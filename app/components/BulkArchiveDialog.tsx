@@ -24,17 +24,16 @@ function BulkArchiveDialog({ documents, onSubmit }: Props) {
       setArchiving(true);
 
       try {
-        let successCount = 0;
-        let errorCount = 0;
+        const results = await Promise.allSettled(
+          documents.map((document) => document.archive())
+        );
 
-        for (const document of documents) {
-          try {
-            await document.archive();
-            successCount++;
-          } catch (err) {
-            errorCount++;
-          }
-        }
+        const successCount = results.filter(
+          (r) => r.status === "fulfilled"
+        ).length;
+        const errorCount = results.filter(
+          (r) => r.status === "rejected"
+        ).length;
 
         documentsStore.clearSelection();
 

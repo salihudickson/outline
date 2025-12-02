@@ -24,17 +24,16 @@ function BulkDeleteDialog({ documents, onSubmit }: Props) {
       setDeleting(true);
 
       try {
-        let successCount = 0;
-        let errorCount = 0;
+        const results = await Promise.allSettled(
+          documents.map((document) => document.delete())
+        );
 
-        for (const document of documents) {
-          try {
-            await document.delete();
-            successCount++;
-          } catch (err) {
-            errorCount++;
-          }
-        }
+        const successCount = results.filter(
+          (r) => r.status === "fulfilled"
+        ).length;
+        const errorCount = results.filter(
+          (r) => r.status === "rejected"
+        ).length;
 
         documentsStore.clearSelection();
 

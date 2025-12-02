@@ -73,6 +73,8 @@ function BulkMoveDialog({ documents, onSubmit }: Props) {
       let successCount = 0;
       let errorCount = 0;
 
+      // Move documents sequentially to avoid potential ordering/conflict issues
+      // when moving multiple documents to the same parent
       for (const document of documents) {
         try {
           if (type === "document") {

@@ -105,16 +105,16 @@ function DocumentListItem(
   const contextMenuAction = useDocumentMenuAction({ documentId: document.id });
 
   const handleCheckboxChange = React.useCallback(
-    (ev: React.MouseEvent) => {
-      ev.preventDefault();
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
       ev.stopPropagation();
       documents.toggleSelection(document.id);
     },
     [documents, document.id]
   );
 
-  const handleCheckboxClick = React.useCallback(
+  const handleCheckboxWrapperClick = React.useCallback(
     (ev: React.MouseEvent) => {
+      // Prevent the link from being followed when clicking checkbox area
       ev.preventDefault();
       ev.stopPropagation();
     },
@@ -156,13 +156,12 @@ function DocumentListItem(
         >
           <CheckboxWrapper
             $visible={showSelectionCheckbox}
-            onClick={handleCheckboxClick}
+            onClick={handleCheckboxWrapperClick}
           >
             <Checkbox
               type="checkbox"
               checked={isSelected}
               onChange={handleCheckboxChange}
-              onClick={handleCheckboxChange}
               aria-label={t("Select document")}
             />
           </CheckboxWrapper>
