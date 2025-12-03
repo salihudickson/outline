@@ -6,6 +6,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 import { metaDisplay } from "@shared/utils/keyboard";
+import BulkSelectionToolbar from "~/components/BulkSelectionToolbar";
 import Scrollable from "~/components/Scrollable";
 import { inviteUser } from "~/actions/definitions/users";
 import useCurrentTeam from "~/hooks/useCurrentTeam";
@@ -131,6 +132,7 @@ function AppSidebar() {
               <SidebarAction action={inviteUser} />
             </Section>
           </Scrollable>
+          <BulkSelectionToolbar />
         </DndProvider>
       )}
     </Sidebar>

@@ -39,8 +39,6 @@ type Props = {
   showPublished?: boolean;
   showDraft?: boolean;
   showTemplate?: boolean;
-  /** Whether to show the selection checkbox */
-  showCheckbox?: boolean;
 };
 
 const SEARCH_RESULT_REGEX = /<b\b[^>]*>(.*?)<\/b>/gi;
@@ -56,7 +54,7 @@ function DocumentListItem(
 ) {
   const { t } = useTranslation();
   const user = useCurrentUser();
-  const { userMemberships, groupMemberships, documents } = useStores();
+  const { userMemberships, groupMemberships } = useStores();
   const locationSidebarContext = useLocationSidebarContext();
   const [menuOpen, handleMenuOpen, handleMenuClose] = useBoolean();
 
@@ -76,16 +74,10 @@ function DocumentListItem(
     showPublished,
     showDraft = true,
     showTemplate,
-    showCheckbox = false,
     highlight,
     context,
     ...rest
   } = props;
-
-  const isSelected = documents.isSelected(document.id);
-  const isSelectionMode = documents.isSelectionMode;
-  const showSelectionCheckbox = showCheckbox || isSelectionMode;
-
   const queryIsInTitle =
     !!highlight &&
     !!document.title.toLowerCase().includes(highlight.toLowerCase());
@@ -103,23 +95,6 @@ function DocumentListItem(
   });
 
   const contextMenuAction = useDocumentMenuAction({ documentId: document.id });
-
-  const handleCheckboxChange = React.useCallback(
-    (ev: React.ChangeEvent<HTMLInputElement>) => {
-      ev.stopPropagation();
-      documents.toggleSelection(document.id);
-    },
-    [documents, document.id]
-  );
-
-  const handleCheckboxWrapperClick = React.useCallback(
-    (ev: React.MouseEvent) => {
-      // Prevent the link from being followed when clicking checkbox area
-      ev.preventDefault();
-      ev.stopPropagation();
-    },
-    []
-  );
 
   return (
     <ActionContextProvider
@@ -142,8 +117,6 @@ function DocumentListItem(
           dir={document.dir}
           $isStarred={document.isStarred}
           $menuOpen={menuOpen}
-          $isSelected={isSelected}
-          $showCheckbox={showSelectionCheckbox}
           to={{
             pathname: documentPath(document),
             state: {
@@ -154,17 +127,6 @@ function DocumentListItem(
           {...rest}
           {...rovingTabIndex}
         >
-          <CheckboxWrapper
-            $visible={showSelectionCheckbox}
-            onClick={handleCheckboxWrapperClick}
-          >
-            <Checkbox
-              type="checkbox"
-              checked={isSelected}
-              onChange={handleCheckboxChange}
-              aria-label={t("Select document")}
-            />
-          </CheckboxWrapper>
           <Content>
             <Heading dir={document.dir}>
               {document.icon && (
@@ -255,28 +217,9 @@ const Actions = styled(EventBoundary)`
   `};
 `;
 
-const CheckboxWrapper = styled(EventBoundary)<{ $visible?: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  flex-shrink: 0;
-  opacity: ${(props) => (props.$visible ? 1 : 0)};
-  transition: opacity 150ms ease-in-out;
-`;
-
-const Checkbox = styled.input`
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: ${s("accent")};
-`;
-
 const DocumentLink = styled(Link)<{
   $isStarred?: boolean;
   $menuOpen?: boolean;
-  $isSelected?: boolean;
-  $showCheckbox?: boolean;
 }>`
   display: flex;
   align-items: center;
@@ -320,10 +263,6 @@ const DocumentLink = styled(Link)<{
         opacity: 1;
       }
     }
-
-    ${CheckboxWrapper} {
-      opacity: 1;
-    }
   }
 
   ${(props) =>
@@ -337,16 +276,6 @@ const DocumentLink = styled(Link)<{
 
       ${AnimatedStar} {
         opacity: 0.5;
-      }
-    `}
-
-  ${(props) =>
-    props.$isSelected &&
-    css`
-      background: ${s("accent")}15;
-
-      ${CheckboxWrapper} {
-        opacity: 1;
       }
     `}
 `;

@@ -56,6 +56,12 @@ type Props = Omit<NavLinkProps, "to"> & {
   scrollIntoViewIfNeeded?: boolean;
   /** Optional context menu action to display */
   contextAction?: ActionV2WithChildren;
+  /** Whether the item is selected for bulk operations */
+  isSelected?: boolean;
+  /** Whether to show the selection checkbox */
+  showCheckbox?: boolean;
+  /** Callback fired when the checkbox is toggled */
+  onCheckboxChange?: (checked: boolean) => void;
 };
 
 const activeDropStyle = {
@@ -88,6 +94,9 @@ function SidebarLink(
     disabled,
     unreadBadge,
     contextAction,
+    isSelected,
+    showCheckbox,
+    onCheckboxChange,
     ...rest
   }: Props,
   ref: React.RefObject<HTMLAnchorElement>
@@ -141,6 +150,15 @@ function SidebarLink(
     [onDisclosureClick]
   );
 
+  const handleCheckboxClick = React.useCallback(
+    (ev: React.MouseEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      onCheckboxChange?.(!isSelected);
+    },
+    [onCheckboxChange, isSelected]
+  );
+
   const DisclosureComponent = icon ? HiddenDisclosure : Disclosure;
 
   return (
@@ -149,6 +167,7 @@ function SidebarLink(
         $isActiveDrop={isActiveDrop}
         $isDraft={isDraft}
         $disabled={disabled}
+        $isSelected={isSelected}
         style={style}
         activeStyle={isActiveDrop ? activeDropStyle : activeStyle}
         onClick={handleClick}
@@ -166,6 +185,16 @@ function SidebarLink(
         {...rest}
       >
         <Content>
+          {showCheckbox && (
+            <CheckboxWrapper onClick={handleCheckboxClick}>
+              <Checkbox
+                type="checkbox"
+                checked={isSelected}
+                readOnly
+                aria-label={t("Select")}
+              />
+            </CheckboxWrapper>
+          )}
           {hasDisclosure && (
             <DisclosureComponent
               expanded={expanded}
@@ -174,7 +203,7 @@ function SidebarLink(
               tabIndex={-1}
             />
           )}
-          {icon && <IconWrapper>{icon}</IconWrapper>}
+          {icon && <IconWrapper $hideForCheckbox={showCheckbox}>{icon}</IconWrapper>}
           <Label $ellipsis={typeof label === "string"}>{label}</Label>
           {unreadBadge && <UnreadBadge style={unreadStyle} />}
         </Content>
@@ -185,12 +214,29 @@ function SidebarLink(
 }
 
 // accounts for whitespace around icon
-export const IconWrapper = styled.span`
+export const IconWrapper = styled.span<{ $hideForCheckbox?: boolean }>`
   margin-left: -4px;
   height: 24px;
   overflow: hidden;
   flex-shrink: 0;
   transition: opacity 200ms ease-in-out;
+  ${(props) => props.$hideForCheckbox && "display: none;"}
+`;
+
+const CheckboxWrapper = styled(EventBoundary)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -4px;
+  margin-right: 4px;
+  flex-shrink: 0;
+`;
+
+const Checkbox = styled.input`
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: ${s("accent")};
 `;
 
 const Content = styled.span`
@@ -239,6 +285,7 @@ const Link = styled(NavLink)<{
   $isActiveDrop?: boolean;
   $isDraft?: boolean;
   $disabled?: boolean;
+  $isSelected?: boolean;
 }>`
   &:hover,
   &:active {
@@ -250,6 +297,7 @@ const Link = styled(NavLink)<{
   }
 
   ${(props) => props.$isActiveDrop && `--background: ${props.theme.slateDark};`}
+  ${(props) => props.$isSelected && `--background: ${props.theme.accent}15;`}
 
   display: flex;
   position: relative;
