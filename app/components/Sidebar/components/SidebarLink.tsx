@@ -150,13 +150,21 @@ function SidebarLink(
     [onDisclosureClick]
   );
 
-  const handleCheckboxClick = React.useCallback(
+  const handleCheckboxChange = React.useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      ev.stopPropagation();
+      onCheckboxChange?.(ev.target.checked);
+    },
+    [onCheckboxChange]
+  );
+
+  const handleCheckboxWrapperClick = React.useCallback(
     (ev: React.MouseEvent) => {
+      // Prevent the link from being followed when clicking checkbox area
       ev.preventDefault();
       ev.stopPropagation();
-      onCheckboxChange?.(!isSelected);
     },
-    [onCheckboxChange, isSelected]
+    []
   );
 
   const DisclosureComponent = icon ? HiddenDisclosure : Disclosure;
@@ -186,11 +194,11 @@ function SidebarLink(
       >
         <Content>
           {showCheckbox && (
-            <CheckboxWrapper onClick={handleCheckboxClick}>
+            <CheckboxWrapper onClick={handleCheckboxWrapperClick}>
               <Checkbox
                 type="checkbox"
                 checked={isSelected}
-                readOnly
+                onChange={handleCheckboxChange}
                 aria-label={t("Select")}
               />
             </CheckboxWrapper>
@@ -220,7 +228,7 @@ export const IconWrapper = styled.span<{ $hideForCheckbox?: boolean }>`
   overflow: hidden;
   flex-shrink: 0;
   transition: opacity 200ms ease-in-out;
-  ${(props) => props.$hideForCheckbox && "display: none;"}
+  display: ${(props) => (props.$hideForCheckbox ? "none" : "block")};
 `;
 
 const CheckboxWrapper = styled(EventBoundary)`
