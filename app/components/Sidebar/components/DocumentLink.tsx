@@ -82,16 +82,13 @@ function InnerDocumentLink(
   const isSelected = documents.isSelected(node.id);
   const hasAnySelection = documents.selectedCount > 0;
 
-  const handleCheckboxChange = React.useCallback(
-    (checked: boolean) => {
-      if (checked) {
-        documents.select(node.id);
-      } else {
-        documents.deselect(node.id);
-      }
-    },
-    [documents, node.id]
-  );
+  const handleCheckboxChange = React.useCallback(() => {
+    if (documents.isSelected(node.id)) {
+      documents.deselect(node.id);
+    } else {
+      documents.select(node.id);
+    }
+  }, [documents, node.id]);
 
   React.useEffect(() => {
     if (

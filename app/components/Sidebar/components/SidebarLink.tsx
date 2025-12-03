@@ -14,6 +14,7 @@ import NavLink, { Props as NavLinkProps } from "./NavLink";
 import { ActionV2WithChildren } from "~/types";
 import { ContextMenu } from "~/components/Menu/ContextMenu";
 import { useTranslation } from "react-i18next";
+import { CheckboxIcon } from "outline-icons";
 
 /**
  * Props for the SidebarLink component.
@@ -63,7 +64,7 @@ type Props = Omit<NavLinkProps, "to"> & {
   /** Whether any document is selected (makes checkbox always visible) */
   hasAnySelection?: boolean;
   /** Callback fired when the checkbox is toggled */
-  onCheckboxChange?: (checked: boolean) => void;
+  onCheckboxChange?: () => void;
 };
 
 const activeDropStyle = {
@@ -96,7 +97,7 @@ function SidebarLink(
     disabled,
     unreadBadge,
     contextAction,
-    isSelected,
+    isSelected = false,
     showCheckbox,
     hasAnySelection,
     onCheckboxChange,
@@ -153,21 +154,13 @@ function SidebarLink(
     [onDisclosureClick]
   );
 
-  const handleCheckboxChange = React.useCallback(
-    (ev: React.ChangeEvent<HTMLInputElement>) => {
-      ev.stopPropagation();
-      onCheckboxChange?.(ev.target.checked);
-    },
-    [onCheckboxChange]
-  );
-
-  const handleCheckboxWrapperClick = React.useCallback(
+  const handleCheckBoxClick = React.useCallback(
     (ev: React.MouseEvent) => {
-      // Prevent the link from being followed when clicking checkbox area
       ev.preventDefault();
       ev.stopPropagation();
+      onCheckboxChange?.();
     },
-    []
+    [onCheckboxChange]
   );
 
   const DisclosureComponent = icon ? HiddenDisclosure : Disclosure;
@@ -199,14 +192,10 @@ function SidebarLink(
       >
         <Content>
           {showCheckbox && (
-            <CheckboxWrapper
-              onClick={handleCheckboxWrapperClick}
-              $alwaysVisible={hasAnySelection}
-            >
-              <Checkbox
-                type="checkbox"
+            <CheckboxWrapper $alwaysVisible={hasAnySelection}>
+              <CheckboxIcon
                 checked={isSelected}
-                onChange={handleCheckboxChange}
+                onClick={handleCheckBoxClick}
                 aria-label={t("Select")}
               />
             </CheckboxWrapper>
@@ -219,7 +208,9 @@ function SidebarLink(
               tabIndex={-1}
             />
           )}
-          {icon && <IconWrapper $hideForCheckbox={hasAnySelection}>{icon}</IconWrapper>}
+          {icon && (
+            <IconWrapper $hideForCheckbox={hasAnySelection}>{icon}</IconWrapper>
+          )}
           <Label $ellipsis={typeof label === "string"}>{label}</Label>
           {unreadBadge && <UnreadBadge style={unreadStyle} />}
         </Content>
@@ -248,13 +239,6 @@ const CheckboxWrapper = styled(EventBoundary)<{ $alwaysVisible?: boolean }>`
   flex-shrink: 0;
   opacity: ${(props) => (props.$alwaysVisible ? 1 : 0)};
   transition: opacity 150ms ease-in-out;
-`;
-
-const Checkbox = styled.input`
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: ${s("accent")};
 `;
 
 const Content = styled.span`

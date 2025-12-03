@@ -17,13 +17,7 @@ function BulkSelectionToolbar() {
   const { documents, dialogs, policies, ui } = useStores();
   const selectedCount = documents.selectedCount;
 
-  if (selectedCount === 0) {
-    return null;
-  }
-
   const selectedDocuments = documents.selectedDocuments;
-
-  // Check permissions for selected documents
   const canArchiveAll = selectedDocuments.every(
     (doc) => policies.abilities(doc.id).archive
   );
@@ -95,6 +89,10 @@ function BulkSelectionToolbar() {
   );
 
   const sidebarWidth = ui.sidebarWidth;
+
+  if (selectedCount === 0) {
+    return null;
+  }
 
   return (
     <Wrapper $sidebarWidth={sidebarWidth}>
