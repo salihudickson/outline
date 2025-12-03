@@ -14,7 +14,7 @@ import BulkMoveDialog from "./BulkMoveDialog";
 
 function BulkSelectionToolbar() {
   const { t } = useTranslation();
-  const { documents, dialogs, policies } = useStores();
+  const { documents, dialogs, policies, ui } = useStores();
   const selectedCount = documents.selectedCount;
 
   if (selectedCount === 0) {
@@ -34,48 +34,70 @@ function BulkSelectionToolbar() {
     (doc) => policies.abilities(doc.id).move
   );
 
-  const handleClear = () => {
-    documents.clearSelection();
-  };
+  const handleClear = React.useCallback(
+    (ev: React.MouseEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      documents.clearSelection();
+    },
+    [documents]
+  );
 
-  const handleArchive = () => {
-    dialogs.openModal({
-      title: t("Archive {{ count }} documents", { count: selectedCount }),
-      content: (
-        <BulkArchiveDialog
-          documents={selectedDocuments}
-          onSubmit={dialogs.closeAllModals}
-        />
-      ),
-    });
-  };
+  const handleArchive = React.useCallback(
+    (ev: React.MouseEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      dialogs.openModal({
+        title: t("Archive {{ count }} documents", { count: selectedCount }),
+        content: (
+          <BulkArchiveDialog
+            documents={selectedDocuments}
+            onSubmit={dialogs.closeAllModals}
+          />
+        ),
+      });
+    },
+    [dialogs, selectedCount, selectedDocuments, t]
+  );
 
-  const handleDelete = () => {
-    dialogs.openModal({
-      title: t("Delete {{ count }} documents", { count: selectedCount }),
-      content: (
-        <BulkDeleteDialog
-          documents={selectedDocuments}
-          onSubmit={dialogs.closeAllModals}
-        />
-      ),
-    });
-  };
+  const handleDelete = React.useCallback(
+    (ev: React.MouseEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      dialogs.openModal({
+        title: t("Delete {{ count }} documents", { count: selectedCount }),
+        content: (
+          <BulkDeleteDialog
+            documents={selectedDocuments}
+            onSubmit={dialogs.closeAllModals}
+          />
+        ),
+      });
+    },
+    [dialogs, selectedCount, selectedDocuments, t]
+  );
 
-  const handleMove = () => {
-    dialogs.openModal({
-      title: t("Move {{ count }} documents", { count: selectedCount }),
-      content: (
-        <BulkMoveDialog
-          documents={selectedDocuments}
-          onSubmit={dialogs.closeAllModals}
-        />
-      ),
-    });
-  };
+  const handleMove = React.useCallback(
+    (ev: React.MouseEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      dialogs.openModal({
+        title: t("Move {{ count }} documents", { count: selectedCount }),
+        content: (
+          <BulkMoveDialog
+            documents={selectedDocuments}
+            onSubmit={dialogs.closeAllModals}
+          />
+        ),
+      });
+    },
+    [dialogs, selectedCount, selectedDocuments, t]
+  );
+
+  const sidebarWidth = ui.sidebarWidth;
 
   return (
-    <Wrapper>
+    <Wrapper $sidebarWidth={sidebarWidth}>
       <MenuContainer>
         <Header>
           <CountText>
@@ -117,11 +139,10 @@ function BulkSelectionToolbar() {
   );
 }
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ $sidebarWidth: number }>`
   position: fixed;
   bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: ${(props) => props.$sidebarWidth + 16}px;
   z-index: ${depths.menu};
 `;
 
