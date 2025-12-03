@@ -180,6 +180,7 @@ function SidebarLink(
         $disabled={disabled}
         $isSelected={isSelected}
         $hasCheckbox={showCheckbox}
+        $hasAnySelection={hasAnySelection}
         style={style}
         activeStyle={isActiveDrop ? activeDropStyle : activeStyle}
         onClick={handleClick}
@@ -234,7 +235,7 @@ export const IconWrapper = styled.span<{ $hideForCheckbox?: boolean }>`
   height: 24px;
   overflow: hidden;
   flex-shrink: 0;
-  transition: opacity 200ms ease-in-out;
+  transition: all 150ms ease-in-out;
   display: ${(props) => (props.$hideForCheckbox ? "none" : "block")};
 `;
 
@@ -304,6 +305,7 @@ const Link = styled(NavLink)<{
   $disabled?: boolean;
   $isSelected?: boolean;
   $hasCheckbox?: boolean;
+  $hasAnySelection?: boolean;
 }>`
   &:hover,
   &:active {
@@ -393,12 +395,15 @@ const Link = styled(NavLink)<{
         props.$isActiveDrop ? props.theme.white : props.theme.text};
     }
 
-    /* Show checkbox on hover when checkbox is enabled */
+    /* Show checkbox on hover and hide icon when checkbox is enabled */
     ${(props) =>
       props.$hasCheckbox &&
       css`
         &:hover ${CheckboxWrapper} {
           opacity: 1;
+        }
+        &:hover ${IconWrapper} {
+          display: none;
         }
       `}
   }
