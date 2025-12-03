@@ -1,14 +1,11 @@
 import { observer } from "mobx-react";
 import { ArchiveIcon, CrossIcon, MoveIcon, TrashIcon } from "outline-icons";
-import { transparentize } from "polished";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
+import breakpoint from "styled-components-breakpoint";
 import { depths, s } from "@shared/styles";
-import Button from "~/components/Button";
-import Flex from "~/components/Flex";
 import NudeButton from "~/components/NudeButton";
-import Text from "~/components/Text";
 import Tooltip from "~/components/Tooltip";
 import useStores from "~/hooks/useStores";
 import BulkDeleteDialog from "./BulkDeleteDialog";
@@ -20,7 +17,7 @@ function BulkSelectionToolbar() {
   const { documents, dialogs, policies } = useStores();
   const selectedCount = documents.selectedCount;
 
-  if (!documents.isSelectionMode || selectedCount === 0) {
+  if (selectedCount === 0) {
     return null;
   }
 
@@ -79,35 +76,43 @@ function BulkSelectionToolbar() {
 
   return (
     <Wrapper>
-      <Inner align="center" justify="space-between">
-        <Flex align="center" gap={12}>
-          <Text type="secondary" size="small">
+      <MenuContainer>
+        <Header>
+          <CountText>
             {t("{{ count }} selected", { count: selectedCount })}
-          </Text>
+          </CountText>
           <Tooltip content={t("Clear selection")} placement="top">
-            <NudeButton onClick={handleClear}>
-              <CrossIcon />
-            </NudeButton>
+            <ClearButton onClick={handleClear}>
+              <CrossIcon size={18} />
+            </ClearButton>
           </Tooltip>
-        </Flex>
-        <Flex align="center" gap={8}>
-          {canArchiveAll && (
-            <Button onClick={handleArchive} icon={<ArchiveIcon />} neutral>
-              {t("Archive")}
-            </Button>
-          )}
-          {canMoveAll && (
-            <Button onClick={handleMove} icon={<MoveIcon />} neutral>
-              {t("Move")}
-            </Button>
-          )}
-          {canDeleteAll && (
-            <Button onClick={handleDelete} icon={<TrashIcon />} danger>
-              {t("Delete")}
-            </Button>
-          )}
-        </Flex>
-      </Inner>
+        </Header>
+        <MenuSeparator />
+        {canArchiveAll && (
+          <MenuItem onClick={handleArchive}>
+            <MenuIconWrapper>
+              <ArchiveIcon />
+            </MenuIconWrapper>
+            <MenuLabel>{t("Archive")}</MenuLabel>
+          </MenuItem>
+        )}
+        {canMoveAll && (
+          <MenuItem onClick={handleMove}>
+            <MenuIconWrapper>
+              <MoveIcon />
+            </MenuIconWrapper>
+            <MenuLabel>{t("Move")}</MenuLabel>
+          </MenuItem>
+        )}
+        {canDeleteAll && (
+          <MenuItem onClick={handleDelete} $dangerous>
+            <MenuIconWrapper>
+              <TrashIcon />
+            </MenuIconWrapper>
+            <MenuLabel>{t("Delete")}</MenuLabel>
+          </MenuItem>
+        )}
+      </MenuContainer>
     </Wrapper>
   );
 }
@@ -117,17 +122,99 @@ const Wrapper = styled.div`
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: ${depths.editorToolbar};
+  z-index: ${depths.menu};
 `;
 
-const Inner = styled(Flex)`
-  background: ${s("background")};
-  border: 1px solid ${s("inputBorder")};
-  border-radius: 8px;
-  padding: 8px 16px;
-  box-shadow: 0 4px 12px ${(props) => transparentize(0.8, props.theme.text)};
-  min-width: 320px;
-  gap: 24px;
+const MenuContainer = styled.div`
+  background: ${s("menuBackground")};
+  box-shadow: ${s("menuShadow")};
+  border-radius: 6px;
+  padding: 6px;
+  min-width: 180px;
+`;
+
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 4px;
+`;
+
+const CountText = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: ${s("textTertiary")};
+  letter-spacing: 0.04em;
+`;
+
+const ClearButton = styled(NudeButton)`
+  width: 24px;
+  height: 24px;
+  color: ${s("textTertiary")};
+
+  &:hover {
+    color: ${s("text")};
+    background: ${s("sidebarControlHoverBackground")};
+  }
+`;
+
+const MenuSeparator = styled.hr`
+  margin: 6px 0;
+  border: none;
+  border-top: 1px solid ${s("divider")};
+`;
+
+const MenuItem = styled.button<{ $dangerous?: boolean }>`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 32px;
+  font-size: 16px;
+  cursor: var(--pointer);
+  user-select: none;
+  white-space: nowrap;
+  background: none;
+  color: ${s("textSecondary")};
+  margin: 0;
+  border: 0;
+  border-radius: 4px;
+  padding: 12px;
+
+  &:hover {
+    color: ${s("accentText")};
+    background: ${(props) =>
+      props.$dangerous ? props.theme.danger : props.theme.accent};
+
+    svg {
+      color: ${s("accentText")};
+      fill: ${s("accentText")};
+    }
+  }
+
+  ${breakpoint("tablet")`
+    padding: 4px 12px;
+    font-size: 14px;
+  `}
+`;
+
+const MenuIconWrapper = styled.span`
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+  margin-left: -4px;
+  color: ${s("textSecondary")};
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const MenuLabel = styled.span`
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 export default observer(BulkSelectionToolbar);

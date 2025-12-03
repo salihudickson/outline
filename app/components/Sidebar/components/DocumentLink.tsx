@@ -80,7 +80,7 @@ function InnerDocumentLink(
 
   // Selection state for bulk operations
   const isSelected = documents.isSelected(node.id);
-  const isSelectionMode = documents.isSelectionMode;
+  const hasAnySelection = documents.selectedCount > 0;
 
   const handleCheckboxChange = React.useCallback(
     (checked: boolean) => {
@@ -450,7 +450,8 @@ function InnerDocumentLink(
                 ref={ref}
                 menu={menuElement}
                 isSelected={isSelected}
-                showCheckbox={isSelectionMode}
+                showCheckbox
+                hasAnySelection={hasAnySelection}
                 onCheckboxChange={handleCheckboxChange}
               />
             </DropToImport>

@@ -60,6 +60,8 @@ type Props = Omit<NavLinkProps, "to"> & {
   isSelected?: boolean;
   /** Whether to show the selection checkbox */
   showCheckbox?: boolean;
+  /** Whether any document is selected (makes checkbox always visible) */
+  hasAnySelection?: boolean;
   /** Callback fired when the checkbox is toggled */
   onCheckboxChange?: (checked: boolean) => void;
 };
@@ -96,6 +98,7 @@ function SidebarLink(
     contextAction,
     isSelected,
     showCheckbox,
+    hasAnySelection,
     onCheckboxChange,
     ...rest
   }: Props,
@@ -176,6 +179,7 @@ function SidebarLink(
         $isDraft={isDraft}
         $disabled={disabled}
         $isSelected={isSelected}
+        $hasCheckbox={showCheckbox}
         style={style}
         activeStyle={isActiveDrop ? activeDropStyle : activeStyle}
         onClick={handleClick}
@@ -194,7 +198,10 @@ function SidebarLink(
       >
         <Content>
           {showCheckbox && (
-            <CheckboxWrapper onClick={handleCheckboxWrapperClick}>
+            <CheckboxWrapper
+              onClick={handleCheckboxWrapperClick}
+              $alwaysVisible={hasAnySelection}
+            >
               <Checkbox
                 type="checkbox"
                 checked={isSelected}
@@ -211,7 +218,7 @@ function SidebarLink(
               tabIndex={-1}
             />
           )}
-          {icon && <IconWrapper $hideForCheckbox={showCheckbox}>{icon}</IconWrapper>}
+          {icon && <IconWrapper $hideForCheckbox={hasAnySelection}>{icon}</IconWrapper>}
           <Label $ellipsis={typeof label === "string"}>{label}</Label>
           {unreadBadge && <UnreadBadge style={unreadStyle} />}
         </Content>
@@ -231,13 +238,15 @@ export const IconWrapper = styled.span<{ $hideForCheckbox?: boolean }>`
   display: ${(props) => (props.$hideForCheckbox ? "none" : "block")};
 `;
 
-const CheckboxWrapper = styled(EventBoundary)`
+const CheckboxWrapper = styled(EventBoundary)<{ $alwaysVisible?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
   margin-left: -4px;
   margin-right: 4px;
   flex-shrink: 0;
+  opacity: ${(props) => (props.$alwaysVisible ? 1 : 0)};
+  transition: opacity 150ms ease-in-out;
 `;
 
 const Checkbox = styled.input`
@@ -294,6 +303,7 @@ const Link = styled(NavLink)<{
   $isDraft?: boolean;
   $disabled?: boolean;
   $isSelected?: boolean;
+  $hasCheckbox?: boolean;
 }>`
   &:hover,
   &:active {
@@ -382,6 +392,15 @@ const Link = styled(NavLink)<{
       color: ${(props) =>
         props.$isActiveDrop ? props.theme.white : props.theme.text};
     }
+
+    /* Show checkbox on hover when checkbox is enabled */
+    ${(props) =>
+      props.$hasCheckbox &&
+      css`
+        &:hover ${CheckboxWrapper} {
+          opacity: 1;
+        }
+      `}
   }
 
   & ${Actions} {
