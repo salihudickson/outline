@@ -19,7 +19,7 @@ type Props = {
 };
 
 function BulkMoveDialog({ documents, onSubmit }: Props) {
-  const { dialogs, documents: documentsStore, policies } = useStores();
+  const { documents: documentsStore, policies } = useStores();
   const { t } = useTranslation();
   const collectionTrees = useCollectionTrees();
   const [selectedPath, selectPath] = useState<NavigationNode | null>(null);
@@ -83,7 +83,7 @@ function BulkMoveDialog({ documents, onSubmit }: Props) {
             await document.move({ collectionId });
           }
           successCount++;
-        } catch (err) {
+        } catch {
           errorCount++;
         }
       }
@@ -91,7 +91,9 @@ function BulkMoveDialog({ documents, onSubmit }: Props) {
       documentsStore.clearSelection();
 
       if (errorCount === 0) {
-        toast.success(t("{{ count }} documents moved", { count: successCount }));
+        toast.success(
+          t("{{ count }} documents moved", { count: successCount })
+        );
       } else {
         toast.warning(
           t("{{ successCount }} moved, {{ errorCount }} failed", {
@@ -102,7 +104,7 @@ function BulkMoveDialog({ documents, onSubmit }: Props) {
       }
 
       onSubmit();
-    } catch (err) {
+    } catch {
       toast.error(t("Couldn't move the documents, try again?"));
     } finally {
       setMoving(false);
