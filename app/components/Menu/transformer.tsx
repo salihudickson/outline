@@ -255,6 +255,105 @@ export function toMobileMenuItems(
   });
 }
 
+/**
+ * Converts menu items to static menu components that don't require radix-ui context.
+ * Use this for menus that are always visible (not dropdowns/context menus).
+ *
+ * @param items - menu items to convert.
+ * @returns array of React elements.
+ */
+export function toStaticMenuItems(items: MenuItem[]) {
+  const filteredItems = filterMenuItems(items);
+
+  if (!filteredItems.length) {
+    return null;
+  }
+
+  const showIcon = filteredItems.find(
+    (item) =>
+      item.type !== "separator" &&
+      item.type !== "heading" &&
+      item.type !== "group" &&
+      !!item.icon
+  );
+
+  return filteredItems.map((item, index) => {
+    const icon = showIcon ? (
+      <Components.MenuIconWrapper aria-hidden>
+        {"icon" in item ? item.icon : null}
+      </Components.MenuIconWrapper>
+    ) : undefined;
+
+    switch (item.type) {
+      case "button":
+        return (
+          <Components.MenuButton
+            key={`${item.type}-${item.title}-${index}`}
+            disabled={item.disabled}
+            $dangerous={item.dangerous}
+            onClick={item.onClick}
+          >
+            {icon}
+            <Components.MenuLabel>{item.title}</Components.MenuLabel>
+            {item.selected !== undefined && (
+              <Components.SelectedIconWrapper aria-hidden>
+                {item.selected ? <CheckmarkIcon size={18} /> : null}
+              </Components.SelectedIconWrapper>
+            )}
+          </Components.MenuButton>
+        );
+
+      case "route":
+        return (
+          <Components.MenuInternalLink
+            key={`${item.type}-${item.title}-${index}`}
+            to={item.to}
+            disabled={item.disabled}
+          >
+            {icon}
+            <Components.MenuLabel>{item.title}</Components.MenuLabel>
+          </Components.MenuInternalLink>
+        );
+
+      case "link":
+        return (
+          <Components.MenuExternalLink
+            key={`${item.type}-${item.title}-${index}`}
+            href={typeof item.href === "string" ? item.href : item.href.url}
+            target={
+              typeof item.href === "string" ? undefined : item.href.target
+            }
+            disabled={item.disabled}
+          >
+            {icon}
+            <Components.MenuLabel>{item.title}</Components.MenuLabel>
+          </Components.MenuExternalLink>
+        );
+
+      case "group": {
+        const groupItems = toStaticMenuItems(item.items);
+
+        if (!groupItems?.length) {
+          return null;
+        }
+
+        return (
+          <div key={`${item.type}-${item.title}-${index}`}>
+            <Components.MenuHeader>{item.title}</Components.MenuHeader>
+            {groupItems}
+          </div>
+        );
+      }
+
+      case "separator":
+        return <Components.MenuSeparator key={`${item.type}-${index}`} />;
+
+      default:
+        return null;
+    }
+  });
+}
+
 function filterMenuItems(items: MenuItem[]): MenuItem[] {
   return items
     .filter((item) => item.visible !== false)
