@@ -2066,6 +2066,44 @@ router.post(
   }
 );
 
+router.post(
+  "documents.request_access",
+  auth(),
+  rateLimiter(RateLimiterStrategy.TwentyFivePerMinute),
+  validate(T.DocumentsRequestAccessSchema),
+  async (ctx: APIContext<T.DocumentsRequestAccessReq>) => {
+    const { id } = ctx.input.body;
+    const { user } = ctx.state.auth;
+
+    // Get the document without checking permissions
+    const document = await Document.unscoped()
+      .scope("withoutState")
+      .findByPk(id);
+
+    if (!document) {
+      throw NotFoundError("Document could not be found");
+    }
+
+    // Verify the document belongs to the same team as the user
+    if (document.teamId !== user.teamId) {
+      throw NotFoundError("Document could not be found");
+    }
+
+    // Create an event to trigger the notification
+    await Event.createFromContext(ctx, {
+      name: "documents.request_access",
+      documentId: document.id,
+      data: {
+        userId: user.id,
+      },
+    });
+
+    ctx.body = {
+      success: true,
+    };
+  }
+);
+
 // Remove this helper once apiVersion is removed (#6175)
 function getAPIVersion(ctx: APIContext) {
   return Number(
