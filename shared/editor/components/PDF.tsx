@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import styled from "styled-components";
 import useDragResize from "./hooks/useDragResize";
 import { ResizeLeft, ResizeRight } from "./ResizeHandle";
 import { ComponentProps } from "../types";
@@ -71,35 +72,74 @@ export default function PdfViewer(props: Props) {
   });
 
   return (
-    <div
+    <PDFContainer
       className="pdf"
       contentEditable={false}
       ref={ref}
-      style={{ width: dragging ? width : undefined }}
     >
-      <embed
-        title={name}
-        src={href}
-        ref={embedRef}
-        type="application/pdf"
-        width={width}
-        height={height}
-        style={{
-          pointerEvents: isSelected && !dragging ? "initial" : "none",
-        }}
-      />
-      {isEditable && !!props.onChangeSize && (
-        <>
-          <ResizeLeft
-            onPointerDown={handlePointerDown("left")}
-            $dragging={isSelected || dragging}
-          />
-          <ResizeRight
-            onPointerDown={handlePointerDown("right")}
-            $dragging={isSelected || dragging}
-          />
-        </>
-      )}
-    </div>
+      <PDFWrapper
+        className={
+          isSelected || dragging
+            ? "pdf-wrapper ProseMirror-selectednode"
+            : "pdf-wrapper"
+        }
+        style={{ width: width || "auto" }}
+        $dragging={dragging}
+      >
+        <embed
+          title={name}
+          src={href}
+          ref={embedRef}
+          type="application/pdf"
+          width={width}
+          height={height}
+          style={{
+            pointerEvents: isSelected && !dragging ? "initial" : "none",
+          }}
+        />
+        {isEditable && !!props.onChangeSize && (
+          <>
+            <ResizeLeft
+              onPointerDown={handlePointerDown("left")}
+              $dragging={isSelected || dragging}
+            />
+            <ResizeRight
+              onPointerDown={handlePointerDown("right")}
+              $dragging={isSelected || dragging}
+            />
+          </>
+        )}
+      </PDFWrapper>
+    </PDFContainer>
   );
 }
+
+const PDFContainer = styled.div`
+  line-height: 0;
+`;
+
+const PDFWrapper = styled.div<{ $dragging: boolean }>`
+  line-height: 0;
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+  transition-property: width, height;
+  transition-duration: 150ms;
+  transition-timing-function: ease-in-out;
+  overflow: hidden;
+  will-change: ${(props) => (props.$dragging ? "width, height" : "auto")};
+
+  embed {
+    transition-property: width, height;
+    transition-duration: 150ms;
+    transition-timing-function: ease-in-out;
+    will-change: ${(props) => (props.$dragging ? "width, height" : "auto")};
+  }
+
+  &:hover {
+    ${ResizeLeft}, ${ResizeRight} {
+      opacity: 1;
+    }
+  }
+`;
