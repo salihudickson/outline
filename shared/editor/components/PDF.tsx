@@ -128,15 +128,13 @@ const PDFWrapper = styled.div<{ $dragging: boolean }>`
   transition-duration: 150ms;
   transition-timing-function: ease-in-out;
   overflow: hidden;
-  --will-change-value: ${(props) =>
-    props.$dragging ? "width, height" : "auto"};
-  will-change: var(--will-change-value);
+  will-change: ${(props) => (props.$dragging ? "width, height" : "auto")};
 
   embed {
     transition-property: width, height;
     transition-duration: 150ms;
     transition-timing-function: ease-in-out;
-    will-change: var(--will-change-value);
+    will-change: ${(props) => (props.$dragging ? "width, height" : "auto")};
   }
 
   &:hover {
