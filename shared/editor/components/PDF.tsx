@@ -83,7 +83,7 @@ export default function PdfViewer(props: Props) {
             ? "pdf-wrapper ProseMirror-selectednode"
             : "pdf-wrapper"
         }
-        style={{ width: width || "auto" }}
+        style={{ width: width ?? "auto" }}
         $dragging={dragging}
       >
         <embed
@@ -128,13 +128,15 @@ const PDFWrapper = styled.div<{ $dragging: boolean }>`
   transition-duration: 150ms;
   transition-timing-function: ease-in-out;
   overflow: hidden;
-  will-change: ${(props) => (props.$dragging ? "width, height" : "auto")};
+  --will-change-value: ${(props) =>
+    props.$dragging ? "width, height" : "auto"};
+  will-change: var(--will-change-value);
 
   embed {
     transition-property: width, height;
     transition-duration: 150ms;
     transition-timing-function: ease-in-out;
-    will-change: ${(props) => (props.$dragging ? "width, height" : "auto")};
+    will-change: var(--will-change-value);
   }
 
   &:hover {
