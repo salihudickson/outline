@@ -201,7 +201,7 @@ export default class EmailsProcessor extends BaseProcessor {
         return;
       }
 
-      case NotificationEventType.RequestAccessDocument: {
+      case NotificationEventType.RequestDocumentAccess: {
         await new DocumentAccessRequestedEmail(
           {
             to: notification.user.email,

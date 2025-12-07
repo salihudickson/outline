@@ -47,11 +47,11 @@ export default class DocumentAccessRequestedEmail extends BaseEmail<
   }
 
   protected subject({ actor, document }: Props) {
-    return `${actor.name} requested access to "${document.titleWithDefault}"`;
+    return `${actor.name} is requesting access to "${document.titleWithDefault}"`;
   }
 
   protected preview({ actor }: Props): string {
-    return `${actor.name} requested access to a document`;
+    return `${actor.name} is requesting access to a document`;
   }
 
   protected fromName({ actor }: Props) {
@@ -60,7 +60,7 @@ export default class DocumentAccessRequestedEmail extends BaseEmail<
 
   protected renderAsText({ actor, teamUrl, document }: Props): string {
     return `
-${actor.name} requested access to "${document.titleWithDefault}".
+${actor.name} is requesting access to "${document.titleWithDefault}".
 
 Open the document to share it with them: ${teamUrl}${document.path}
 `;
@@ -80,12 +80,10 @@ Open the document to share it with them: ${teamUrl}${document.path}
         <Body>
           <Heading>{document.titleWithDefault}</Heading>
           <p>
-            {actor.name} requested access to the{" "}
+            {actor.name} is requesting access to the{" "}
             <a href={documentUrl}>{document.titleWithDefault}</a> document.
           </p>
-          <p>
-            Open the document to share it with them.
-          </p>
+          <p>Open the document to share it with them.</p>
           <p>
             <Button href={documentUrl}>View Document</Button>
           </p>

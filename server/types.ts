@@ -288,9 +288,7 @@ export type DocumentUserEvent = BaseEvent<UserMembership> & {
 export type DocumentAccessRequestEvent = BaseEvent<Document> & {
   name: "documents.request_access";
   documentId: string;
-  data: {
-    userId: string;
-  };
+  userId: string;
 };
 
 export type DocumentGroupEvent = BaseEvent<GroupMembership> & {

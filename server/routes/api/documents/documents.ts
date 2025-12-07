@@ -2075,7 +2075,6 @@ router.post(
     const { id } = ctx.input.body;
     const { user } = ctx.state.auth;
 
-    // Get the document without checking permissions
     const document = await Document.unscoped()
       .scope("withoutState")
       .findByPk(id);
@@ -2084,18 +2083,10 @@ router.post(
       throw NotFoundError("Document could not be found");
     }
 
-    // Verify the document belongs to the same team as the user
-    if (document.teamId !== user.teamId) {
-      throw NotFoundError("Document could not be found");
-    }
-
-    // Create an event to trigger the notification
     await Event.createFromContext(ctx, {
       name: "documents.request_access",
       documentId: document.id,
-      data: {
-        userId: user.id,
-      },
+      userId: user.id,
     });
 
     ctx.body = {

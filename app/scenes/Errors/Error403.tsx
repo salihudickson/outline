@@ -22,7 +22,7 @@ const Error403 = ({ documentId }: Props) => {
   const [requested, setRequested] = React.useState(false);
 
   const handleRequestAccess = React.useCallback(async () => {
-    if (!documentId) {
+    if (!documentId || requesting || requested) {
       return;
     }
 
@@ -31,12 +31,12 @@ const Error403 = ({ documentId }: Props) => {
       await client.post("/documents.request_access", { id: documentId });
       setRequested(true);
       toast.success(t("Access request sent"));
-    } catch (error) {
+    } catch {
       toast.error(t("Failed to send access request"));
     } finally {
       setRequesting(false);
     }
-  }, [documentId, t]);
+  }, [documentId, t, requested, requesting]);
 
   return (
     <Scene title={t("No access to this doc")}>
@@ -46,19 +46,20 @@ const Error403 = ({ documentId }: Props) => {
           {t(
             "It doesn't look like you have permission to access this document."
           )}{" "}
-          {documentId && !requested
-            ? t("You can request access from someone who can manage it.")
-            : t("Please request access from the document owner.")}
+          {t("You can request access from a document manager.")}
         </Empty>
         <Flex gap={8}>
-          {documentId && !requested && (
-            <Button onClick={handleRequestAccess} disabled={requesting}>
-              {requesting ? t("Requesting…") : t("Request access")}
-            </Button>
-          )}
-          {requested && (
-            <Button disabled neutral>
-              {t("Request sent")}
+          {documentId && (
+            <Button
+              onClick={handleRequestAccess}
+              disabled={requesting || requested}
+              neutral={requesting || requested}
+            >
+              {requested
+                ? t("Request sent")
+                : requesting
+                  ? t("Requesting…")
+                  : t("Request access")}
             </Button>
           )}
           <Button action={navigateToHome} hideIcon neutral={!!documentId}>
