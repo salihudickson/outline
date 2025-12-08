@@ -150,6 +150,7 @@ export default class DeliverWebhookTask extends BaseTask<Props> {
       case "documents.update.delayed":
       case "documents.update.debounced":
       case "documents.empty_trash":
+      case "documents.request_access":
         // Ignored
         return;
       case "revisions.create":
