@@ -109,18 +109,28 @@ export class GitLab {
     endpoint: string
   ): Promise<any> {
     const url = `${GitLab.apiBaseUrl}${endpoint}`;
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error(`GitLab API error: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(
+          `GitLab API error: ${response.status} ${response.statusText} (${endpoint})`
+        );
+      }
+
+      return response.json();
+    } catch (err) {
+      if (err instanceof Error) {
+        throw err;
+      }
+      throw new Error(`Failed to fetch from GitLab API: ${endpoint}`);
     }
-
-    return response.json();
   }
 
   /**
