@@ -1,0 +1,40 @@
+import { Minute } from "@shared/utils/time";
+import { PluginManager, Hook } from "@server/utils/PluginManager";
+import config from "../plugin.json";
+import { GitLabIssueProvider } from "./GitLabIssueProvider";
+import router from "./api/gitlab";
+import env from "./env";
+import { GitLab } from "./gitlab";
+import GitLabWebhookTask from "./tasks/GitLabWebhookTask";
+import { uninstall } from "./uninstall";
+
+const enabled =
+  !!env.GITLAB_CLIENT_ID &&
+  !!env.GITLAB_CLIENT_SECRET &&
+  !!env.GITLAB_APP_NAME;
+
+if (enabled) {
+  PluginManager.add([
+    {
+      ...config,
+      type: Hook.API,
+      value: router,
+    },
+    {
+      type: Hook.Task,
+      value: GitLabWebhookTask,
+    },
+    {
+      type: Hook.IssueProvider,
+      value: new GitLabIssueProvider(),
+    },
+    {
+      type: Hook.UnfurlProvider,
+      value: { unfurl: GitLab.unfurl, cacheExpiry: Minute.seconds },
+    },
+    {
+      type: Hook.Uninstall,
+      value: uninstall,
+    },
+  ]);
+}
