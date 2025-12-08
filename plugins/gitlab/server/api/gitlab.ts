@@ -61,8 +61,7 @@ router.get(
     const accessToken = tokenData.access_token;
 
     // Get user info to get the account details
-    const client = GitLab.authenticateAsUser(accessToken);
-    const userInfo = await client.Users.current();
+    const userInfo = await GitLab.getCurrentUser(accessToken);
 
     const scopes = ["api", "read_api", "read_user"];
 
