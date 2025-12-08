@@ -8,10 +8,7 @@ import { GitLab } from "./gitlab";
 import GitLabWebhookTask from "./tasks/GitLabWebhookTask";
 import { uninstall } from "./uninstall";
 
-const enabled =
-  !!env.GITLAB_CLIENT_ID &&
-  !!env.GITLAB_CLIENT_SECRET &&
-  !!env.GITLAB_APP_NAME;
+const enabled = !!env.GITLAB_CLIENT_ID && !!env.GITLAB_CLIENT_SECRET;
 
 if (enabled) {
   PluginManager.add([

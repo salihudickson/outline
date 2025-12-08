@@ -6,7 +6,7 @@ import {
   UnfurlResourceType,
 } from "@shared/types";
 import Logger from "@server/logging/Logger";
-import { Integration, User } from "@server/models";
+import { Integration, IntegrationAuthentication, User } from "@server/models";
 import { UnfurlIssueOrPR, UnfurlSignature } from "@server/types";
 import { GitLabUtils } from "../shared/GitLabUtils";
 import env from "./env";
@@ -125,15 +125,22 @@ export class GitLab {
         teamId: actor.teamId,
         "settings.gitlab.installation.account.name": resource.owner,
       },
+      include: [
+        {
+          model: IntegrationAuthentication,
+          as: "authentication",
+          required: true,
+        },
+      ],
     })) as Integration<IntegrationType.Embed>;
 
-    if (!integration) {
+    if (!integration || !integration.authentication) {
       return;
     }
 
     try {
       const client = GitLab.authenticateAsUser(
-        integration.settings.gitlab!.installation.account.name
+        integration.authentication.token
       );
 
       const projectPath = `${resource.owner}/${resource.repo}`;

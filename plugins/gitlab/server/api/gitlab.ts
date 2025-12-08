@@ -71,6 +71,7 @@ router.get(
         service: IntegrationService.GitLab,
         userId: user.id,
         teamId: user.teamId,
+        token: accessToken,
         scopes,
       },
       { transaction }
@@ -88,7 +89,7 @@ router.get(
             id: userInfo.id,
             account: {
               id: userInfo.id,
-              name: accessToken, // Store access token as account name (not ideal, but matches structure)
+              name: userInfo.username,
               avatarUrl: userInfo.avatar_url,
             },
           },

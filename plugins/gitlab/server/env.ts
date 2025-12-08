@@ -31,16 +31,6 @@ class GitLabPluginEnvironment extends Environment {
   public GITLAB_WEBHOOK_SECRET = this.toOptionalString(
     environment.GITLAB_WEBHOOK_SECRET
   );
-
-  @IsOptional()
-  @CannotUseWithout("GITLAB_APP_PRIVATE_KEY")
-  public GITLAB_APP_ID = this.toOptionalString(environment.GITLAB_APP_ID);
-
-  @IsOptional()
-  @CannotUseWithout("GITLAB_APP_ID")
-  public GITLAB_APP_PRIVATE_KEY = this.toOptionalString(
-    environment.GITLAB_APP_PRIVATE_KEY
-  );
 }
 
 export default new GitLabPluginEnvironment();

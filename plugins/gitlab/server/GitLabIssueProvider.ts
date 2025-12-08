@@ -14,9 +14,22 @@ export class GitLabIssueProvider extends BaseIssueProvider {
   async fetchSources(
     integration: Integration<IntegrationType.Embed>
   ): Promise<IssueSource[]> {
-    const client = GitLab.authenticateAsUser(
-      integration.settings.gitlab!.installation.account.name
-    );
+    await integration.reload({
+      include: [
+        {
+          model: IntegrationAuthentication,
+          as: "authentication",
+          required: true,
+        },
+      ],
+    });
+
+    if (!integration.authentication) {
+      Logger.warn("GitLab integration without authentication");
+      return [];
+    }
+
+    const client = GitLab.authenticateAsUser(integration.authentication.token);
 
     const sources: IssueSource[] = [];
 
