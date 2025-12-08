@@ -60,6 +60,6 @@ export class GitLabIssueProvider extends BaseIssueProvider {
 
     // GitLab webhook handling can be extended here
     // For now, we'll just log the event
-    Logger.info("gitlab", `Received GitLab webhook event: ${eventName}`);
+    Logger.info("task", `Received GitLab webhook event: ${eventName}`);
   }
 }

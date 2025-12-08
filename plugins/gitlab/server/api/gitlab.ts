@@ -1,5 +1,5 @@
 import Router from "koa-router";
-import axios from "axios";
+import fetch from "node-fetch";
 import { IntegrationService, IntegrationType } from "@shared/types";
 import { createContext } from "@server/context";
 import apexAuthRedirect from "@server/middlewares/apexAuthRedirect";
@@ -43,15 +43,22 @@ router.get(
 
     // Exchange code for access token
     const tokenUrl = "https://gitlab.com/oauth/token";
-    const tokenResponse = await axios.post(tokenUrl, {
-      client_id: env.GITLAB_CLIENT_ID,
-      client_secret: env.GITLAB_CLIENT_SECRET,
-      code,
-      grant_type: "authorization_code",
-      redirect_uri: GitLabUtils.callbackUrl(),
+    const tokenResponse = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: env.GITLAB_CLIENT_ID,
+        client_secret: env.GITLAB_CLIENT_SECRET,
+        code,
+        grant_type: "authorization_code",
+        redirect_uri: GitLabUtils.callbackUrl(),
+      }),
     });
 
-    const { access_token: accessToken } = tokenResponse.data;
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
 
     // Get user info to get the account details
     const client = GitLab.authenticateAsUser(accessToken);
