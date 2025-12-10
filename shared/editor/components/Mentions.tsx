@@ -308,7 +308,9 @@ export const MentionIssue = observer((props: IssuePrProps) => {
   const service =
     url.hostname === "github.com"
       ? IntegrationService.GitHub
-      : IntegrationService.Linear;
+      : url.hostname === "gitlab.com"
+        ? IntegrationService.GitLab
+        : IntegrationService.Linear;
 
   return (
     <a
