@@ -1,4 +1,3 @@
-import env from "@shared/env";
 import {
   IntegrationService,
   IntegrationSettings,
@@ -38,13 +37,6 @@ export const isURLMentionable = ({
       );
     }
 
-    case IntegrationService.GitLab: {
-      const gitlabHostname = new URL(env.GITLAB_URL || "https://gitlab.com")
-        .hostname;
-
-      return hostname === gitlabHostname;
-    }
-
     default:
       return false;
   }
@@ -73,15 +65,6 @@ export const determineMentionType = ({
     case IntegrationService.Linear: {
       const type = pathParts[2];
       return type === "issue" ? MentionType.Issue : undefined;
-    }
-
-    case IntegrationService.GitLab: {
-      const type = pathParts[pathParts.length - 2];
-      return type === "merge_requests"
-        ? MentionType.PullRequest
-        : type === "issues"
-          ? MentionType.Issue
-          : undefined;
     }
 
     default:

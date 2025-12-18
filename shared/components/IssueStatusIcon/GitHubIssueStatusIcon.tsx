@@ -5,7 +5,6 @@ export function GitHubIssueStatusIcon(props: BaseIconProps) {
   const { state, className, size = 16 } = props;
 
   switch (state.name) {
-    case "opened":
     case "open":
       return (
         <svg

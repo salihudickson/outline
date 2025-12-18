@@ -128,7 +128,6 @@ export enum IntegrationService {
   Matomo = "matomo",
   Umami = "umami",
   GitHub = "github",
-  GitLab = "gitlab",
   Linear = "linear",
   Notion = "notion",
 }
@@ -144,14 +143,11 @@ export const ImportableIntegrationService = {
 
 export type IssueTrackerIntegrationService = Extract<
   IntegrationService,
-  | IntegrationService.GitHub
-  | IntegrationService.GitLab
-  | IntegrationService.Linear
+  IntegrationService.GitHub | IntegrationService.Linear
 >;
 
 export const IssueTrackerIntegrationService = {
   GitHub: IntegrationService.GitHub,
-  GitLab: IntegrationService.GitLab,
   Linear: IntegrationService.Linear,
 } as const;
 
@@ -198,12 +194,6 @@ export type IntegrationSettings<T> = T extends IntegrationType.Embed
           account: { id: number; name: string; avatarUrl: string };
         };
       };
-      gitlab?: {
-        installation: {
-          id: number;
-          account: { id: number; name: string; avatarUrl: string };
-        };
-      };
       linear?: {
         workspace: { id: string; name: string; key: string; logoUrl?: string };
       };
@@ -225,16 +215,6 @@ export type IntegrationSettings<T> = T extends IntegrationType.Embed
               | { url: string }
               | {
                   github?: {
-                    installation: {
-                      id: number;
-                      account: {
-                        id?: number;
-                        name: string;
-                        avatarUrl?: string;
-                      };
-                    };
-                  };
-                  gitlab?: {
                     installation: {
                       id: number;
                       account: {
