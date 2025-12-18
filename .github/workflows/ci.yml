@@ -102,7 +102,6 @@ jobs:
 
   test-server:
     needs: [build, changes]
-    if: ${{ needs.changes.outputs.server == 'true' || needs.changes.outputs.config == 'true' }}
     runs-on: ubuntu-latest
     services:
       postgres:
