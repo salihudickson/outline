@@ -207,26 +207,27 @@ export class GitLabUtils {
    *
    * @param accessToken - The access token for authentication.
    * @param projectPath - The project path (owner/repo).
-   * @param issueIId - The issue IID (internal ID within the project).
+   * @param issueIid - The issue IID (internal ID within the project).
    * @returns The issue data.
    */
   public static async getIssue(
     accessToken: string,
     projectPath: string,
-    issueIId: number
+    issueIid: number
   ) {
     const client = this.createClient(accessToken);
-    // Get all issues from the project and filter by IID
-    // GitLab's REST API endpoint is GET /projects/:id/issues/:issue_iid
-    // but Gitbeaker's Issues.show expects a global issue ID
-    // So we use the Issues.all method with iids filter
+    // Note: GitLab's REST API has GET /projects/:id/issues/:issue_iid endpoint
+    // but Gitbeaker's Issues.show() method expects a global issue ID, not IID.
+    // Using Issues.all() with iids filter is the Gitbeaker-recommended approach
+    // for fetching issues by IID within a project. The API only returns the
+    // matching issue, so this is efficient despite the method name.
     const issues = await client.Issues.all({
       projectId: projectPath,
-      iids: [issueIId],
+      iids: [issueIid],
     });
 
     if (!issues || issues.length === 0) {
-      throw new Error(`Issue ${issueIId} not found in project ${projectPath}`);
+      throw new Error(`Issue ${issueIid} not found in project ${projectPath}`);
     }
 
     return IssueSchema.parse(issues[0]);
@@ -237,17 +238,17 @@ export class GitLabUtils {
    *
    * @param accessToken - The access token for authentication.
    * @param projectPath - The project path (owner/repo).
-   * @param mrIId - The merge request IID (internal ID within the project).
+   * @param mrIid - The merge request IID (internal ID within the project).
    * @returns The merge request data.
    */
   public static async getMergeRequest(
     accessToken: string,
     projectPath: string,
-    mrIId: number
+    mrIid: number
   ) {
     const client = this.createClient(accessToken);
     // MergeRequests.show properly accepts projectId and mergerequestIId
-    const mr = await client.MergeRequests.show(projectPath, mrIId);
+    const mr = await client.MergeRequests.show(projectPath, mrIid);
     return MRSchema.parse(mr);
   }
 
