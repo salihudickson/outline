@@ -16,44 +16,38 @@ import {
   AccessTokenResponseSchema,
 } from "../shared/GitLabUtils";
 import env from "./env";
-import { Op, Sequelize } from "sequelize";
+import { Op } from "sequelize";
+import { sequelize } from "@server/storage/database";
 
 export class GitLab {
   private static clientSecret = env.GITLAB_CLIENT_SECRET;
   private static clientId = env.GITLAB_CLIENT_ID;
 
   /**
-   * Fetches current user information
+   * Fetches current user information.
    *
-   * @param accessToken Access token received from OAuth flow
-   * @returns User information
+   * @param accessToken - Access token received from OAuth flow.
+   * @returns User information.
    */
   public static async getCurrentUser(accessToken: string) {
-    const userData = await GitLabUtils.apiRequest({
-      accessToken,
-      endpoint: "/user",
-    });
-
+    const client = GitLabUtils.createClient(accessToken);
+    const userData = await client.Users.showCurrentUser();
     return UserInfoResponseSchema.parse(userData);
   }
 
   /**
-   * Fetches projects accessible to the user
+   * Fetches projects accessible to the user.
    *
-   * @param accessToken Access token for authentication
-   * @returns Array of projects
+   * @param accessToken - Access token for authentication.
+   * @returns Array of projects.
    */
   public static async getProjects(accessToken: string) {
-    const projects = await GitLabUtils.apiRequest({
-      accessToken,
-      endpoint: "/projects",
-      query: {
-        simple: true,
-        per_page: 100,
-        min_access_level: 40, // At least Maintanier access to reduce the sheer volume of projects
-      },
+    const client = GitLabUtils.createClient(accessToken);
+    const projects = await client.Projects.all({
+      simple: true,
+      perPage: 100,
+      minAccessLevel: 40, // At least Maintainer access to reduce the sheer volume of projects
     });
-
     return projectsSchema.parse(projects);
   }
 
@@ -72,9 +66,14 @@ export class GitLab {
       where: {
         service: IntegrationService.GitLab,
         teamId: actor.teamId,
-        [Op.and]: Sequelize.literal(
-          `"issueSources"::jsonb @> '[{"owner": {"name": "${resource.owner}"}}]'`
+        [Op.and]: sequelize.where(
+          sequelize.literal(`"issueSources"::jsonb @> :ownerJson`),
+          Op.eq,
+          true
         ),
+      },
+      replacements: {
+        ownerJson: JSON.stringify([{ owner: { name: resource.owner } }]),
       },
       include: [
         {

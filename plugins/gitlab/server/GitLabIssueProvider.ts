@@ -6,7 +6,6 @@ import { BaseIssueProvider } from "@server/utils/BaseIssueProvider";
 import { GitLab } from "./gitlab";
 import { sequelize } from "@server/storage/database";
 import { Op } from "sequelize";
-import { Sequelize } from "sequelize";
 
 export class GitLabIssueProvider extends BaseIssueProvider {
   constructor() {
@@ -102,14 +101,19 @@ export class GitLabIssueProvider extends BaseIssueProvider {
     const name = payload.old_full_path ?? payload.old_username;
     const where = {
       service: IntegrationService.GitLab,
-      [Op.and]: Sequelize.literal(
-        `"issueSources"::jsonb @> '[{"owner": {"name": "${name}"}}]'`
+      [Op.and]: sequelize.where(
+        sequelize.literal(`"issueSources"::jsonb @> :ownerJson`),
+        Op.eq,
+        true
       ),
     };
 
     await sequelize.transaction(async (transaction) => {
       const integration = (await Integration.findOne({
         where,
+        replacements: {
+          ownerJson: JSON.stringify([{ owner: { name } }]),
+        },
         lock: transaction.LOCK.UPDATE,
         transaction,
       })) as Integration<IntegrationType.Embed>;
@@ -140,15 +144,17 @@ export class GitLabIssueProvider extends BaseIssueProvider {
   }
 
   private async destroyNamespace(payload: Record<string, any>) {
-    const where = {
+    const where: any = {
       service: IntegrationService.GitLab,
       ...(payload.user_id && {
         "settings.gitlab.installation.account.id": payload.user_id,
       }),
       ...(payload.full_path &&
         !payload.user_id && {
-          [Op.and]: Sequelize.literal(
-            `"issueSources"::jsonb @> '[{"owner": {"name": "${payload.full_path}"}}]'`
+          [Op.and]: sequelize.where(
+            sequelize.literal(`"issueSources"::jsonb @> :ownerJson`),
+            Op.eq,
+            true
           ),
         }),
     };
@@ -156,6 +162,9 @@ export class GitLabIssueProvider extends BaseIssueProvider {
     await sequelize.transaction(async (transaction) => {
       const integrations = (await Integration.findAll({
         where,
+        replacements: {
+          ownerJson: JSON.stringify([{ owner: { name: payload.full_path } }]),
+        },
         lock: transaction.LOCK.UPDATE,
         transaction,
       })) as Integration<IntegrationType.Embed>[];
@@ -169,14 +178,14 @@ export class GitLabIssueProvider extends BaseIssueProvider {
         if (payload.full_path) {
           const sources =
             integration.issueSources?.filter(
-              (source) => payload.full_path !== source.owner.id
+              (source) => payload.full_path !== source.owner.name
             ) ?? [];
 
           integration.issueSources = sources;
           integration.changed("issueSources", true);
           await integration.save({ transaction });
         } else if (payload.user_id) {
-          await integration.destroy();
+          await integration.destroy({ transaction });
         }
       }
     });
@@ -187,15 +196,20 @@ export class GitLabIssueProvider extends BaseIssueProvider {
       const integrations = await Integration.findAll({
         where: {
           service: IntegrationService.GitLab,
-          [Op.and]: Sequelize.literal(
-            `"issueSources"::jsonb @> '[{"id": "${payload.project_id}"}]'`
+          [Op.and]: sequelize.where(
+            sequelize.literal(`"issueSources"::jsonb @> :projectJson`),
+            Op.eq,
+            true
           ),
+        },
+        replacements: {
+          projectJson: JSON.stringify([{ id: String(payload.project_id) }]),
         },
         lock: transaction.LOCK.UPDATE,
         transaction,
       });
 
-      if (!integrations) {
+      if (!integrations || integrations.length === 0) {
         Logger.warn(`GitLab project_destroy event without integration;`);
         return;
       }
@@ -259,15 +273,20 @@ export class GitLabIssueProvider extends BaseIssueProvider {
       const integrations = await Integration.findAll({
         where: {
           service: IntegrationService.GitLab,
-          [Op.and]: Sequelize.literal(
-            `"issueSources"::jsonb @> '[{"id": "${payload.project_id}"}]'`
+          [Op.and]: sequelize.where(
+            sequelize.literal(`"issueSources"::jsonb @> :projectJson`),
+            Op.eq,
+            true
           ),
+        },
+        replacements: {
+          projectJson: JSON.stringify([{ id: String(payload.project_id) }]),
         },
         lock: transaction.LOCK.UPDATE,
         transaction,
       });
 
-      if (!integrations) {
+      if (!integrations || integrations.length === 0) {
         Logger.warn(`GitLab project_update event without integration;`);
         return;
       }
