@@ -16,7 +16,6 @@ import {
   AccessTokenResponseSchema,
 } from "../shared/GitLabUtils";
 import env from "./env";
-import { Op, Sequelize } from "sequelize";
 
 export class GitLab {
   private static clientSecret = env.GITLAB_CLIENT_SECRET;
@@ -68,13 +67,11 @@ export class GitLab {
       return;
     }
 
-    const integration = (await Integration.findOne({
+    // Fetch all GitLab integrations for the team and filter in application code to avoid SQL injection
+    const integrations = (await Integration.findAll({
       where: {
         service: IntegrationService.GitLab,
         teamId: actor.teamId,
-        [Op.and]: Sequelize.literal(
-          `"issueSources"::jsonb @> '[{"owner": {"name": "${resource.owner}"}}]'`
-        ),
       },
       include: [
         {
@@ -83,7 +80,12 @@ export class GitLab {
           required: true,
         },
       ],
-    })) as Integration<IntegrationType.Embed>;
+    })) as Integration<IntegrationType.Embed>[];
+
+    // Find the integration that has this owner in its issueSources
+    const integration = integrations.find((int) =>
+      int.issueSources?.some((source) => source.owner.name === resource.owner)
+    );
 
     if (!integration || !integration.authentication) {
       return;

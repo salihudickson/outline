@@ -5,8 +5,6 @@ import { Integration, IntegrationAuthentication } from "@server/models";
 import { BaseIssueProvider } from "@server/utils/BaseIssueProvider";
 import { GitLab } from "./gitlab";
 import { sequelize } from "@server/storage/database";
-import { Op } from "sequelize";
-import { Sequelize } from "sequelize";
 
 export class GitLabIssueProvider extends BaseIssueProvider {
   constructor() {
@@ -100,60 +98,54 @@ export class GitLabIssueProvider extends BaseIssueProvider {
 
   private async updateNamespace(payload: Record<string, any>) {
     const name = payload.old_full_path ?? payload.old_username;
-    const where = {
-      service: IntegrationService.GitLab,
-      [Op.and]: Sequelize.literal(
-        `"issueSources"::jsonb @> '[{"owner": {"name": "${name}"}}]'`
-      ),
-    };
 
     await sequelize.transaction(async (transaction) => {
-      const integration = (await Integration.findOne({
-        where,
+      // Fetch all GitLab integrations for this team and filter in application code
+      const integrations = (await Integration.findAll({
+        where: {
+          service: IntegrationService.GitLab,
+        },
         lock: transaction.LOCK.UPDATE,
         transaction,
-      })) as Integration<IntegrationType.Embed>;
+      })) as Integration<IntegrationType.Embed>[];
 
-      if (!integration) {
-        Logger.warn(`GitLab namespace_update event without integration;`);
-        return;
-      }
+      for (const integration of integrations) {
+        const sources = integration.issueSources ?? [];
+        let hasChanges = false;
 
-      const sources = integration.issueSources ?? [];
-      const updatedSources = sources.map((source) => {
-        if (source.owner.name === name) {
-          return {
-            ...source,
-            owner: {
-              id: payload.group_id || source.id,
-              name: payload.full_path ?? payload.username,
-            },
-          };
+        const updatedSources = sources.map((source) => {
+          if (source.owner.name === name) {
+            hasChanges = true;
+            return {
+              ...source,
+              owner: {
+                id: payload.group_id || source.id,
+                name: payload.full_path ?? payload.username,
+              },
+            };
+          }
+          return source;
+        });
+
+        if (hasChanges) {
+          integration.issueSources = updatedSources;
+          integration.changed("issueSources", true);
+          await integration.save({ transaction });
         }
-        return source;
-      });
-
-      integration.issueSources = updatedSources;
-      integration.changed("issueSources", true);
-      await integration.save({ transaction });
+      }
     });
   }
 
   private async destroyNamespace(payload: Record<string, any>) {
-    const where = {
-      service: IntegrationService.GitLab,
-      ...(payload.user_id && {
-        "settings.gitlab.installation.account.id": payload.user_id,
-      }),
-      ...(payload.full_path &&
-        !payload.user_id && {
-          [Op.and]: Sequelize.literal(
-            `"issueSources"::jsonb @> '[{"owner": {"name": "${payload.full_path}"}}]'`
-          ),
-        }),
-    };
-
     await sequelize.transaction(async (transaction) => {
+      const where: any = {
+        service: IntegrationService.GitLab,
+      };
+
+      if (payload.user_id) {
+        where["settings.gitlab.installation.account.id"] = payload.user_id;
+      }
+
       const integrations = (await Integration.findAll({
         where,
         lock: transaction.LOCK.UPDATE,
@@ -166,17 +158,18 @@ export class GitLabIssueProvider extends BaseIssueProvider {
       }
 
       for (const integration of integrations) {
-        if (payload.full_path) {
+        if (payload.full_path && !payload.user_id) {
+          // Filter sources in application code to avoid SQL injection
           const sources =
             integration.issueSources?.filter(
-              (source) => payload.full_path !== source.owner.id
+              (source) => payload.full_path !== source.owner.name
             ) ?? [];
 
           integration.issueSources = sources;
           integration.changed("issueSources", true);
           await integration.save({ transaction });
         } else if (payload.user_id) {
-          await integration.destroy();
+          await integration.destroy({ transaction });
         }
       }
     });
@@ -184,31 +177,32 @@ export class GitLabIssueProvider extends BaseIssueProvider {
 
   private async destroyProject(payload: Record<string, any>) {
     await sequelize.transaction(async (transaction) => {
+      // Fetch all GitLab integrations and filter in application code to avoid SQL injection
       const integrations = await Integration.findAll({
         where: {
           service: IntegrationService.GitLab,
-          [Op.and]: Sequelize.literal(
-            `"issueSources"::jsonb @> '[{"id": "${payload.project_id}"}]'`
-          ),
         },
         lock: transaction.LOCK.UPDATE,
         transaction,
       });
 
-      if (!integrations) {
+      if (!integrations || integrations.length === 0) {
         Logger.warn(`GitLab project_destroy event without integration;`);
         return;
       }
 
       for (const integration of integrations) {
-        const sources =
-          integration.issueSources?.filter(
-            (source) => String(payload.project_id) !== source.id
-          ) ?? [];
+        const projectId = String(payload.project_id);
+        const sources = integration.issueSources ?? [];
+        const hasProject = sources.some((source) => source.id === projectId);
 
-        integration.issueSources = sources;
-        integration.changed("issueSources", true);
-        await integration.save({ transaction });
+        if (hasProject) {
+          integration.issueSources = sources.filter(
+            (source) => source.id !== projectId
+          );
+          integration.changed("issueSources", true);
+          await integration.save({ transaction });
+        }
       }
     });
   }
@@ -256,18 +250,16 @@ export class GitLabIssueProvider extends BaseIssueProvider {
 
   private async updateProject(payload: Record<string, any>) {
     await sequelize.transaction(async (transaction) => {
+      // Fetch all GitLab integrations and filter in application code to avoid SQL injection
       const integrations = await Integration.findAll({
         where: {
           service: IntegrationService.GitLab,
-          [Op.and]: Sequelize.literal(
-            `"issueSources"::jsonb @> '[{"id": "${payload.project_id}"}]'`
-          ),
         },
         lock: transaction.LOCK.UPDATE,
         transaction,
       });
 
-      if (!integrations) {
+      if (!integrations || integrations.length === 0) {
         Logger.warn(`GitLab project_update event without integration;`);
         return;
       }
