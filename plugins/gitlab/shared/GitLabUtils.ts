@@ -1,3 +1,4 @@
+import { Gitlab } from "@gitbeaker/rest";
 import env from "@shared/env";
 import { integrationSettingsPath } from "@shared/utils/routeHelpers";
 import { UnfurlResourceType } from "@shared/types";
@@ -141,55 +142,16 @@ export class GitLabUtils {
   }
 
   /**
-   * Makes an authenticated API request to GitLab.
+   * Creates a Gitbeaker client instance.
    *
    * @param accessToken - The access token for authentication.
-   * @param endpoint - The API endpoint path.
-   * @param params - Additional fetch options.
-   * @param query - Query parameters to include in the request.
-   * @returns The response data from the GitLab API.
+   * @returns A configured Gitbeaker client.
    */
-  public static async apiRequest({
-    accessToken,
-    endpoint,
-    params,
-    query,
-  }: {
-    accessToken: string;
-    endpoint: string;
-    params?: RequestInit;
-    query?: Record<string, string | number | boolean>;
-  }): Promise<any> {
-    const url = new URL(`${this.apiBaseUrl}${endpoint}`);
-
-    if (query) {
-      Object.entries(query).forEach(([key, value]) => {
-        url.searchParams.append(key, String(value));
-      });
-    }
-
-    try {
-      const response = await fetch(url.toString(), {
-        ...params,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          ...params?.headers,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `GitLab API error: ${response.status} ${response.statusText} (${endpoint})`
-        );
-      }
-
-      return response.json();
-    } catch (err) {
-      throw new Error(
-        `Failed to fetch from GitLab API: ${endpoint}. ${err instanceof Error ? err.message : ""}`
-      );
-    }
+  public static createClient(accessToken: string) {
+    return new Gitlab({
+      host: this.gitlabUrl,
+      oauthToken: accessToken,
+    });
   }
 
   /**
@@ -245,21 +207,29 @@ export class GitLabUtils {
    *
    * @param accessToken - The access token for authentication.
    * @param projectPath - The project path (owner/repo).
-   * @param issueId - The issue IID.
+   * @param issueIId - The issue IID (internal ID within the project).
    * @returns The issue data.
    */
   public static async getIssue(
     accessToken: string,
     projectPath: string,
-    issueId: number
+    issueIId: number
   ) {
-    const encodedPath = encodeURIComponent(projectPath);
-    const issue = await this.apiRequest({
-      accessToken,
-      endpoint: `/projects/${encodedPath}/issues/${issueId}`,
+    const client = this.createClient(accessToken);
+    // Get all issues from the project and filter by IID
+    // GitLab's REST API endpoint is GET /projects/:id/issues/:issue_iid
+    // but Gitbeaker's Issues.show expects a global issue ID
+    // So we use the Issues.all method with iids filter
+    const issues = await client.Issues.all({
+      projectId: projectPath,
+      iids: [issueIId],
     });
 
-    return IssueSchema.parse(issue);
+    if (!issues || issues.length === 0) {
+      throw new Error(`Issue ${issueIId} not found in project ${projectPath}`);
+    }
+
+    return IssueSchema.parse(issues[0]);
   }
 
   /**
@@ -267,20 +237,17 @@ export class GitLabUtils {
    *
    * @param accessToken - The access token for authentication.
    * @param projectPath - The project path (owner/repo).
-   * @param mrId - The merge request IID.
+   * @param mrIId - The merge request IID (internal ID within the project).
    * @returns The merge request data.
    */
   public static async getMergeRequest(
     accessToken: string,
     projectPath: string,
-    mrId: number
+    mrIId: number
   ) {
-    const encodedPath = encodeURIComponent(projectPath);
-    const mr = await this.apiRequest({
-      accessToken,
-      endpoint: `/projects/${encodedPath}/merge_requests/${mrId}`,
-    });
-
+    const client = this.createClient(accessToken);
+    // MergeRequests.show properly accepts projectId and mergerequestIId
+    const mr = await client.MergeRequests.show(projectPath, mrIId);
     return MRSchema.parse(mr);
   }
 
