@@ -31,8 +31,8 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
   const { item } = props;
   const { state } = view;
 
-  const items: TMenuItem[] = useMemo(() => {
-    const handleClick = (menuItem: MenuItem) => () => {
+  const handleClick = useCallback(
+    (menuItem: MenuItem) => () => {
       if (!menuItem.name) {
         return;
       }
@@ -46,8 +46,11 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
       } else if (menuItem.onClick) {
         menuItem.onClick();
       }
-    };
+    },
+    [commands, state]
+  );
 
+  const items: TMenuItem[] = useMemo(() => {
     return item.children
       ? item.children.map((child) => {
           if (child.name === "separator") {
@@ -65,12 +68,52 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
           };
         })
       : [];
-  }, [item.children, commands, state]);
+  }, [item.children, handleClick, state]);
 
   const handleCloseAutoFocus = useCallback((ev: Event) => {
     ev.stopImmediatePropagation();
   }, []);
 
+  // Check if the parent item has a trigger (icon or label)
+  const hasTrigger = !!(item.icon || item.label);
+
+  // If no trigger, render children directly as inline toolbar buttons
+  if (!hasTrigger) {
+    return (
+      <>
+        {item.children?.map((child, index) => {
+          if (child.name === "separator" && child.visible !== false) {
+            return <ToolbarSeparator key={index} />;
+          }
+          if (child.visible === false || (!child.skipIcon && !child.icon)) {
+            return null;
+          }
+          const isActive = child.active ? child.active(state) : false;
+
+          return (
+            <Tooltip
+              key={index}
+              shortcut={child.shortcut}
+              content={child.label === child.tooltip ? undefined : child.tooltip}
+            >
+              <Toolbar.Button asChild>
+                <ToolbarButton
+                  onClick={handleClick(child)}
+                  active={isActive && !child.label}
+                  aria-label={child.label ? undefined : child.tooltip}
+                >
+                  {child.label && <Label>{child.label}</Label>}
+                  {child.icon}
+                </ToolbarButton>
+              </Toolbar.Button>
+            </Tooltip>
+          );
+        })}
+      </>
+    );
+  }
+
+  // Render as dropdown menu with trigger
   return (
     <MenuProvider variant="dropdown">
       <Menu>
