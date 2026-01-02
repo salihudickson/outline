@@ -19,6 +19,12 @@ import * as T from "./schema";
 
 const router = new Router();
 
+/**
+ * Default permission level to grant when approving an access request
+ * if no specific permission is provided.
+ */
+const DEFAULT_APPROVED_PERMISSION = DocumentPermission.ReadWrite;
+
 router.post(
   "access_requests.approve",
   rateLimiter(RateLimiterStrategy.TenPerMinute),
@@ -57,7 +63,7 @@ router.post(
       {
         userId: accessRequest.userId,
         documentId: accessRequest.documentId,
-        permission: permission || DocumentPermission.ReadWrite,
+        permission: permission || DEFAULT_APPROVED_PERMISSION,
         createdById: user.id,
       },
       { transaction }

@@ -61,12 +61,6 @@ function NotificationListItem({ notification, onNavigate }: Props) {
   );
 
   const handleClick: React.MouseEventHandler<HTMLAnchorElement> = (event) => {
-    // Don't navigate if clicking on action buttons
-    if ((event.target as HTMLElement).closest("button")) {
-      event.preventDefault();
-      return;
-    }
-
     if (event.altKey) {
       event.preventDefault();
       event.stopPropagation();

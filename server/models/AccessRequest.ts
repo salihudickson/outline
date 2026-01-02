@@ -63,6 +63,11 @@ class AccessRequest extends Model<
   @Column(DataType.UUID)
   id: string;
 
+  /**
+   * The permission level requested by the user. This field is optional
+   * because users may request access without specifying a permission level,
+   * leaving it to the document manager to decide.
+   */
   @AllowNull
   @Column(DataType.STRING)
   requestedPermission: DocumentPermission | null;
