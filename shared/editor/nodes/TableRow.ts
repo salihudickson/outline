@@ -96,6 +96,27 @@ export default class TableRow extends Node {
 
               return false;
             },
+            contextmenu: (view, event) => {
+              if (!(event.target instanceof HTMLElement)) {
+                return false;
+              }
+
+              const targetGripRow = event.target.closest(
+                `.${EditorStyleHelper.tableGripRow}`
+              );
+              if (targetGripRow) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                selectRow(
+                  Number(targetGripRow.getAttribute("data-index")),
+                  event.metaKey || event.shiftKey
+                )(view.state, view.dispatch);
+                return true;
+              }
+
+              return false;
+            },
           },
           decorations: (state) => {
             if (!this.editor.view?.editable) {
