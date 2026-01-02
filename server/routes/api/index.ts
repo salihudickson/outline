@@ -12,6 +12,7 @@ import { verifyCSRFToken } from "@server/middlewares/csrf";
 import type { AppState, AppContext } from "@server/types";
 import { Hook, PluginManager } from "@server/utils/PluginManager";
 import apiKeys from "./apiKeys";
+import accessRequests from "./accessRequests";
 import attachments from "./attachments";
 import auth from "./auth";
 import authenticationProviders from "./authenticationProviders";
@@ -81,6 +82,7 @@ PluginManager.getHooks(Hook.API).forEach((hook) =>
 
 // routes
 router.use("/", auth.routes());
+router.use("/", accessRequests.routes());
 router.use("/", authenticationProviders.routes());
 router.use("/", events.routes());
 router.use("/", users.routes());
