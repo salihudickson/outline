@@ -15,6 +15,11 @@ import { ActiveDocumentSection } from "~/actions/sections";
  * 
  * Note: These actions are designed for the editor's table system and require
  * special handling since tables are ProseMirror nodes, not React components.
+ * The perform functions are placeholders - actual command execution happens
+ * in the editor's MenuItem system (see app/editor/menus/tableRow.tsx).
+ * 
+ * TODO: Bridge the gap between the Action system and editor's MenuItem system
+ * to enable full integration with the app's menu infrastructure.
  */
 
 /**

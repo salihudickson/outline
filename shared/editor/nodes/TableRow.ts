@@ -87,10 +87,13 @@ export default class TableRow extends Node {
                 event.preventDefault();
                 event.stopImmediatePropagation();
 
-                selectRow(
-                  Number(targetGripRow.getAttribute("data-index")),
-                  event.metaKey || event.shiftKey
-                )(view.state, view.dispatch);
+                const indexAttr = targetGripRow.getAttribute("data-index");
+                if (indexAttr !== null) {
+                  selectRow(
+                    Number(indexAttr),
+                    event.metaKey || event.shiftKey
+                  )(view.state, view.dispatch);
+                }
                 return true;
               }
 
@@ -106,8 +109,10 @@ export default class TableRow extends Node {
               );
               if (targetGripRow) {
                 // Select the row when right-clicking on the grip
-                const index = Number(targetGripRow.getAttribute("data-index"));
-                selectRow(index, false)(view.state, view.dispatch);
+                const indexAttr = targetGripRow.getAttribute("data-index");
+                if (indexAttr !== null) {
+                  selectRow(Number(indexAttr), false)(view.state, view.dispatch);
+                }
                 
                 // Let the event bubble up so the floating toolbar can show
                 // Don't prevent default to allow native context menu behavior
