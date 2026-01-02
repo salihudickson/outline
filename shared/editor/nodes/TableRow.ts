@@ -64,11 +64,16 @@ export default class TableRow extends Node {
         `.${EditorStyleHelper.tableGripRow}`
       );
       if (targetGripRow) {
+        const indexAttr = targetGripRow.getAttribute("data-index");
+        if (indexAttr === null) {
+          return false;
+        }
+
         event.preventDefault();
         event.stopImmediatePropagation();
 
         selectRow(
-          Number(targetGripRow.getAttribute("data-index")),
+          Number(indexAttr),
           event.metaKey || event.shiftKey
         )(view.state, view.dispatch);
         return true;
