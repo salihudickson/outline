@@ -74,6 +74,9 @@ export default class DocumentAccessRequestNotificationsTask extends BaseTask<Doc
         teamId: event.teamId,
         documentId: event.documentId,
         accessRequestId: accessRequest.id,
+        data: {
+          accessRequestId: accessRequest.id,
+        },
       });
     }
   }
