@@ -213,7 +213,7 @@ function DataLoader({ match, children }: Props) {
     ) : error instanceof PaymentRequiredError ? (
       <Error402 />
     ) : error instanceof AuthorizationError ? (
-      <Error403 />
+      <Error403 documentId={document?.id} />
     ) : error instanceof NotFoundError ? (
       <Error404 />
     ) : (
