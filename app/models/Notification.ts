@@ -57,6 +57,7 @@ class Notification extends Model {
         NotificationEventType.Onboarding,
         NotificationEventType.Features,
         NotificationEventType.ExportCompleted,
+        NotificationEventType.RequestAccess,
       ],
     };
 
@@ -194,6 +195,8 @@ class Notification extends Model {
         return t("shared");
       case NotificationEventType.AddUserToCollection:
         return t("invited you to");
+      case NotificationEventType.RequestAccess:
+        return t("requested access to");
       default:
         return this.event;
     }
@@ -259,6 +262,16 @@ class Notification extends Model {
       }
       case NotificationEventType.ExportCompleted: {
         return settingsPath("export");
+      }
+      case NotificationEventType.RequestAccess: {
+        // Return path to document or collection that was requested
+        if (this.document) {
+          return this.document.path;
+        }
+        const collection = this.collectionId
+          ? this.store.rootStore.collections.get(this.collectionId)
+          : undefined;
+        return collection ? collectionPath(collection) : "";
       }
       default:
         this.event satisfies never;

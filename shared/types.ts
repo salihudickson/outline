@@ -375,6 +375,7 @@ export enum NotificationEventType {
   Onboarding = "emails.onboarding",
   Features = "emails.features",
   ExportCompleted = "emails.export_completed",
+  RequestAccess = "access.requested",
 }
 
 export enum NotificationChannelType {
@@ -385,6 +386,7 @@ export enum NotificationChannelType {
 
 export type NotificationData = {
   emoji?: string;
+  accessRequestId?: string;
 };
 
 export type NotificationSettings = {
@@ -414,6 +416,7 @@ export const NotificationEventDefaults: Record<NotificationEventType, boolean> =
     [NotificationEventType.ExportCompleted]: true,
     [NotificationEventType.AddUserToDocument]: true,
     [NotificationEventType.AddUserToCollection]: true,
+    [NotificationEventType.RequestAccess]: true,
   };
 
 export enum UnfurlResourceType {

@@ -23,6 +23,7 @@ import { NotificationData, NotificationEventType } from "@shared/types";
 import { getBaseDomain } from "@shared/utils/domains";
 import env from "@server/env";
 import Model from "@server/models/base/Model";
+import AccessRequest from "./AccessRequest";
 import Collection from "./Collection";
 import Comment from "./Comment";
 import Document from "./Document";
