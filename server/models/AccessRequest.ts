@@ -2,6 +2,7 @@ import {
   InferAttributes,
   InferCreationAttributes,
   type SaveOptions,
+  WhereOptions,
 } from "sequelize";
 import {
   Table,
