@@ -4,7 +4,7 @@ import {
   CollectionPermission,
 } from "@shared/types";
 import Logger from "@server/logging/Logger";
-import { Notification, UserMembership } from "@server/models";
+import { Notification, UserMembership, AccessRequest } from "@server/models";
 import DocumentAccessRequestNotificationsTask from "./DocumentAccessRequestNotificationsTask";
 import {
   buildCollection,
@@ -44,6 +44,7 @@ describe("DocumentAccessRequestNotificationsTask", () => {
 
     it("should send notifications to document managers", async () => {
       const spy = jest.spyOn(Notification, "create");
+      const accessRequestSpy = jest.spyOn(AccessRequest, "create");
       const team = await buildTeam();
       const manager1 = await buildUser({ teamId: team.id });
       const manager2 = await buildUser({ teamId: team.id });
@@ -71,6 +72,7 @@ describe("DocumentAccessRequestNotificationsTask", () => {
         ip,
       });
 
+      expect(accessRequestSpy).toHaveBeenCalledTimes(1);
       expect(spy).toHaveBeenCalledTimes(2);
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -94,6 +96,7 @@ describe("DocumentAccessRequestNotificationsTask", () => {
 
     it("should send notifications to collection managers", async () => {
       const spy = jest.spyOn(Notification, "create");
+      const accessRequestSpy = jest.spyOn(AccessRequest, "create");
       const team = await buildTeam();
       const manager1 = await buildUser({ teamId: team.id });
       const manager2 = await buildUser({ teamId: team.id });
@@ -126,6 +129,7 @@ describe("DocumentAccessRequestNotificationsTask", () => {
         ip,
       });
 
+      expect(accessRequestSpy).toHaveBeenCalledTimes(1);
       expect(spy).toHaveBeenCalledTimes(2);
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -243,6 +247,52 @@ describe("DocumentAccessRequestNotificationsTask", () => {
       });
 
       expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("should not create duplicate access requests", async () => {
+      const accessRequestSpy = jest.spyOn(AccessRequest, "create");
+      const notificationSpy = jest.spyOn(Notification, "create");
+      const team = await buildTeam();
+      const admin = await buildUser({ teamId: team.id });
+      const actor = await buildUser({ teamId: team.id });
+
+      const document = await buildDocument({
+        teamId: team.id,
+        createdById: admin.id,
+      });
+
+      await UserMembership.create({
+        userId: admin.id,
+        documentId: document.id,
+        permission: DocumentPermission.Admin,
+        createdById: admin.id,
+      });
+
+      const task = new DocumentAccessRequestNotificationsTask();
+      
+      // First request should create AccessRequest and Notification
+      await task.perform({
+        name: "documents.request_access",
+        documentId: document.id,
+        teamId: team.id,
+        actorId: actor.id,
+        ip,
+      });
+
+      expect(accessRequestSpy).toHaveBeenCalledTimes(1);
+      expect(notificationSpy).toHaveBeenCalledTimes(1);
+
+      // Second request should not create AccessRequest or Notification
+      await task.perform({
+        name: "documents.request_access",
+        documentId: document.id,
+        teamId: team.id,
+        actorId: actor.id,
+        ip,
+      });
+
+      expect(accessRequestSpy).toHaveBeenCalledTimes(1);
+      expect(notificationSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -1,3 +1,5 @@
+export { default as AccessRequest } from "./AccessRequest";
+
 export { default as ApiKey } from "./ApiKey";
 
 export { default as Attachment } from "./Attachment";

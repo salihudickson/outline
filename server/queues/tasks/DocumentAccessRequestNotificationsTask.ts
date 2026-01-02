@@ -5,7 +5,8 @@ import {
   CollectionPermission,
 } from "@shared/types";
 import Logger from "@server/logging/Logger";
-import { Document, Notification, User, Collection } from "@server/models";
+import { Document, Notification, User, Collection, AccessRequest } from "@server/models";
+import { AccessRequestStatus } from "@server/models/AccessRequest";
 import { DocumentAccessRequestEvent } from "@server/types";
 import { BaseTask, TaskPriority } from "./base/BaseTask";
 import { uniq } from "lodash";
@@ -28,6 +29,32 @@ export default class DocumentAccessRequestNotificationsTask extends BaseTask<Doc
       return;
     }
 
+    // Check if there's already a pending request for this document/user
+    const hasPendingRequest = await AccessRequest.hasPendingRequest(
+      event.documentId,
+      event.actorId
+    );
+
+    if (hasPendingRequest) {
+      Logger.debug(
+        "task",
+        `User already has a pending access request for this document`,
+        {
+          documentId: event.documentId,
+          userId: event.actorId,
+        }
+      );
+      return;
+    }
+
+    // Create the AccessRequest record
+    const accessRequest = await AccessRequest.create({
+      documentId: event.documentId,
+      userId: event.actorId,
+      teamId: event.teamId,
+      status: AccessRequestStatus.Pending,
+    });
+
     const recipients = await this.findDocumentManagers(document);
     for (const recipient of recipients) {
       if (
@@ -46,6 +73,10 @@ export default class DocumentAccessRequestNotificationsTask extends BaseTask<Doc
         actorId: event.actorId,
         teamId: event.teamId,
         documentId: event.documentId,
+        accessRequestId: accessRequest.id,
+        data: {
+          accessRequestId: accessRequest.id,
+        },
       });
     }
   }

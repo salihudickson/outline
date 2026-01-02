@@ -195,6 +195,10 @@ class Notification extends Model<
   @Column(DataType.UUID)
   membershipId: string;
 
+  @AllowNull
+  @Column(DataType.UUID)
+  accessRequestId: string;
+
   @AfterCreate
   static async createEvent(
     model: Notification,

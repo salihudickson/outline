@@ -386,6 +386,7 @@ export enum NotificationChannelType {
 
 export type NotificationData = {
   emoji?: string;
+  accessRequestId?: string;
 };
 
 export type NotificationSettings = {

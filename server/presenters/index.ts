@@ -1,3 +1,4 @@
+import presentAccessRequest from "./accessRequest";
 import presentApiKey from "./apiKey";
 import presentAttachment from "./attachment";
 import presentAuthenticationProvider from "./authenticationProvider";
@@ -31,6 +32,7 @@ import presentView from "./view";
 import presentEmoji from "./emoji";
 
 export {
+  presentAccessRequest,
   presentApiKey,
   presentAttachment,
   presentAuthenticationProvider,
