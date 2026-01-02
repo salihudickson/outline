@@ -1,5 +1,5 @@
 import Router from "koa-router";
-import { Op, WhereOptions } from "sequelize";
+import { WhereOptions } from "sequelize";
 import { NotificationEventType } from "@shared/types";
 import auth from "@server/middlewares/authentication";
 import { rateLimiter } from "@server/middlewares/rateLimiter";
@@ -10,7 +10,6 @@ import {
   Collection,
   Document,
   Notification,
-  User,
   UserMembership,
 } from "@server/models";
 import {
@@ -39,7 +38,6 @@ router.post(
 
     // Determine resource type and validate resource exists
     let document: Document | null = null;
-    let collection: Collection | null = null;
     let resourceType: AccessRequestResourceType;
     let recipientUserIds: string[] = [];
 
@@ -69,12 +67,11 @@ router.post(
           },
           transaction,
         });
-        recipientUserIds.push(
-          ...collectionMemberships.map((m) => m.userId)
-        );
+        recipientUserIds.push(...collectionMemberships.map((m) => m.userId));
       }
     } else if (collectionId) {
-      collection = await Collection.findByPk(collectionId, {
+      // Validate collection exists
+      await Collection.findByPk(collectionId, {
         transaction,
         rejectOnEmpty: true,
       });
@@ -196,13 +193,10 @@ router.post(
       });
       authorize(user, "share", document);
     } else if (accessRequest.collectionId) {
-      const collection = await Collection.findByPk(
-        accessRequest.collectionId,
-        {
-          userId: user.id,
-          transaction,
-        }
-      );
+      const collection = await Collection.findByPk(accessRequest.collectionId, {
+        userId: user.id,
+        transaction,
+      });
       authorize(user, "update", collection);
     }
 
@@ -275,13 +269,10 @@ router.post(
       });
       authorize(user, "share", document);
     } else if (accessRequest.collectionId) {
-      const collection = await Collection.findByPk(
-        accessRequest.collectionId,
-        {
-          userId: user.id,
-          transaction,
-        }
-      );
+      const collection = await Collection.findByPk(accessRequest.collectionId, {
+        userId: user.id,
+        transaction,
+      });
       authorize(user, "update", collection);
     }
 

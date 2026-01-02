@@ -154,7 +154,7 @@ class AccessRequest extends Model<
     documentId?: string | null;
     collectionId?: string | null;
   }): Promise<boolean> {
-    const where: any = {
+    const where: WhereOptions<AccessRequest> = {
       requestedById: userId,
       status: AccessRequestStatus.Pending,
     };

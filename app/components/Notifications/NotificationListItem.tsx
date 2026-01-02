@@ -93,7 +93,7 @@ function NotificationListItem({ notification, onNavigate }: Props) {
         });
         ui.showToast(t("Access request approved"), { type: "success" });
         void notification.markAsRead();
-      } catch (error) {
+      } catch (_error) {
         ui.showToast(t("Failed to approve access request"), { type: "error" });
       } finally {
         setProcessing(false);
@@ -126,7 +126,7 @@ function NotificationListItem({ notification, onNavigate }: Props) {
         });
         ui.showToast(t("Access request dismissed"), { type: "success" });
         void notification.markAsRead();
-      } catch (error) {
+      } catch (_error) {
         ui.showToast(t("Failed to dismiss access request"), { type: "error" });
       } finally {
         setProcessing(false);

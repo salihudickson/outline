@@ -28,8 +28,8 @@ const Error403 = ({ documentId, collectionId }: Props) => {
   const document = documentId
     ? documents.get(documentId)
     : params.documentSlug
-    ? documents.get(params.documentSlug)
-    : undefined;
+      ? documents.get(params.documentSlug)
+      : undefined;
   const collection = collectionId ? collections.get(collectionId) : undefined;
 
   const handleRequestAccess = React.useCallback(async () => {
@@ -48,7 +48,7 @@ const Error403 = ({ documentId, collectionId }: Props) => {
         t("Access request sent. You'll be notified when it's approved."),
         { type: "success" }
       );
-    } catch (error) {
+    } catch (_error) {
       ui.showToast(t("Failed to request access"), { type: "error" });
     } finally {
       setRequesting(false);
@@ -77,11 +77,7 @@ const Error403 = ({ documentId, collectionId }: Props) => {
             {t("Go back")}
           </Button>
           {user && (document || collection) && !requested && (
-            <Button
-              onClick={handleRequestAccess}
-              disabled={requesting}
-              primary
-            >
+            <Button onClick={handleRequestAccess} disabled={requesting} primary>
               {requesting ? t("Requesting...") : t("Request Access")}
             </Button>
           )}
