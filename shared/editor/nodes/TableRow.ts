@@ -4,6 +4,7 @@ import Node from "./Node";
 import { cn } from "../styles/utils";
 import { EditorStyleHelper } from "../styles/EditorStyleHelper";
 import { Decoration, DecorationSet } from "prosemirror-view";
+import type { EditorView } from "prosemirror-view";
 import { Plugin } from "prosemirror-state";
 import { addRowBefore, selectRow, selectTable } from "../commands/table";
 import {
@@ -49,6 +50,32 @@ export default class TableRow extends Node {
       );
     }
 
+    /**
+     * Helper function to handle table row grip click/right-click events.
+     *
+     * @returns true if the event was handled, false otherwise.
+     */
+    function handleRowGripEvent(
+      view: EditorView,
+      event: MouseEvent,
+      target: HTMLElement
+    ) {
+      const targetGripRow = target.closest(
+        `.${EditorStyleHelper.tableGripRow}`
+      );
+      if (targetGripRow) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        selectRow(
+          Number(targetGripRow.getAttribute("data-index")),
+          event.metaKey || event.shiftKey
+        )(view.state, view.dispatch);
+        return true;
+      }
+      return false;
+    }
+
     return [
       new Plugin({
         props: {
@@ -80,42 +107,14 @@ export default class TableRow extends Node {
                 return true;
               }
 
-              const targetGripRow = event.target.closest(
-                `.${EditorStyleHelper.tableGripRow}`
-              );
-              if (targetGripRow) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-
-                selectRow(
-                  Number(targetGripRow.getAttribute("data-index")),
-                  event.metaKey || event.shiftKey
-                )(view.state, view.dispatch);
-                return true;
-              }
-
-              return false;
+              return handleRowGripEvent(view, event, event.target);
             },
             contextmenu: (view, event) => {
               if (!(event.target instanceof HTMLElement)) {
                 return false;
               }
 
-              const targetGripRow = event.target.closest(
-                `.${EditorStyleHelper.tableGripRow}`
-              );
-              if (targetGripRow) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-
-                selectRow(
-                  Number(targetGripRow.getAttribute("data-index")),
-                  event.metaKey || event.shiftKey
-                )(view.state, view.dispatch);
-                return true;
-              }
-
-              return false;
+              return handleRowGripEvent(view, event, event.target);
             },
           },
           decorations: (state) => {
