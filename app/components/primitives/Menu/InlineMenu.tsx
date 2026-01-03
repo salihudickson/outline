@@ -104,8 +104,8 @@ InlineMenu.displayName = "InlineMenu";
 const StyledMenuContent = styled(Components.MenuContent)`
   ${breakpoint("mobile", "tablet")`
     // On mobile/tablet, remove width constraints and make it full-width
-    min-width: unset;
-    max-width: unset;
+    min-width: auto;
+    max-width: none;
     width: 100%;
     box-shadow: none;
     border-radius: 0;
