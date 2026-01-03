@@ -293,6 +293,19 @@ const MenuButton = React.forwardRef<
     ...rest
   } = props;
 
+  // Common button content
+  const buttonContent = (
+    <>
+      {icon}
+      <Components.MenuLabel>{label}</Components.MenuLabel>
+      {selected !== undefined && (
+        <Components.SelectedIconWrapper aria-hidden>
+          {selected ? <CheckmarkIcon size={18} /> : null}
+        </Components.SelectedIconWrapper>
+      )}
+    </>
+  );
+
   // For inline variant, render button directly without Radix Item wrapper
   if (variant === "inline") {
     const button = (
@@ -302,13 +315,7 @@ const MenuButton = React.forwardRef<
         $dangerous={dangerous}
         onClick={onClick}
       >
-        {icon}
-        <Components.MenuLabel>{label}</Components.MenuLabel>
-        {selected !== undefined && (
-          <Components.SelectedIconWrapper aria-hidden>
-            {selected ? <CheckmarkIcon size={18} /> : null}
-          </Components.SelectedIconWrapper>
-        )}
+        {buttonContent}
       </Components.MenuButton>
     );
 
@@ -333,13 +340,7 @@ const MenuButton = React.forwardRef<
         $dangerous={dangerous}
         onClick={onClick}
       >
-        {icon}
-        <Components.MenuLabel>{label}</Components.MenuLabel>
-        {selected !== undefined && (
-          <Components.SelectedIconWrapper aria-hidden>
-            {selected ? <CheckmarkIcon size={18} /> : null}
-          </Components.SelectedIconWrapper>
-        )}
+        {buttonContent}
       </Components.MenuButton>
     </Item>
   );
