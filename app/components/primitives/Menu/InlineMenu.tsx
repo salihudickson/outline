@@ -5,7 +5,6 @@ import * as Components from "../components/Menu";
 import { CheckmarkIcon } from "outline-icons";
 import type { MenuItem } from "@shared/editor/types";
 import type { EditorState } from "prosemirror-state";
-import useMobile from "~/hooks/useMobile";
 
 /**
  * InlineMenu is a menu component that displays its content directly without
@@ -31,7 +30,6 @@ type InlineMenuProps = {
 export const InlineMenu = React.forwardRef<HTMLDivElement, InlineMenuProps>(
   (props, ref) => {
     const { item, state, handleClick, "aria-label": ariaLabel } = props;
-    const isMobile = useMobile();
 
     if (!item.children) {
       return null;
@@ -54,7 +52,6 @@ export const InlineMenu = React.forwardRef<HTMLDivElement, InlineMenuProps>(
         maxHeightVar="--inline-menu-max-height"
         transformOriginVar="--inline-menu-transform-origin"
         hiddenScrollbars
-        $isMobile={isMobile}
         style={{
           // Set CSS variables for styling compatibility
           ["--inline-menu-max-height" as string]: "85vh",
@@ -104,23 +101,9 @@ export const InlineMenu = React.forwardRef<HTMLDivElement, InlineMenuProps>(
 InlineMenu.displayName = "InlineMenu";
 
 // Styled wrapper for MenuContent with mobile-specific overrides
-const StyledMenuContent = styled(Components.MenuContent)<{
-  $isMobile: boolean;
-}>`
-  ${(props) =>
-    props.$isMobile &&
-    `
-    // On mobile, remove width constraints and make it full-width
-    min-width: unset;
-    max-width: unset;
-    width: 100%;
-    box-shadow: none;
-    border-radius: 0;
-    padding: 0;
-  `}
-
+const StyledMenuContent = styled(Components.MenuContent)`
   ${breakpoint("mobile", "tablet")`
-    // Additional mobile/tablet specific styles
+    // On mobile/tablet, remove width constraints and make it full-width
     min-width: unset;
     max-width: unset;
     width: 100%;
