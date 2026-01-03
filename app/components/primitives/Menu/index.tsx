@@ -3,6 +3,8 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import * as Components from "../components/Menu";
 import type { LocationDescriptor } from "history";
 import * as React from "react";
+import styled from "styled-components";
+import breakpoint from "styled-components-breakpoint";
 import Tooltip from "~/components/Tooltip";
 import { CheckmarkIcon } from "outline-icons";
 import { useMenuContext } from "./MenuContext";
@@ -10,10 +12,17 @@ import { useMenuContext } from "./MenuContext";
 type MenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Root
 > &
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Root>;
+  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Root> & {
+    children: React.ReactNode;
+  };
 
 const Menu = ({ children, ...rest }: MenuProps) => {
   const { variant } = useMenuContext();
+
+  // For inline variant, just render children directly without Radix wrapper
+  if (variant === "inline") {
+    return <>{children}</>;
+  }
 
   const Root =
     variant === "dropdown"
@@ -72,11 +81,34 @@ type ContentProps = React.ComponentPropsWithoutRef<
 
 const MenuContent = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Content>
-  | React.ElementRef<typeof ContextMenuPrimitive.Content>,
+  | React.ElementRef<typeof ContextMenuPrimitive.Content>
+  | HTMLDivElement,
   ContentProps
 >((props, ref) => {
   const { variant } = useMenuContext();
   const { children, ...rest } = props;
+
+  // For inline variant, render content directly without Portal
+  if (variant === "inline") {
+    const contentProps = {
+      maxHeightVar: "--inline-menu-max-height",
+      transformOriginVar: "--inline-menu-transform-origin",
+    };
+
+    return (
+      <InlineMenuContentWrapper
+        ref={ref as React.Ref<HTMLDivElement>}
+        {...contentProps}
+        hiddenScrollbars
+        style={{
+          ["--inline-menu-max-height" as string]: "85vh",
+          ["--inline-menu-transform-origin" as string]: "top left",
+        }}
+      >
+        {children}
+      </InlineMenuContentWrapper>
+    );
+  }
 
   const Portal =
     variant === "dropdown"
@@ -245,7 +277,8 @@ type MenuButtonProps = BaseItemProps & {
 
 const MenuButton = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Item>
-  | React.ElementRef<typeof ContextMenuPrimitive.Item>,
+  | React.ElementRef<typeof ContextMenuPrimitive.Item>
+  | HTMLButtonElement,
   MenuButtonProps
 >((props, ref) => {
   const { variant } = useMenuContext();
@@ -259,6 +292,34 @@ const MenuButton = React.forwardRef<
     onClick,
     ...rest
   } = props;
+
+  // For inline variant, render button directly without Radix Item wrapper
+  if (variant === "inline") {
+    const button = (
+      <Components.MenuButton
+        ref={ref as React.Ref<HTMLButtonElement>}
+        disabled={disabled}
+        $dangerous={dangerous}
+        onClick={onClick}
+      >
+        {icon}
+        <Components.MenuLabel>{label}</Components.MenuLabel>
+        {selected !== undefined && (
+          <Components.SelectedIconWrapper aria-hidden>
+            {selected ? <CheckmarkIcon size={18} /> : null}
+          </Components.SelectedIconWrapper>
+        )}
+      </Components.MenuButton>
+    );
+
+    return tooltip ? (
+      <Tooltip content={tooltip} placement="bottom">
+        <div>{button}</div>
+      </Tooltip>
+    ) : (
+      <>{button}</>
+    );
+  }
 
   const Item =
     variant === "dropdown"
@@ -375,10 +436,16 @@ type MenuSeparatorProps = React.ComponentPropsWithoutRef<
 
 const MenuSeparator = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Separator>
-  | React.ElementRef<typeof ContextMenuPrimitive.Separator>,
+  | React.ElementRef<typeof ContextMenuPrimitive.Separator>
+  | HTMLHRElement,
   MenuSeparatorProps
 >((props, ref) => {
   const { variant } = useMenuContext();
+
+  // For inline variant, render separator directly without Radix wrapper
+  if (variant === "inline") {
+    return <Components.MenuSeparator ref={ref as React.Ref<HTMLHRElement>} />;
+  }
 
   const Separator =
     variant === "dropdown"
@@ -419,6 +486,19 @@ const MenuLabel = React.forwardRef<
 });
 MenuLabel.displayName = "MenuLabel";
 
+// Styled wrapper for inline menu content with mobile-specific overrides
+const InlineMenuContentWrapper = styled(Components.MenuContent)`
+  ${breakpoint("mobile", "tablet")`
+    // On mobile/tablet, remove width constraints and make it full-width
+    min-width: auto;
+    max-width: none;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+  `}
+`;
+
 export {
   Menu,
   MenuTrigger,
@@ -433,5 +513,3 @@ export {
   SubMenuTrigger,
   SubMenuContent,
 };
-
-export { InlineMenu } from "./InlineMenu";

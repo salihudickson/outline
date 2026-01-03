@@ -12,7 +12,7 @@ import ToolbarButton from "./ToolbarButton";
 import ToolbarSeparator from "./ToolbarSeparator";
 import Tooltip from "./Tooltip";
 import { toMenuItems } from "~/components/Menu/transformer";
-import { MenuContent, InlineMenu } from "~/components/primitives/Menu";
+import { MenuContent } from "~/components/primitives/Menu";
 import { MenuProvider } from "~/components/primitives/Menu/MenuContext";
 import { Menu, MenuTrigger } from "~/components/primitives/Menu";
 import { useTranslation } from "react-i18next";
@@ -25,7 +25,7 @@ type Props = {
 /*
  * Renders a dropdown menu in the floating toolbar.
  * If the item has no icon or label (no trigger), it renders the menu
- * directly using InlineMenu component instead of a dropdown menu.
+ * directly using inline variant instead of a dropdown menu.
  */
 function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
   const { commands, view } = useEditor();
@@ -79,15 +79,16 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
   // Check if the parent item has a trigger (icon or label)
   const hasTrigger = !!(item.icon || item.label);
 
-  // If no trigger, render directly using InlineMenu
+  // If no trigger, render directly using inline variant
   if (!hasTrigger) {
     return (
-      <InlineMenu
-        item={item}
-        state={state}
-        handleClick={handleClick}
-        aria-label={item.tooltip || t("More options")}
-      />
+      <MenuProvider variant="inline">
+        <Menu>
+          <MenuContent aria-label={item.tooltip || t("More options")}>
+            <EventBoundary>{toMenuItems(items)}</EventBoundary>
+          </MenuContent>
+        </Menu>
+      </MenuProvider>
     );
   }
 
