@@ -434,10 +434,4 @@ export {
   SubMenuContent,
 };
 
-export {
-  InlineMenuButton,
-  InlineMenuInternalLink,
-  InlineMenuExternalLink,
-  InlineMenuSeparator,
-  InlineMenuContent,
-} from "./InlineMenu";
+export { InlineMenu } from "./InlineMenu";

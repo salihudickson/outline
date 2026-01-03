@@ -1,8 +1,8 @@
 import * as React from "react";
 import * as Components from "../components/Menu";
 import { CheckmarkIcon } from "outline-icons";
-import type { LocationDescriptor } from "history";
-import Tooltip from "~/components/Tooltip";
+import type { MenuItem } from "@shared/editor/types";
+import type { EditorState } from "prosemirror-state";
 
 /**
  * InlineMenu is a menu component that displays its content directly without
@@ -11,142 +11,89 @@ import Tooltip from "~/components/Tooltip";
  *
  * Unlike the standard Menu component which uses Radix UI's dropdown/context menu
  * primitives (requiring Root + Trigger + Content), InlineMenu just renders the
- * menu content directly.
+ * menu content directly with proper styling and hover states.
  */
 
-type BaseItemProps = {
-  label: string;
-  icon?: React.ReactElement;
-  disabled?: boolean;
-};
-
-type InlineMenuButtonProps = BaseItemProps & {
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  tooltip?: React.ReactNode;
-  selected?: boolean;
-  dangerous?: boolean;
-};
-
-export const InlineMenuButton = React.forwardRef<
-  HTMLButtonElement,
-  InlineMenuButtonProps
->((props, ref) => {
-  const { label, icon, tooltip, disabled, selected, dangerous, onClick } =
-    props;
-
-  const button = (
-    <Components.MenuButton
-      ref={ref}
-      disabled={disabled}
-      $dangerous={dangerous}
-      onClick={onClick}
-    >
-      {icon}
-      <Components.MenuLabel>{label}</Components.MenuLabel>
-      {selected !== undefined && (
-        <Components.SelectedIconWrapper aria-hidden>
-          {selected ? <CheckmarkIcon size={18} /> : null}
-        </Components.SelectedIconWrapper>
-      )}
-    </Components.MenuButton>
-  );
-
-  return tooltip ? (
-    <Tooltip content={tooltip} placement="bottom">
-      {button}
-    </Tooltip>
-  ) : (
-    button
-  );
-});
-InlineMenuButton.displayName = "InlineMenuButton";
-
-type InlineMenuInternalLinkProps = BaseItemProps & {
-  to: LocationDescriptor;
-};
-
-export const InlineMenuInternalLink = React.forwardRef<
-  HTMLAnchorElement,
-  InlineMenuInternalLinkProps
->((props, ref) => {
-  const { label, icon, disabled, to } = props;
-
-  return (
-    <Components.MenuInternalLink ref={ref} to={to} disabled={disabled}>
-      {icon}
-      <Components.MenuLabel>{label}</Components.MenuLabel>
-    </Components.MenuInternalLink>
-  );
-});
-InlineMenuInternalLink.displayName = "InlineMenuInternalLink";
-
-type InlineMenuExternalLinkProps = BaseItemProps & {
-  href: string;
-  target?: string;
-};
-
-export const InlineMenuExternalLink = React.forwardRef<
-  HTMLAnchorElement,
-  InlineMenuExternalLinkProps
->((props, ref) => {
-  const { label, icon, disabled, href, target } = props;
-
-  return (
-    <Components.MenuExternalLink
-      ref={ref}
-      href={href}
-      target={target}
-      disabled={disabled}
-    >
-      {icon}
-      <Components.MenuLabel>{label}</Components.MenuLabel>
-    </Components.MenuExternalLink>
-  );
-});
-InlineMenuExternalLink.displayName = "InlineMenuExternalLink";
-
-export const InlineMenuSeparator = React.forwardRef<HTMLHRElement>((_, ref) => (
-  <Components.MenuSeparator ref={ref} />
-));
-InlineMenuSeparator.displayName = "InlineMenuSeparator";
-
-type InlineMenuContentProps = {
-  children: React.ReactNode;
+type InlineMenuProps = {
+  item: MenuItem;
+  state: EditorState;
+  handleClick: (menuItem: MenuItem) => () => void;
   "aria-label"?: string;
-  maxHeight?: string;
-  transformOrigin?: string;
 };
 
 /**
- * Container for inline menu content. Provides the same styling as regular
- * menu content but without the Radix UI portal/positioning logic.
+ * InlineMenu component that renders menu items directly without a trigger.
+ * Accepts a MenuItem with children and renders them with proper styling.
  */
-export const InlineMenuContent = React.forwardRef<
-  HTMLDivElement,
-  InlineMenuContentProps
->((props, ref) => {
-  const {
-    children,
-    "aria-label": ariaLabel,
-    maxHeight = "85vh",
-    transformOrigin = "top left",
-  } = props;
+export const InlineMenu = React.forwardRef<HTMLDivElement, InlineMenuProps>(
+  (props, ref) => {
+    const { item, state, handleClick, "aria-label": ariaLabel } = props;
 
-  return (
-    <Components.MenuContent
-      ref={ref}
-      aria-label={ariaLabel}
-      maxHeightVar="--inline-menu-max-height"
-      transformOriginVar="--inline-menu-transform-origin"
-      hiddenScrollbars
-      style={{
-        // Set CSS variables for styling compatibility
-        ["--inline-menu-max-height" as string]: maxHeight,
-        ["--inline-menu-transform-origin" as string]: transformOrigin,
-      }}
-    >
-      {children}
-    </Components.MenuContent>
-  );
-});
-InlineMenuContent.displayName = "InlineMenuContent";
+    if (!item.children) {
+      return null;
+    }
+
+    // Filter out invisible items
+    const visibleChildren = item.children.filter(
+      (child) => child.visible !== false
+    );
+
+    // Check if any child has an icon to determine if we should reserve space for icons
+    const hasIcons = visibleChildren.some(
+      (child) => child.name !== "separator" && child.icon
+    );
+
+    return (
+      <Components.MenuContent
+        ref={ref}
+        aria-label={ariaLabel}
+        maxHeightVar="--inline-menu-max-height"
+        transformOriginVar="--inline-menu-transform-origin"
+        hiddenScrollbars
+        style={{
+          // Set CSS variables for styling compatibility
+          ["--inline-menu-max-height" as string]: "85vh",
+          ["--inline-menu-transform-origin" as string]: "top left",
+        }}
+      >
+        {visibleChildren.map((child, index) => {
+          if (child.name === "separator") {
+            return <Components.MenuSeparator key={index} />;
+          }
+
+          const selected =
+            child.active !== undefined ? child.active(state) : undefined;
+
+          // Reserve space for icon if any child has an icon
+          const icon = hasIcons ? (
+            <Components.MenuIconWrapper aria-hidden>
+              {child.icon || null}
+            </Components.MenuIconWrapper>
+          ) : (
+            child.icon
+          );
+
+          return (
+            <Components.MenuButton
+              key={index}
+              disabled={child.disabled}
+              $dangerous={child.dangerous}
+              onClick={handleClick(child)}
+            >
+              {icon}
+              <Components.MenuLabel>
+                {child.label || child.tooltip || ""}
+              </Components.MenuLabel>
+              {selected !== undefined && (
+                <Components.SelectedIconWrapper aria-hidden>
+                  {selected ? <CheckmarkIcon size={18} /> : null}
+                </Components.SelectedIconWrapper>
+              )}
+            </Components.MenuButton>
+          );
+        })}
+      </Components.MenuContent>
+    );
+  }
+);
+InlineMenu.displayName = "InlineMenu";
