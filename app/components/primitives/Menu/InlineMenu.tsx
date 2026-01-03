@@ -22,7 +22,7 @@ type BaseItemProps = {
 
 type InlineMenuButtonProps = BaseItemProps & {
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  tooltip?: React.ReactChild;
+  tooltip?: React.ReactNode;
   selected?: boolean;
   dangerous?: boolean;
 };
@@ -53,10 +53,10 @@ export const InlineMenuButton = React.forwardRef<
 
   return tooltip ? (
     <Tooltip content={tooltip} placement="bottom">
-      <div>{button}</div>
+      {button}
     </Tooltip>
   ) : (
-    <>{button}</>
+    button
   );
 });
 InlineMenuButton.displayName = "InlineMenuButton";
@@ -113,6 +113,8 @@ InlineMenuSeparator.displayName = "InlineMenuSeparator";
 type InlineMenuContentProps = {
   children: React.ReactNode;
   "aria-label"?: string;
+  maxHeight?: string;
+  transformOrigin?: string;
 };
 
 /**
@@ -123,7 +125,12 @@ export const InlineMenuContent = React.forwardRef<
   HTMLDivElement,
   InlineMenuContentProps
 >((props, ref) => {
-  const { children, "aria-label": ariaLabel } = props;
+  const {
+    children,
+    "aria-label": ariaLabel,
+    maxHeight = "85vh",
+    transformOrigin = "top left",
+  } = props;
 
   return (
     <Components.MenuContent
@@ -134,8 +141,8 @@ export const InlineMenuContent = React.forwardRef<
       hiddenScrollbars
       style={{
         // Set CSS variables for styling compatibility
-        ["--inline-menu-max-height" as string]: "85vh",
-        ["--inline-menu-transform-origin" as string]: "top left",
+        ["--inline-menu-max-height" as string]: maxHeight,
+        ["--inline-menu-transform-origin" as string]: transformOrigin,
       }}
     >
       {children}
