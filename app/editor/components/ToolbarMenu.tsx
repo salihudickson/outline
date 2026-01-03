@@ -24,6 +24,8 @@ type Props = {
 
 /*
  * Renders a dropdown menu in the floating toolbar.
+ * If the item has no icon or label (no trigger), it renders the menu
+ * directly using inline variant instead of a dropdown menu.
  */
 function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
   const { commands, view } = useEditor();
@@ -31,8 +33,8 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
   const { item } = props;
   const { state } = view;
 
-  const items: TMenuItem[] = useMemo(() => {
-    const handleClick = (menuItem: MenuItem) => () => {
+  const handleClick = useCallback(
+    (menuItem: MenuItem) => () => {
       if (!menuItem.name) {
         return;
       }
@@ -46,8 +48,11 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
       } else if (menuItem.onClick) {
         menuItem.onClick();
       }
-    };
+    },
+    [commands, state]
+  );
 
+  const items: TMenuItem[] = useMemo(() => {
     return item.children
       ? item.children.map((child) => {
           if (child.name === "separator") {
@@ -65,12 +70,29 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
           };
         })
       : [];
-  }, [item.children, commands, state]);
+  }, [item.children, handleClick, state]);
 
   const handleCloseAutoFocus = useCallback((ev: Event) => {
     ev.stopImmediatePropagation();
   }, []);
 
+  // Check if the parent item has a trigger (icon or label)
+  const hasTrigger = !!(item.icon || item.label);
+
+  // If no trigger, render directly using inline variant
+  if (!hasTrigger) {
+    return (
+      <MenuProvider variant="inline">
+        <Menu>
+          <MenuContent aria-label={item.tooltip || t("More options")}>
+            <EventBoundary>{toMenuItems(items)}</EventBoundary>
+          </MenuContent>
+        </Menu>
+      </MenuProvider>
+    );
+  }
+
+  // Render as dropdown menu with trigger
   return (
     <MenuProvider variant="dropdown">
       <Menu>
