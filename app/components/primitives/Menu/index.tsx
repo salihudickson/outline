@@ -433,3 +433,11 @@ export {
   SubMenuTrigger,
   SubMenuContent,
 };
+
+export {
+  InlineMenuButton,
+  InlineMenuInternalLink,
+  InlineMenuExternalLink,
+  InlineMenuSeparator,
+  InlineMenuContent,
+} from "./InlineMenu";

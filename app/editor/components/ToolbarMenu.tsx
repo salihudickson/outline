@@ -15,6 +15,11 @@ import { toMenuItems } from "~/components/Menu/transformer";
 import { MenuContent } from "~/components/primitives/Menu";
 import { MenuProvider } from "~/components/primitives/Menu/MenuContext";
 import { Menu, MenuTrigger } from "~/components/primitives/Menu";
+import {
+  InlineMenuContent,
+  InlineMenuButton,
+  InlineMenuSeparator,
+} from "~/components/primitives/Menu";
 import { useTranslation } from "react-i18next";
 import EventBoundary from "@shared/components/EventBoundary";
 
@@ -24,6 +29,8 @@ type Props = {
 
 /*
  * Renders a dropdown menu in the floating toolbar.
+ * If the item has no icon or label (no trigger), it renders the children
+ * directly using InlineMenu components instead of a dropdown menu.
  */
 function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
   const { commands, view } = useEditor();
@@ -77,39 +84,37 @@ function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
   // Check if the parent item has a trigger (icon or label)
   const hasTrigger = !!(item.icon || item.label);
 
-  // If no trigger, render children directly as inline toolbar buttons
-  if (!hasTrigger) {
+  // If no trigger, render children directly using InlineMenu
+  if (!hasTrigger && item.children) {
     return (
-      <>
-        {item.children?.map((child, index) => {
-          if (child.name === "separator" && child.visible !== false) {
-            return <ToolbarSeparator key={index} />;
+      <InlineMenuContent aria-label={item.tooltip || t("More options")}>
+        {item.children.map((child, index) => {
+          if (child.name === "separator") {
+            if (child.visible === false) {
+              return null;
+            }
+            return <InlineMenuSeparator key={index} />;
           }
-          if (child.visible === false || (!child.skipIcon && !child.icon)) {
+
+          if (child.visible === false) {
             return null;
           }
-          const isActive = child.active ? child.active(state) : false;
+
+          const selected =
+            child.active !== undefined ? child.active(state) : undefined;
 
           return (
-            <Tooltip
+            <InlineMenuButton
               key={index}
-              shortcut={child.shortcut}
-              content={child.label === child.tooltip ? undefined : child.tooltip}
-            >
-              <Toolbar.Button asChild>
-                <ToolbarButton
-                  onClick={handleClick(child)}
-                  active={isActive && !child.label}
-                  aria-label={child.label ? undefined : child.tooltip}
-                >
-                  {child.label && <Label>{child.label}</Label>}
-                  {child.icon}
-                </ToolbarButton>
-              </Toolbar.Button>
-            </Tooltip>
+              label={child.label || child.tooltip || ""}
+              icon={child.icon}
+              dangerous={child.dangerous}
+              selected={selected}
+              onClick={handleClick(child)}
+            />
           );
         })}
-      </>
+      </InlineMenuContent>
     );
   }
 
