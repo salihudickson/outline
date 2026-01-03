@@ -278,11 +278,22 @@ type MenuGroupProps = {
 
 const MenuGroup = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Group>
-  | React.ElementRef<typeof ContextMenuPrimitive.Group>,
+  | React.ElementRef<typeof ContextMenuPrimitive.Group>
+  | HTMLDivElement,
   MenuGroupProps
 >((props, ref) => {
   const { variant } = useMenuContext();
   const { label, items, ...rest } = props;
+
+  // For inline variant, render group without Radix wrapper
+  if (variant === "inline") {
+    return (
+      <div ref={ref as React.Ref<HTMLDivElement>} {...rest}>
+        <MenuLabel>{label}</MenuLabel>
+        {items}
+      </div>
+    );
+  }
 
   const Group =
     variant === "dropdown"
@@ -511,11 +522,21 @@ type MenuLabelProps = React.ComponentPropsWithoutRef<
 
 const MenuLabel = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Label>
-  | React.ElementRef<typeof ContextMenuPrimitive.Label>,
+  | React.ElementRef<typeof ContextMenuPrimitive.Label>
+  | HTMLHeadingElement,
   MenuLabelProps
 >((props, ref) => {
   const { variant } = useMenuContext();
   const { children, ...rest } = props;
+
+  // For inline variant, render label without Radix wrapper
+  if (variant === "inline") {
+    return (
+      <Components.MenuHeader ref={ref as React.Ref<HTMLHeadingElement>} {...rest}>
+        {children}
+      </Components.MenuHeader>
+    );
+  }
 
   const Label =
     variant === "dropdown"
