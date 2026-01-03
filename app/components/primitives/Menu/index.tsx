@@ -8,6 +8,9 @@ import breakpoint from "styled-components-breakpoint";
 import Tooltip from "~/components/Tooltip";
 import { CheckmarkIcon } from "outline-icons";
 import { useMenuContext } from "./MenuContext";
+import useMobile from "~/hooks/useMobile";
+import { Drawer, DrawerContent, DrawerTitle } from "../Drawer";
+import Scrollable from "~/components/Scrollable";
 
 type MenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Root
@@ -18,8 +21,18 @@ type MenuProps = React.ComponentPropsWithoutRef<
 
 const Menu = ({ children, ...rest }: MenuProps) => {
   const { variant } = useMenuContext();
+  const isMobile = useMobile();
 
-  // For inline variant, just render children directly without Radix wrapper
+  // For inline variant on mobile, use Drawer component
+  if (variant === "inline" && isMobile) {
+    return (
+      <Drawer open={true} modal={false}>
+        {children}
+      </Drawer>
+    );
+  }
+
+  // For inline variant on desktop, just render children directly without Radix wrapper
   if (variant === "inline") {
     return <>{children}</>;
   }
@@ -86,9 +99,39 @@ const MenuContent = React.forwardRef<
   ContentProps
 >((props, ref) => {
   const { variant } = useMenuContext();
+  const isMobile = useMobile();
   const { children, ...rest } = props;
+  const contentRef = React.useRef<React.ElementRef<typeof DrawerContent>>(null);
 
-  // For inline variant, render content directly without Portal
+  const enablePointerEvents = React.useCallback(() => {
+    if (contentRef.current) {
+      contentRef.current.style.pointerEvents = "auto";
+    }
+  }, []);
+
+  const disablePointerEvents = React.useCallback(() => {
+    if (contentRef.current) {
+      contentRef.current.style.pointerEvents = "none";
+    }
+  }, []);
+
+  // For inline variant on mobile, render in Drawer
+  if (variant === "inline" && isMobile) {
+    return (
+      <DrawerContent
+        ref={contentRef}
+        aria-label={rest["aria-label"]}
+        aria-describedby={undefined}
+        onAnimationStart={disablePointerEvents}
+        onAnimationEnd={enablePointerEvents}
+      >
+        <DrawerTitle>{rest["aria-label"] || "Menu"}</DrawerTitle>
+        <StyledScrollable hiddenScrollbars>{children}</StyledScrollable>
+      </DrawerContent>
+    );
+  }
+
+  // For inline variant on desktop, render content directly without Portal
   if (variant === "inline") {
     const contentProps = {
       maxHeightVar: "--inline-menu-max-height",
@@ -498,6 +541,11 @@ const InlineMenuContentWrapper = styled(Components.MenuContent)`
     border-radius: 0;
     padding: 0;
   `}
+`;
+
+// Styled scrollable for mobile drawer content
+const StyledScrollable = styled(Scrollable)`
+  max-height: 75vh;
 `;
 
 export {
