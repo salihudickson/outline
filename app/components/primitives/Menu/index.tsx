@@ -8,9 +8,6 @@ import breakpoint from "styled-components-breakpoint";
 import Tooltip from "~/components/Tooltip";
 import { CheckmarkIcon } from "outline-icons";
 import { useMenuContext } from "./MenuContext";
-import useMobile from "~/hooks/useMobile";
-import { Drawer, DrawerContent, DrawerTitle } from "../Drawer";
-import Scrollable from "~/components/Scrollable";
 
 type MenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Root
@@ -21,18 +18,9 @@ type MenuProps = React.ComponentPropsWithoutRef<
 
 const Menu = ({ children, ...rest }: MenuProps) => {
   const { variant } = useMenuContext();
-  const isMobile = useMobile();
 
-  // For inline variant on mobile, use Drawer component
-  if (variant === "inline" && isMobile) {
-    return (
-      <Drawer open={true} modal={false}>
-        {children}
-      </Drawer>
-    );
-  }
-
-  // For inline variant on desktop, just render children directly without Radix wrapper
+  // For inline variant, just render children directly without any wrapper
+  // (no Radix wrapper, no Drawer on mobile - just direct rendering)
   if (variant === "inline") {
     return <>{children}</>;
   }
@@ -99,39 +87,10 @@ const MenuContent = React.forwardRef<
   ContentProps
 >((props, ref) => {
   const { variant } = useMenuContext();
-  const isMobile = useMobile();
   const { children, ...rest } = props;
-  const contentRef = React.useRef<React.ElementRef<typeof DrawerContent>>(null);
 
-  const enablePointerEvents = React.useCallback(() => {
-    if (contentRef.current) {
-      contentRef.current.style.pointerEvents = "auto";
-    }
-  }, []);
-
-  const disablePointerEvents = React.useCallback(() => {
-    if (contentRef.current) {
-      contentRef.current.style.pointerEvents = "none";
-    }
-  }, []);
-
-  // For inline variant on mobile, render in Drawer
-  if (variant === "inline" && isMobile) {
-    return (
-      <DrawerContent
-        ref={contentRef}
-        aria-label={rest["aria-label"]}
-        aria-describedby={undefined}
-        onAnimationStart={disablePointerEvents}
-        onAnimationEnd={enablePointerEvents}
-      >
-        <DrawerTitle>{rest["aria-label"] || "Menu"}</DrawerTitle>
-        <StyledScrollable hiddenScrollbars>{children}</StyledScrollable>
-      </DrawerContent>
-    );
-  }
-
-  // For inline variant on desktop, render content directly without Portal
+  // For inline variant, render content directly without Portal
+  // (same on both mobile and desktop - just inline rendering)
   if (variant === "inline") {
     const contentProps = {
       maxHeightVar: "--inline-menu-max-height",
@@ -363,14 +322,14 @@ const MenuButton = React.forwardRef<
   // For inline variant, render button directly without Radix Item wrapper
   if (variant === "inline") {
     const button = (
-      <Components.MenuButton
+      <InlineMenuButton
         ref={ref as React.Ref<HTMLButtonElement>}
         disabled={disabled}
         $dangerous={dangerous}
         onClick={onClick}
       >
         {buttonContent}
-      </Components.MenuButton>
+      </InlineMenuButton>
     );
 
     return tooltip ? (
@@ -564,9 +523,36 @@ const InlineMenuContentWrapper = styled(Components.MenuContent)`
   `}
 `;
 
-// Styled scrollable for mobile drawer content
-const StyledScrollable = styled(Scrollable)`
-  max-height: 75vh;
+// Styled button for inline menu with hover states (since Radix doesn't provide data-highlighted)
+const InlineMenuButton = styled(Components.MenuButton)`
+  &:hover:not(:disabled) {
+    color: ${(props) => props.theme.accentText};
+    background: ${(props) =>
+      props.$dangerous ? props.theme.danger : props.theme.accent};
+    outline-color: ${(props) =>
+      props.$dangerous ? props.theme.danger : props.theme.accent};
+    box-shadow: none;
+    cursor: var(--pointer);
+
+    svg:not([data-fixed-color]) {
+      color: ${(props) => props.theme.accentText};
+      fill: ${(props) => props.theme.accentText};
+    }
+  }
+
+  &:focus-visible:not(:disabled) {
+    color: ${(props) => props.theme.accentText};
+    background: ${(props) =>
+      props.$dangerous ? props.theme.danger : props.theme.accent};
+    outline-color: ${(props) =>
+      props.$dangerous ? props.theme.danger : props.theme.accent};
+    box-shadow: none;
+
+    svg:not([data-fixed-color]) {
+      color: ${(props) => props.theme.accentText};
+      fill: ${(props) => props.theme.accentText};
+    }
+  }
 `;
 
 export {
