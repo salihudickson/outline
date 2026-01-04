@@ -523,35 +523,30 @@ const InlineMenuContentWrapper = styled(Components.MenuContent)`
   `}
 `;
 
+// Common highlighted styles for inline menu buttons
+const inlineMenuButtonHighlightedStyles = css`
+  color: ${(props) => props.theme.accentText};
+  background: ${(props) =>
+    props.$dangerous ? props.theme.danger : props.theme.accent};
+  outline-color: ${(props) =>
+    props.$dangerous ? props.theme.danger : props.theme.accent};
+  box-shadow: none;
+  cursor: var(--pointer);
+
+  svg:not([data-fixed-color]) {
+    color: ${(props) => props.theme.accentText};
+    fill: ${(props) => props.theme.accentText};
+  }
+`;
+
 // Styled button for inline menu with hover states (since Radix doesn't provide data-highlighted)
 const InlineMenuButton = styled(Components.MenuButton)`
   &:hover:not(:disabled) {
-    color: ${(props) => props.theme.accentText};
-    background: ${(props) =>
-      props.$dangerous ? props.theme.danger : props.theme.accent};
-    outline-color: ${(props) =>
-      props.$dangerous ? props.theme.danger : props.theme.accent};
-    box-shadow: none;
-    cursor: var(--pointer);
-
-    svg:not([data-fixed-color]) {
-      color: ${(props) => props.theme.accentText};
-      fill: ${(props) => props.theme.accentText};
-    }
+    ${inlineMenuButtonHighlightedStyles}
   }
 
   &:focus-visible:not(:disabled) {
-    color: ${(props) => props.theme.accentText};
-    background: ${(props) =>
-      props.$dangerous ? props.theme.danger : props.theme.accent};
-    outline-color: ${(props) =>
-      props.$dangerous ? props.theme.danger : props.theme.accent};
-    box-shadow: none;
-
-    svg:not([data-fixed-color]) {
-      color: ${(props) => props.theme.accentText};
-      fill: ${(props) => props.theme.accentText};
-    }
+    ${inlineMenuButtonHighlightedStyles}
   }
 `;
 
