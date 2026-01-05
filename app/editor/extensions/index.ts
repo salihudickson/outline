@@ -12,6 +12,7 @@ import MentionMenuExtension from "~/editor/extensions/MentionMenu";
 import PasteHandler from "~/editor/extensions/PasteHandler";
 import PreventTab from "~/editor/extensions/PreventTab";
 import SelectionToolbarExtension from "~/editor/extensions/SelectionToolbar";
+import TableGripMenuExtension from "~/editor/extensions/TableGripMenu";
 import SmartText from "~/editor/extensions/SmartText";
 
 type Nodes = (typeof Node | typeof Mark | typeof Extension)[];
@@ -27,6 +28,7 @@ export const withUIExtensions = (nodes: Nodes) => [
   FindAndReplaceExtension,
   HoverPreviewsExtension,
   SelectionToolbarExtension,
+  TableGripMenuExtension,
   DiagramsExtension,
   // Order these default key handlers last
   PreventTab,

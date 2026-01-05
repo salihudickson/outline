@@ -8,6 +8,8 @@ import Extension from "@shared/editor/lib/Extension";
 import { isInNotice } from "@shared/editor/queries/isInNotice";
 import { isMarkActive } from "@shared/editor/queries/isMarkActive";
 import { isNodeActive } from "@shared/editor/queries/isNodeActive";
+import { RowSelection } from "@shared/editor/selection/RowSelection";
+import { ColumnSelection } from "@shared/editor/selection/ColumnSelection";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 
 export default class SelectionToolbarExtension extends Extension {
@@ -39,6 +41,11 @@ export default class SelectionToolbarExtension extends Extension {
 
   private calculateState(state: EditorState): Selection | boolean {
     const { selection, doc, schema } = state;
+
+    // Don't show toolbar for row/column selections - TableGripMenu handles these
+    if (selection instanceof RowSelection || selection instanceof ColumnSelection) {
+      return false;
+    }
 
     if (isMarkActive(schema.marks.link)(state)) {
       return selection;
