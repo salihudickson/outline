@@ -40,6 +40,21 @@ export default function tableRowMenuItems(
 
   return [
     {
+      name: "addRowBefore",
+      tooltip: dictionary.addRowBefore,
+      icon: <InsertAboveIcon />,
+      attrs: { index },
+    },
+    {
+      name: "addRowAfter",
+      tooltip: dictionary.addRowAfter,
+      icon: <InsertBelowIcon />,
+      attrs: { index },
+    },
+    {
+      name: "separator",
+    },
+    {
       icon: <MoreIcon />,
       children: [
         {
@@ -47,18 +62,6 @@ export default function tableRowMenuItems(
           label: dictionary.toggleHeader,
           icon: <TableHeaderRowIcon />,
           visible: index === 0,
-        },
-        {
-          name: "addRowBefore",
-          label: dictionary.addRowBefore,
-          icon: <InsertAboveIcon />,
-          attrs: { index },
-        },
-        {
-          name: "addRowAfter",
-          label: dictionary.addRowAfter,
-          icon: <InsertBelowIcon />,
-          attrs: { index },
         },
         {
           name: "moveTableRow",
