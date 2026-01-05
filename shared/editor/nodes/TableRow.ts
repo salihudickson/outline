@@ -87,10 +87,60 @@ export default class TableRow extends Node {
                 event.preventDefault();
                 event.stopImmediatePropagation();
 
-                selectRow(
-                  Number(targetGripRow.getAttribute("data-index")),
-                  event.metaKey || event.shiftKey
-                )(view.state, view.dispatch);
+                const index = Number(targetGripRow.getAttribute("data-index"));
+                
+                // Select the row to establish cell selection
+                selectRow(index, event.metaKey || event.shiftKey)(
+                  view.state,
+                  view.dispatch
+                );
+
+                // Dispatch a custom event to trigger the context menu
+                const customEvent = new CustomEvent("table-row-grip-menu", {
+                  detail: {
+                    index,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                    view,
+                  },
+                  bubbles: true,
+                });
+                event.target.dispatchEvent(customEvent);
+
+                return true;
+              }
+
+              return false;
+            },
+            contextmenu: (view, event) => {
+              if (!(event.target instanceof HTMLElement)) {
+                return false;
+              }
+
+              const targetGripRow = event.target.closest(
+                `.${EditorStyleHelper.tableGripRow}`
+              );
+              if (targetGripRow) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                const index = Number(targetGripRow.getAttribute("data-index"));
+                
+                // Select the row to establish cell selection
+                selectRow(index, false)(view.state, view.dispatch);
+
+                // Dispatch a custom event to trigger the context menu
+                const customEvent = new CustomEvent("table-row-grip-menu", {
+                  detail: {
+                    index,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                    view,
+                  },
+                  bubbles: true,
+                });
+                event.target.dispatchEvent(customEvent);
+
                 return true;
               }
 

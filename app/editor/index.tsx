@@ -52,6 +52,7 @@ import EditorContext from "./components/EditorContext";
 import type { NodeViewRenderer } from "./components/NodeViewRenderer";
 
 import WithTheme from "./components/WithTheme";
+import { TableRowGripMenu } from "./components/TableRowGripMenu";
 import isNull from "lodash/isNull";
 import { isArray, map } from "lodash";
 import type { LightboxImage } from "@shared/editor/lib/Lightbox";
@@ -865,6 +866,7 @@ export class Editor extends React.PureComponent<
                 <>{Array.from(this.renderers).map((view) => view.content)}</>
               )}
             </Observer>
+            <TableRowGripMenu />
           </Flex>
           {!isNull(this.state.activeLightboxImage) && (
             <Lightbox
