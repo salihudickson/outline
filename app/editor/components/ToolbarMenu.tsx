@@ -34,7 +34,6 @@ function InLineMenu(props: {
   containerRef?: React.MutableRefObject<HTMLDivElement | null>;
 }) {
   const { item, containerRef } = props;
-  const { t } = useTranslation();
   const { commands, view } = useEditor();
   const fallbackRef = useRef<HTMLDivElement | null>(null);
   const pos = usePosition({
@@ -58,7 +57,6 @@ function InLineMenu(props: {
         <MenuContent
           pos={pos}
           align="end"
-          aria-label={item.tooltip || t("Table options")}
           onCloseAutoFocus={handleCloseAutoFocus}
         >
           <EventBoundary>{toMenuItems(items)}</EventBoundary>
