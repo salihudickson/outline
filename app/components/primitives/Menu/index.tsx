@@ -8,6 +8,10 @@ import breakpoint from "styled-components-breakpoint";
 import Tooltip from "~/components/Tooltip";
 import { CheckmarkIcon } from "outline-icons";
 import { useMenuContext } from "./MenuContext";
+import useMobile from "~/hooks/useMobile";
+import { Drawer, DrawerContent, DrawerTitle } from "../Drawer";
+import Scrollable from "~/components/Scrollable";
+import { Portal as ReactPortal } from "~/components/Portal";
 
 type MenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Root
@@ -18,11 +22,16 @@ type MenuProps = React.ComponentPropsWithoutRef<
 
 const Menu = ({ children, ...rest }: MenuProps) => {
   const { variant } = useMenuContext();
+  const isMobile = useMobile();
 
-  // For inline variant, just render children directly without any wrapper
-  // (no Radix wrapper, no Drawer on mobile - just direct rendering)
   if (variant === "inline") {
-    return <>{children}</>;
+    return isMobile ? (
+      <Drawer open={true} modal={false}>
+        {children}
+      </Drawer>
+    ) : (
+      <>{children}</>
+    );
   }
 
   const Root =
@@ -78,7 +87,12 @@ MenuTrigger.displayName = "MenuTrigger";
 type ContentProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Content
 > &
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Content>;
+  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Content> & {
+    pos?: {
+      top: number;
+      left: number;
+    };
+  };
 
 const MenuContent = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Content>
@@ -87,28 +101,60 @@ const MenuContent = React.forwardRef<
   ContentProps
 >((props, ref) => {
   const { variant } = useMenuContext();
+  const isMobile = useMobile();
   const { children, ...rest } = props;
+  const contentRef = React.useRef<React.ElementRef<typeof DrawerContent>>(null);
 
-  // For inline variant, render content directly without Portal
-  // (same on both mobile and desktop - just inline rendering)
+  const enablePointerEvents = React.useCallback(() => {
+    if (contentRef.current) {
+      contentRef.current.style.pointerEvents = "auto";
+    }
+  }, []);
+
+  const disablePointerEvents = React.useCallback(() => {
+    if (contentRef.current) {
+      contentRef.current.style.pointerEvents = "none";
+    }
+  }, []);
+
   if (variant === "inline") {
     const contentProps = {
       maxHeightVar: "--inline-menu-max-height",
       transformOriginVar: "--inline-menu-transform-origin",
     };
+    const { pos } = props;
 
-    return (
-      <InlineMenuContentWrapper
-        ref={ref as React.Ref<HTMLDivElement>}
-        {...contentProps}
-        hiddenScrollbars
-        style={{
-          ["--inline-menu-max-height" as string]: "85vh",
-          ["--inline-menu-transform-origin" as string]: "top left",
-        }}
+    return isMobile ? (
+      <DrawerContent
+        ref={contentRef}
+        aria-label={rest["aria-label"]}
+        aria-describedby={undefined}
+        onAnimationStart={disablePointerEvents}
+        onAnimationEnd={enablePointerEvents}
       >
-        {children}
-      </InlineMenuContentWrapper>
+        <DrawerTitle>{rest["aria-label"] || "Menu"}</DrawerTitle>
+        <StyledScrollable hiddenScrollbars>{children}</StyledScrollable>
+      </DrawerContent>
+    ) : (
+      <ReactPortal>
+        <InlineMenuContentWrapper
+          ref={ref as React.Ref<HTMLDivElement>}
+          {...contentProps}
+          hiddenScrollbars
+          style={{
+            ["--inline-menu-max-height" as string]: "85vh",
+            ["--inline-menu-transform-origin" as string]: "top left",
+            position: "fixed",
+            height: "fit-content",
+            top: pos ? pos.top - window.scrollY + 50 : undefined,
+            left: pos?.left,
+            margin: "10px",
+            zIndex: 1000,
+          }}
+        >
+          {children}
+        </InlineMenuContentWrapper>
+      </ReactPortal>
     );
   }
 
@@ -244,16 +290,6 @@ const MenuGroup = React.forwardRef<
   const { variant } = useMenuContext();
   const { label, items, ...rest } = props;
 
-  // For inline variant, render group without Radix wrapper
-  if (variant === "inline") {
-    return (
-      <div ref={ref as React.Ref<HTMLDivElement>} {...rest}>
-        <MenuLabel>{label}</MenuLabel>
-        {items}
-      </div>
-    );
-  }
-
   const Group =
     variant === "dropdown"
       ? DropdownMenuPrimitive.Group
@@ -290,11 +326,11 @@ type MenuButtonProps = BaseItemProps & {
 
 const MenuButton = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Item>
-  | React.ElementRef<typeof ContextMenuPrimitive.Item>
-  | HTMLButtonElement,
+  | React.ElementRef<typeof ContextMenuPrimitive.Item>,
   MenuButtonProps
 >((props, ref) => {
   const { variant } = useMenuContext();
+  const [active, setActive] = React.useState(false);
   const {
     label,
     icon,
@@ -322,14 +358,17 @@ const MenuButton = React.forwardRef<
   // For inline variant, render button directly without Radix Item wrapper
   if (variant === "inline") {
     const button = (
-      <InlineMenuButton
+      <Components.MenuButton
         ref={ref as React.Ref<HTMLButtonElement>}
         disabled={disabled}
         $dangerous={dangerous}
+        $active={active}
         onClick={onClick}
+        onMouseEnter={() => setActive(true)}
+        onMouseLeave={() => setActive(false)}
       >
         {buttonContent}
-      </InlineMenuButton>
+      </Components.MenuButton>
     );
 
     return tooltip ? (
@@ -481,21 +520,11 @@ type MenuLabelProps = React.ComponentPropsWithoutRef<
 
 const MenuLabel = React.forwardRef<
   | React.ElementRef<typeof DropdownMenuPrimitive.Label>
-  | React.ElementRef<typeof ContextMenuPrimitive.Label>
-  | HTMLHeadingElement,
+  | React.ElementRef<typeof ContextMenuPrimitive.Label>,
   MenuLabelProps
 >((props, ref) => {
   const { variant } = useMenuContext();
   const { children, ...rest } = props;
-
-  // For inline variant, render label without Radix wrapper
-  if (variant === "inline") {
-    return (
-      <Components.MenuHeader ref={ref as React.Ref<HTMLHeadingElement>} {...rest}>
-        {children}
-      </Components.MenuHeader>
-    );
-  }
 
   const Label =
     variant === "dropdown"
@@ -523,31 +552,9 @@ const InlineMenuContentWrapper = styled(Components.MenuContent)`
   `}
 `;
 
-// Common highlighted styles for inline menu buttons
-const inlineMenuButtonHighlightedStyles = css`
-  color: ${(props) => props.theme.accentText};
-  background: ${(props) =>
-    props.$dangerous ? props.theme.danger : props.theme.accent};
-  outline-color: ${(props) =>
-    props.$dangerous ? props.theme.danger : props.theme.accent};
-  box-shadow: none;
-  cursor: var(--pointer);
-
-  svg:not([data-fixed-color]) {
-    color: ${(props) => props.theme.accentText};
-    fill: ${(props) => props.theme.accentText};
-  }
-`;
-
-// Styled button for inline menu with hover states (since Radix doesn't provide data-highlighted)
-const InlineMenuButton = styled(Components.MenuButton)`
-  &:hover:not(:disabled) {
-    ${inlineMenuButtonHighlightedStyles}
-  }
-
-  &:focus-visible:not(:disabled) {
-    ${inlineMenuButtonHighlightedStyles}
-  }
+// Styled scrollable for mobile drawer content
+const StyledScrollable = styled(Scrollable)`
+  max-height: 75vh;
 `;
 
 export {
