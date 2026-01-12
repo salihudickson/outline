@@ -74,9 +74,9 @@ function GitLab() {
           type: IntegrationType.Embed,
           service: IntegrationService.GitLab,
           settings: {
-            ...(integration?.settings || {}),
+            ...integration?.settings,
             gitlab: {
-              ...(integration?.settings?.gitlab || {}),
+              ...integration?.settings?.gitlab,
               url: data.url.replace(/\/?$/, "/"),
             },
           } as Integration<IntegrationType.Embed>["settings"],
@@ -166,7 +166,9 @@ function GitLab() {
               <StyledSubmit
                 type="submit"
                 disabled={
-                  !formState.isDirty || !formState.isValid || formState.isSubmitting
+                  !formState.isDirty ||
+                  !formState.isValid ||
+                  formState.isSubmitting
                 }
               >
                 {formState.isSubmitting ? `${t("Saving")}…` : t("Save")}

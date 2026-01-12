@@ -11,8 +11,6 @@ import { Integration, IntegrationAuthentication } from "@server/models";
 import type { UnfurlIssueOrPR, UnfurlSignature } from "@server/types";
 import { GitLabUtils } from "../shared/GitLabUtils";
 import env from "./env";
-import { Op } from "sequelize";
-import { sequelize } from "@server/storage/database";
 import type {
   IssueSchemaWithExpandedLabels,
   MergeRequestSchema,
@@ -92,13 +90,13 @@ export class GitLab {
       const parsed = GitLabUtils.parseUrl(url, customUrl);
       if (parsed) {
         // Check if this integration has access to the owner
-        const issueSources = integration.issueSources as Array<{
-          owner: { name: string };
-        }> | undefined;
+        const issueSources = integration.issueSources as
+          | Array<{
+              owner: { name: string };
+            }>
+          | undefined;
         if (
-          issueSources?.some(
-            (source) => source.owner.name === parsed.owner
-          )
+          issueSources?.some((source) => source.owner.name === parsed.owner)
         ) {
           matchedIntegration = integration;
           resource = parsed;
@@ -107,16 +105,21 @@ export class GitLab {
       }
     }
 
-    if (!matchedIntegration || !resource || !matchedIntegration.authentication) {
+    if (
+      !matchedIntegration ||
+      !resource ||
+      !matchedIntegration.authentication
+    ) {
       return;
     }
 
     try {
       const projectPath = `${resource.owner}/${resource.repo}`;
       const customUrl = matchedIntegration.settings?.gitlab?.url;
-      const token = await matchedIntegration.authentication.refreshTokenIfNeeded(
-        async (refreshToken: string) => GitLab.refreshToken(refreshToken)
-      );
+      const token =
+        await matchedIntegration.authentication.refreshTokenIfNeeded(
+          async (refreshToken: string) => GitLab.refreshToken(refreshToken)
+        );
 
       if (resource.type === UnfurlResourceType.Issue) {
         const issue = await GitLabUtils.getIssue(
