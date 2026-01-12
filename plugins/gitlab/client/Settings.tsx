@@ -46,7 +46,7 @@ function GitLab() {
     service: IntegrationService.GitLab,
   }) as Integration<IntegrationType.Embed> | undefined;
 
-  const url = integration?.settings.gitlab?.url;
+  const url = integration?.settings?.gitlab?.url;
 
   const {
     register,
@@ -77,7 +77,7 @@ function GitLab() {
             ...integration?.settings,
             gitlab: {
               ...integration?.settings?.gitlab,
-              url: data.url.replace(/\/?$/, "/"),
+              url: data.url.trim() ? data.url.replace(/\/?$/, "/") : undefined,
             },
           } as Integration<IntegrationType.Embed>["settings"],
         });
