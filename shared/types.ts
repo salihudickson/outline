@@ -199,6 +199,7 @@ export type IntegrationSettings<T> = T extends IntegrationType.Embed
         };
       };
       gitlab?: {
+        url?: string;
         installation: {
           id: number;
           account: { id: number; name: string; avatarUrl: string };
@@ -235,6 +236,7 @@ export type IntegrationSettings<T> = T extends IntegrationType.Embed
                     };
                   };
                   gitlab?: {
+                    url?: string;
                     installation: {
                       id: number;
                       account: {
