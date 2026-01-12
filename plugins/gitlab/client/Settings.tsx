@@ -77,7 +77,9 @@ function GitLab() {
             ...integration?.settings,
             gitlab: {
               ...integration?.settings?.gitlab,
-              url: data.url.trim() ? data.url.replace(/\/?$/, "/") : undefined,
+              url: data.url.trim()
+                ? data.url.trim().replace(/\/+$/, "") + "/"
+                : undefined,
             },
           } as Integration<IntegrationType.Embed>["settings"],
         });

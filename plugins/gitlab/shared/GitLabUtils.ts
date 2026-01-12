@@ -21,10 +21,22 @@ export class GitLabUtils {
     return customUrl || this.defaultGitlabUrl;
   }
 
+  /**
+   * Gets the OAuth URL for the provided custom GitLab URL or default environment URL.
+   *
+   * @param customUrl - Optional custom GitLab URL from integration settings.
+   * @returns The OAuth URL.
+   */
   public static getOauthUrl(customUrl?: string): string {
     return `${this.getGitlabUrl(customUrl)}/oauth`;
   }
 
+  /**
+   * Gets the default OAuth URL using the environment-configured GitLab URL.
+   * For custom GitLab URLs, use getOauthUrl(customUrl) instead.
+   *
+   * @returns The default OAuth URL.
+   */
   public static get oauthUrl(): string {
     return this.getOauthUrl();
   }
