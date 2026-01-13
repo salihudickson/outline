@@ -50,6 +50,7 @@ import {
   Group,
   GroupUser,
   GroupMembership,
+  AccessRequest,
 } from "@server/models";
 import AttachmentHelper from "@server/models/helpers/AttachmentHelper";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
@@ -2073,6 +2074,7 @@ router.post(
   validate(T.DocumentsRequestAccessSchema),
   async (ctx: APIContext<T.DocumentsRequestAccessReq>) => {
     const { id } = ctx.input.body;
+    const { user } = ctx.state.auth;
 
     const document = await Document.findByPk(id);
 
@@ -2080,6 +2082,25 @@ router.post(
       throw NotFoundError("Document could not be found");
     }
 
+    // Check if there's already a pending access request
+    const existingRequest = await AccessRequest.findOne({
+      where: {
+        documentId: document.id,
+        userId: user.id,
+        status: "pending",
+      },
+    });
+
+    if (!existingRequest) {
+      // Create the access request
+      await AccessRequest.create({
+        documentId: document.id,
+        teamId: document.teamId,
+        userId: user.id,
+      });
+    }
+
+    // Create event for notification
     await Event.createFromContext(ctx, {
       name: "documents.request_access",
       documentId: document.id,
