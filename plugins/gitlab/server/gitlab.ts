@@ -11,8 +11,6 @@ import { Integration, IntegrationAuthentication } from "@server/models";
 import type { UnfurlIssueOrPR, UnfurlSignature } from "@server/types";
 import { GitLabUtils } from "../shared/GitLabUtils";
 import env from "./env";
-import { Op } from "sequelize";
-import { sequelize } from "@server/storage/database";
 import type {
   IssueSchemaWithExpandedLabels,
   MergeRequestSchema,
@@ -67,23 +65,10 @@ export class GitLab {
    * @returns An object containing resource details e.g, a GitLab Merge Request details
    */
   public static unfurl: UnfurlSignature = async (url: string, actor: User) => {
-    const resource = GitLabUtils.parseUrl(url);
-    if (!resource) {
-      return;
-    }
-
-    const integration = (await Integration.findOne({
+    const integrations = (await Integration.findAll({
       where: {
         service: IntegrationService.GitLab,
         teamId: actor.teamId,
-        [Op.and]: sequelize.where(
-          sequelize.literal(`"issueSources"::jsonb @> :ownerJson`),
-          Op.eq,
-          true
-        ),
-      },
-      replacements: {
-        ownerJson: JSON.stringify([{ owner: { name: resource.owner } }]),
       },
       include: [
         {
@@ -92,23 +77,49 @@ export class GitLab {
           required: true,
         },
       ],
-    })) as Integration<IntegrationType.Embed>;
+    })) as Integration<IntegrationType.Embed>[];
 
-    if (!integration || !integration.authentication) {
+    if (integrations.length === 0) {
+      return;
+    }
+
+    // All integrations share the same URL configuration
+    const customUrl = integrations[0].settings?.gitlab?.url;
+    const resource = GitLabUtils.parseUrl(url, customUrl);
+
+    if (!resource) {
+      return;
+    }
+
+    // Find integration that has access to this owner
+    const matchedIntegration = integrations.find((integration) => {
+      const issueSources = integration.issueSources as
+        | Array<{
+            owner: { name: string };
+          }>
+        | undefined;
+      return issueSources?.some(
+        (source) => source.owner.name === resource.owner
+      );
+    });
+
+    if (!matchedIntegration || !matchedIntegration.authentication) {
       return;
     }
 
     try {
       const projectPath = `${resource.owner}/${resource.repo}`;
-      const token = await integration.authentication.refreshTokenIfNeeded(
-        async (refreshToken: string) => GitLab.refreshToken(refreshToken)
-      );
+      const token =
+        await matchedIntegration.authentication.refreshTokenIfNeeded(
+          async (refreshToken: string) => GitLab.refreshToken(refreshToken)
+        );
 
       if (resource.type === UnfurlResourceType.Issue) {
         const issue = await GitLabUtils.getIssue(
           token,
           projectPath,
-          resource.id
+          resource.id,
+          customUrl
         );
 
         return this.transformIssue(issue);
@@ -116,7 +127,8 @@ export class GitLab {
         const mr = await GitLabUtils.getMergeRequest(
           token,
           projectPath,
-          resource.id
+          resource.id,
+          customUrl
         );
         return this.transformMR(mr);
       }
