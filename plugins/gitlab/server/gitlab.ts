@@ -65,8 +65,6 @@ export class GitLab {
    * @returns An object containing resource details e.g, a GitLab Merge Request details
    */
   public static unfurl: UnfurlSignature = async (url: string, actor: User) => {
-    // First, try to find an integration that matches this URL
-    // We need to check all GitLab integrations to find one with matching custom URL
     const integrations = (await Integration.findAll({
       where: {
         service: IntegrationService.GitLab,
@@ -81,41 +79,36 @@ export class GitLab {
       ],
     })) as Integration<IntegrationType.Embed>[];
 
-    // Try to parse the URL with each integration's custom URL
-    let matchedIntegration: Integration<IntegrationType.Embed> | undefined;
-    let resource: ReturnType<typeof GitLabUtils.parseUrl>;
-
-    for (const integration of integrations) {
-      const customUrl = integration.settings?.gitlab?.url;
-      const parsed = GitLabUtils.parseUrl(url, customUrl);
-      if (parsed) {
-        // Check if this integration has access to the owner
-        const issueSources = integration.issueSources as
-          | Array<{
-              owner: { name: string };
-            }>
-          | undefined;
-        if (
-          issueSources?.some((source) => source.owner.name === parsed.owner)
-        ) {
-          matchedIntegration = integration;
-          resource = parsed;
-          break;
-        }
-      }
+    if (integrations.length === 0) {
+      return;
     }
 
-    if (
-      !matchedIntegration ||
-      !resource ||
-      !matchedIntegration.authentication
-    ) {
+    // All integrations share the same URL configuration
+    const customUrl = integrations[0].settings?.gitlab?.url;
+    const resource = GitLabUtils.parseUrl(url, customUrl);
+
+    if (!resource) {
+      return;
+    }
+
+    // Find integration that has access to this owner
+    const matchedIntegration = integrations.find((integration) => {
+      const issueSources = integration.issueSources as
+        | Array<{
+            owner: { name: string };
+          }>
+        | undefined;
+      return issueSources?.some(
+        (source) => source.owner.name === resource.owner
+      );
+    });
+
+    if (!matchedIntegration || !matchedIntegration.authentication) {
       return;
     }
 
     try {
       const projectPath = `${resource.owner}/${resource.repo}`;
-      const customUrl = matchedIntegration.settings?.gitlab?.url;
       const token =
         await matchedIntegration.authentication.refreshTokenIfNeeded(
           async (refreshToken: string) => GitLab.refreshToken(refreshToken)

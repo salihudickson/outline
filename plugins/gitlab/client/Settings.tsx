@@ -69,27 +69,47 @@ function GitLab() {
   const handleSubmit = React.useCallback(
     async (data: FormData) => {
       try {
-        await integrations.save({
-          id: integration?.id,
-          type: IntegrationType.Embed,
-          service: IntegrationService.GitLab,
-          settings: {
-            ...integration?.settings,
-            gitlab: {
-              ...integration?.settings?.gitlab,
-              url: data.url.trim()
-                ? data.url.trim().replace(/\/+$/, "") + "/"
-                : undefined,
-            },
-          } as Integration<IntegrationType.Embed>["settings"],
-        });
+        const urlToSave = data.url.trim()
+          ? data.url.trim().replace(/\/+$/, "") + "/"
+          : undefined;
+
+        // Update all GitLab integrations with the same URL
+        await Promise.all(
+          integrations.gitlab.map((int) =>
+            integrations.save({
+              id: int.id,
+              type: IntegrationType.Embed,
+              service: IntegrationService.GitLab,
+              settings: {
+                ...int.settings,
+                gitlab: {
+                  ...int.settings?.gitlab,
+                  url: urlToSave,
+                },
+              } as Integration<IntegrationType.Embed>["settings"],
+            })
+          )
+        );
+
+        // If no integrations exist yet, create one to store the URL
+        if (integrations.gitlab.length === 0) {
+          await integrations.save({
+            type: IntegrationType.Embed,
+            service: IntegrationService.GitLab,
+            settings: {
+              gitlab: {
+                url: urlToSave,
+              },
+            } as Integration<IntegrationType.Embed>["settings"],
+          });
+        }
 
         toast.success(t("Settings saved"));
       } catch (err) {
         toast.error(err.message);
       }
     },
-    [integrations, integration, t]
+    [integrations, t]
   );
 
   React.useEffect(() => {
