@@ -1,10 +1,11 @@
 import Router from "koa-router";
 import { DocumentPermission } from "@shared/types";
+import { NotFoundError } from "@server/errors";
 import auth from "@server/middlewares/authentication";
 import { rateLimiter } from "@server/middlewares/rateLimiter";
 import { transaction } from "@server/middlewares/transaction";
 import validate from "@server/middlewares/validate";
-import { Document, AccessRequest, UserMembership } from "@server/models";
+import { Document, AccessRequest, UserMembership, Event } from "@server/models";
 import { AccessRequestStatus } from "@server/models/AccessRequest";
 import { authorize } from "@server/policies";
 import { presentAccessRequest, presentPolicies } from "@server/presenters";
@@ -13,6 +14,64 @@ import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import * as T from "./schema";
 
 const router = new Router();
+
+router.post(
+  "access_requests.create",
+  rateLimiter(RateLimiterStrategy.TwentyFivePerMinute),
+  auth(),
+  validate(T.AccessRequestsCreateSchema),
+  transaction(),
+  async (ctx: APIContext<T.AccessRequestsCreateReq>) => {
+    const { documentId } = ctx.input.body;
+    const { user } = ctx.state.auth;
+    const { transaction } = ctx.state;
+
+    const document = await Document.findByPk(documentId, { transaction });
+
+    if (!document) {
+      throw NotFoundError("Document could not be found");
+    }
+
+    // Check if there's already a pending access request
+    const existingRequest = await AccessRequest.findOne({
+      where: {
+        documentId: document.id,
+        userId: user.id,
+        status: AccessRequestStatus.Pending,
+      },
+      transaction,
+    });
+
+    if (existingRequest) {
+      ctx.body = {
+        data: presentAccessRequest(existingRequest),
+        policies: presentPolicies(user, [existingRequest]),
+      };
+      return;
+    }
+
+    // Create the access request
+    const accessRequest = await AccessRequest.create(
+      {
+        documentId: document.id,
+        teamId: document.teamId,
+        userId: user.id,
+      },
+      { transaction }
+    );
+
+    // Create event for notification
+    await Event.createFromContext(ctx, {
+      name: "documents.request_access",
+      documentId: document.id,
+    });
+
+    ctx.body = {
+      data: presentAccessRequest(accessRequest),
+      policies: presentPolicies(user, [accessRequest]),
+    };
+  }
+);
 
 router.post(
   "access_requests.info",

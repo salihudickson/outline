@@ -4,7 +4,7 @@ import {
   CollectionPermission,
 } from "@shared/types";
 import Logger from "@server/logging/Logger";
-import { Notification, UserMembership } from "@server/models";
+import { Notification, UserMembership, AccessRequest } from "@server/models";
 import DocumentAccessRequestNotificationsTask from "./DocumentAccessRequestNotificationsTask";
 import {
   buildCollection,
@@ -42,6 +42,29 @@ describe("DocumentAccessRequestNotificationsTask", () => {
       );
     });
 
+    it("should fail gracefully if access request is not found", async () => {
+      const loggerSpy = jest.spyOn(Logger, "debug");
+      const team = await buildTeam();
+      const user = await buildUser({ teamId: team.id });
+      const document = await buildDocument({
+        teamId: team.id,
+      });
+
+      await task.perform({
+        name: "documents.request_access",
+        documentId: document.id,
+        teamId: team.id,
+        actorId: user.id,
+        ip,
+      });
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        "task",
+        "Access request not found for notification",
+        { documentId: document.id, userId: user.id }
+      );
+    });
+
     it("should send notifications to document managers", async () => {
       const spy = jest.spyOn(Notification, "create");
       const team = await buildTeam();
@@ -61,6 +84,13 @@ describe("DocumentAccessRequestNotificationsTask", () => {
           permission: DocumentPermission.Admin,
         });
       }
+
+      // Create the access request first (as the new endpoint does)
+      await AccessRequest.create({
+        documentId: document.id,
+        teamId: team.id,
+        userId: user.id,
+      });
 
       const task = new DocumentAccessRequestNotificationsTask();
       await task.perform({
@@ -117,6 +147,13 @@ describe("DocumentAccessRequestNotificationsTask", () => {
         });
       }
 
+      // Create the access request first (as the new endpoint does)
+      await AccessRequest.create({
+        documentId: document.id,
+        teamId: team.id,
+        userId: user.id,
+      });
+
       const task = new DocumentAccessRequestNotificationsTask();
       await task.perform({
         name: "documents.request_access",
@@ -164,6 +201,13 @@ describe("DocumentAccessRequestNotificationsTask", () => {
         createdById: admin.id,
       });
 
+      // Create the access request first (as the new endpoint does)
+      await AccessRequest.create({
+        documentId: document.id,
+        teamId: team.id,
+        userId: admin.id,
+      });
+
       const task = new DocumentAccessRequestNotificationsTask();
       await task.perform({
         name: "documents.request_access",
@@ -194,6 +238,13 @@ describe("DocumentAccessRequestNotificationsTask", () => {
         documentId: document.id,
         permission: DocumentPermission.Admin,
         createdById: admin.id,
+      });
+
+      // Create the access request first (as the new endpoint does)
+      await AccessRequest.create({
+        documentId: document.id,
+        teamId: team.id,
+        userId: actor.id,
       });
 
       const task = new DocumentAccessRequestNotificationsTask();
@@ -232,6 +283,13 @@ describe("DocumentAccessRequestNotificationsTask", () => {
         false
       );
       await admin.save();
+
+      // Create the access request first (as the new endpoint does)
+      await AccessRequest.create({
+        documentId: document.id,
+        teamId: team.id,
+        userId: actor.id,
+      });
 
       const task = new DocumentAccessRequestNotificationsTask();
       await task.perform({

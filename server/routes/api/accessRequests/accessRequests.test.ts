@@ -1,5 +1,5 @@
 import { DocumentPermission } from "@shared/types";
-import { AccessRequest, UserMembership } from "@server/models";
+import { AccessRequest, UserMembership, Event } from "@server/models";
 import { AccessRequestStatus } from "@server/models/AccessRequest";
 import {
   buildAdmin,
@@ -10,6 +10,162 @@ import {
 import { getTestServer } from "@server/test/support";
 
 const server = getTestServer();
+
+describe("#access_requests.create", () => {
+  it("should require authentication", async () => {
+    const res = await server.post("/api/access_requests.create");
+    expect(res.status).toEqual(401);
+  });
+
+  it("should require documentId", async () => {
+    const user = await buildUser();
+    const res = await server.post("/api/access_requests.create", {
+      body: {
+        token: user.getJwtToken(),
+      },
+    });
+    expect(res.status).toEqual(400);
+  });
+
+  it("should return 404 for non-existent document", async () => {
+    const user = await buildUser();
+    const res = await server.post("/api/access_requests.create", {
+      body: {
+        token: user.getJwtToken(),
+        documentId: "00000000-0000-0000-0000-000000000000",
+      },
+    });
+    expect(res.status).toEqual(404);
+  });
+
+  it("should create an access request and event", async () => {
+    const team = await buildTeam();
+    const requester = await buildUser({ teamId: team.id });
+    const admin = await buildAdmin({ teamId: team.id });
+    const document = await buildDocument({
+      createdById: admin.id,
+      teamId: team.id,
+    });
+
+    const res = await server.post("/api/access_requests.create", {
+      body: {
+        token: requester.getJwtToken(),
+        documentId: document.id,
+      },
+    });
+    const body = await res.json();
+
+    expect(res.status).toEqual(200);
+    expect(body.data.documentId).toEqual(document.id);
+    expect(body.data.userId).toEqual(requester.id);
+    expect(body.data.status).toEqual(AccessRequestStatus.Pending);
+
+    // Verify the access request was created
+    const accessRequest = await AccessRequest.findOne({
+      where: {
+        documentId: document.id,
+        userId: requester.id,
+      },
+    });
+    expect(accessRequest).toBeTruthy();
+    expect(accessRequest?.status).toEqual(AccessRequestStatus.Pending);
+  });
+
+  it("should work with document urlId", async () => {
+    const team = await buildTeam();
+    const requester = await buildUser({ teamId: team.id });
+    const admin = await buildAdmin({ teamId: team.id });
+    const document = await buildDocument({
+      createdById: admin.id,
+      teamId: team.id,
+    });
+
+    const res = await server.post("/api/access_requests.create", {
+      body: {
+        token: requester.getJwtToken(),
+        documentId: document.urlId,
+      },
+    });
+    const body = await res.json();
+
+    expect(res.status).toEqual(200);
+    expect(body.data.documentId).toEqual(document.id);
+    expect(body.data.userId).toEqual(requester.id);
+  });
+
+  it("should return existing pending request if one already exists", async () => {
+    const team = await buildTeam();
+    const requester = await buildUser({ teamId: team.id });
+    const admin = await buildAdmin({ teamId: team.id });
+    const document = await buildDocument({
+      createdById: admin.id,
+      teamId: team.id,
+    });
+
+    // Create first access request
+    const res1 = await server.post("/api/access_requests.create", {
+      body: {
+        token: requester.getJwtToken(),
+        documentId: document.id,
+      },
+    });
+    const body1 = await res1.json();
+
+    // Try to create another
+    const res2 = await server.post("/api/access_requests.create", {
+      body: {
+        token: requester.getJwtToken(),
+        documentId: document.id,
+      },
+    });
+    const body2 = await res2.json();
+
+    expect(res2.status).toEqual(200);
+    expect(body2.data.id).toEqual(body1.data.id);
+
+    // Verify only one access request exists
+    const count = await AccessRequest.count({
+      where: {
+        documentId: document.id,
+        userId: requester.id,
+      },
+    });
+    expect(count).toEqual(1);
+  });
+
+  it("should allow creating new request after previous was dismissed", async () => {
+    const team = await buildTeam();
+    const requester = await buildUser({ teamId: team.id });
+    const admin = await buildAdmin({ teamId: team.id });
+    const document = await buildDocument({
+      createdById: admin.id,
+      teamId: team.id,
+    });
+
+    // Create and dismiss first request
+    const accessRequest1 = await AccessRequest.create({
+      documentId: document.id,
+      userId: requester.id,
+      teamId: team.id,
+      status: AccessRequestStatus.Dismissed,
+      responderId: admin.id,
+      respondedAt: new Date(),
+    });
+
+    // Create new request
+    const res = await server.post("/api/access_requests.create", {
+      body: {
+        token: requester.getJwtToken(),
+        documentId: document.id,
+      },
+    });
+    const body = await res.json();
+
+    expect(res.status).toEqual(200);
+    expect(body.data.id).not.toEqual(accessRequest1.id);
+    expect(body.data.status).toEqual(AccessRequestStatus.Pending);
+  });
+});
 
 describe("#access_requests.info", () => {
   it("should require authentication", async () => {

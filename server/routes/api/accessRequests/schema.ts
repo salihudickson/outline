@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DocumentPermission } from "@shared/types";
 import { BaseSchema } from "@server/routes/api/schema";
+import { zodIdType } from "@server/utils/zod";
 
 const BaseIdSchema = z.object({
   id: z.string().uuid(),
@@ -36,4 +37,14 @@ export const AccessRequestsDismissSchema = BaseSchema.extend({
 
 export type AccessRequestsDismissReq = z.infer<
   typeof AccessRequestsDismissSchema
+>;
+
+export const AccessRequestsCreateSchema = BaseSchema.extend({
+  body: z.object({
+    documentId: zodIdType(),
+  }),
+});
+
+export type AccessRequestsCreateReq = z.infer<
+  typeof AccessRequestsCreateSchema
 >;
