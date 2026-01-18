@@ -60,16 +60,7 @@ router.get(
         { transaction }
       );
 
-      const existingIntegration = await Integration.findOne({
-        where: {
-          service: IntegrationService.GitLab,
-        },
-      });
-
-      const url = (existingIntegration?.settings as { gitlab: { url: string } })
-        ?.gitlab?.url;
-
-      // need to find out what the url is and use it here
+      const url = new URL(userInfo.url).origin;
       await Integration.createWithCtx(createContext({ user, transaction }), {
         service: IntegrationService.GitLab,
         type: IntegrationType.Embed,

@@ -40,7 +40,7 @@ export class GitLab {
     const userData = await client.Users.showCurrentUser({
       showExpanded: false,
     });
-    return userData;
+    return { ...userData, url: client.url };
   }
 
   /**
