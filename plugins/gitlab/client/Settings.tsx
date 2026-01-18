@@ -28,6 +28,7 @@ import useQuery from "~/hooks/useQuery";
 import useStores from "~/hooks/useStores";
 import GitLabIcon from "./components/Icon";
 import { GitLabConnectButton } from "./components/GitLabButton";
+import { GitLabUtils } from "../shared/GitLabUtils";
 
 type FormData = {
   url: string;
@@ -35,6 +36,7 @@ type FormData = {
 
 function GitLab() {
   const { integrations } = useStores();
+  const [removing, setRemoving] = React.useState(false);
   const { t } = useTranslation();
   const query = useQuery();
   const error = query.get("error");
@@ -53,6 +55,7 @@ function GitLab() {
     reset,
     handleSubmit: formHandleSubmit,
     formState,
+    setValue,
   } = useForm<FormData>({
     mode: "all",
     defaultValues: {
@@ -66,6 +69,34 @@ function GitLab() {
     });
   }, [reset, url]);
 
+  const handleRemove = React.useCallback(async () => {
+    try {
+      setRemoving(true);
+
+      for (const int of integrations.gitlab) {
+        await integrations.save({
+          id: int.id,
+          type: IntegrationType.Embed,
+          service: IntegrationService.GitLab,
+          settings: {
+            ...int.settings,
+            gitlab: {
+              ...int.settings?.gitlab,
+              url: undefined,
+            },
+          } as Integration<IntegrationType.Embed>["settings"],
+        });
+      }
+
+      setValue("url", "");
+      toast.success(t("Settings saved"));
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setRemoving(false);
+    }
+  }, [integrations, t, setValue]);
+
   const handleSubmit = React.useCallback(
     async (data: FormData) => {
       try {
@@ -73,23 +104,20 @@ function GitLab() {
           ? data.url.trim().replace(/\/+$/, "") + "/"
           : undefined;
 
-        // Update all GitLab integrations with the same URL
-        await Promise.all(
-          integrations.gitlab.map((int) =>
-            integrations.save({
-              id: int.id,
-              type: IntegrationType.Embed,
-              service: IntegrationService.GitLab,
-              settings: {
-                ...int.settings,
-                gitlab: {
-                  ...int.settings?.gitlab,
-                  url: urlToSave,
-                },
-              } as Integration<IntegrationType.Embed>["settings"],
-            })
-          )
-        );
+        for (const int of integrations.gitlab) {
+          await integrations.save({
+            id: int.id,
+            type: IntegrationType.Embed,
+            service: IntegrationService.GitLab,
+            settings: {
+              ...int.settings,
+              gitlab: {
+                ...int.settings?.gitlab,
+                url: urlToSave,
+              },
+            } as Integration<IntegrationType.Embed>["settings"],
+          });
+        }
 
         // If no integrations exist yet, create one to store the URL
         if (integrations.gitlab.length === 0) {
@@ -173,9 +201,11 @@ function GitLab() {
             <SettingRow
               label={t("GitLab URL")}
               name="url"
-              description={t(
-                "The URL of your GitLab installation. Leave empty to use the default gitlab.com"
-              )}
+              description={
+                t(
+                  "Enter the URL of your GitLab installation. If left empty, the default URL set in the environment configuration will be used: "
+                ) + GitLabUtils.defaultGitlabUrl
+              }
               border={false}
             >
               <Input
@@ -184,21 +214,34 @@ function GitLab() {
               />
             </SettingRow>
 
-            <Actions reverse justify="end" gap={8}>
-              <StyledSubmit
+            <Actions justify="end" gap={8}>
+              <StyledButton
+                danger
+                disabled={!url || formState.isSubmitting}
+                onClick={handleRemove}
+                aria-label={t("Remove GitLab URL")}
+                title={t("Remove GitLab URL")}
+              >
+                {removing ? `${t("Removing")}…` : t("Remove")}
+              </StyledButton>
+              <StyledButton
                 type="submit"
                 disabled={
                   !formState.isDirty ||
                   !formState.isValid ||
                   formState.isSubmitting
                 }
+                aria-label={t("Save GitLab URL")}
+                title={t("Save GitLab URL")}
               >
                 {formState.isSubmitting ? `${t("Saving")}…` : t("Save")}
-              </StyledSubmit>
+              </StyledButton>
             </Actions>
           </form>
 
-          {integrations.gitlab.length ? (
+          {integrations.gitlab.some(
+            (int) => int.settings.gitlab?.installation
+          ) ? (
             <>
               <Heading as="h2">
                 <Flex justify="space-between" auto>
@@ -209,46 +252,50 @@ function GitLab() {
               <List>
                 {integrations.gitlab.map((integration) => {
                   const gitlabAccount =
-                    integration.settings?.gitlab?.installation.account;
+                    integration.settings?.gitlab?.installation?.account;
                   const integrationCreatedBy = integration.user
                     ? integration.user.name
                     : undefined;
 
                   return (
-                    <ListItem
-                      key={gitlabAccount?.id}
-                      small
-                      title={gitlabAccount?.name}
-                      subtitle={
-                        integrationCreatedBy ? (
-                          <>
-                            <Trans>Enabled by {{ integrationCreatedBy }}</Trans>{" "}
-                            &middot;{" "}
-                            <Time
-                              dateTime={integration.createdAt}
-                              relative={false}
-                              format={{ en_US: "MMMM d, y" }}
-                            />
-                          </>
-                        ) : (
-                          <PlaceholderText />
-                        )
-                      }
-                      image={
-                        <TeamLogo
-                          src={gitlabAccount?.avatarUrl}
-                          size={AvatarSize.Large}
-                        />
-                      }
-                      actions={
-                        <ConnectedButton
-                          onClick={integration.delete}
-                          confirmationMessage={t(
-                            "Disconnecting will prevent previewing GitLab links from this organization in documents. Are you sure?"
-                          )}
-                        />
-                      }
-                    />
+                    gitlabAccount && (
+                      <ListItem
+                        key={gitlabAccount?.id}
+                        small
+                        title={gitlabAccount?.name}
+                        subtitle={
+                          integrationCreatedBy ? (
+                            <>
+                              <Trans>
+                                Enabled by {{ integrationCreatedBy }}
+                              </Trans>{" "}
+                              &middot;{" "}
+                              <Time
+                                dateTime={integration.createdAt}
+                                relative={false}
+                                format={{ en_US: "MMMM d, y" }}
+                              />
+                            </>
+                          ) : (
+                            <PlaceholderText />
+                          )
+                        }
+                        image={
+                          <TeamLogo
+                            src={gitlabAccount?.avatarUrl}
+                            size={AvatarSize.Large}
+                          />
+                        }
+                        actions={
+                          <ConnectedButton
+                            onClick={integration.delete}
+                            confirmationMessage={t(
+                              "Disconnecting will prevent previewing GitLab links from this organization in documents. Are you sure?"
+                            )}
+                          />
+                        }
+                      />
+                    )
                   );
                 })}
               </List>
@@ -279,7 +326,7 @@ const Actions = styled(Flex)`
   margin-top: 8px;
 `;
 
-const StyledSubmit = styled(Button)`
+const StyledButton = styled(Button)`
   width: 80px;
 `;
 
