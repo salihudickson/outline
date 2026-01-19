@@ -29,6 +29,17 @@ export class GitLab {
   private static clientSecret = env.GITLAB_CLIENT_SECRET;
   private static clientId = env.GITLAB_CLIENT_ID;
 
+  public static async getGitLabUrl() {
+    const integrations = await Integration.findOne({
+      where: { service: IntegrationService.GitLab },
+    });
+
+    const customUrl = (integrations?.settings as { gitlab: { url: string } })
+      ?.gitlab?.url;
+
+    return customUrl || GitLabUtils.defaultGitlabUrl;
+  }
+
   /**
    * Fetches current user information.
    *
@@ -36,7 +47,9 @@ export class GitLab {
    * @returns User information.
    */
   public static async getCurrentUser(accessToken: string) {
-    const client = GitLabUtils.createClient(accessToken);
+    const customUrl = await this.getGitLabUrl();
+    const client = GitLabUtils.createClient(accessToken, customUrl);
+
     const userData = await client.Users.showCurrentUser({
       showExpanded: false,
     });
@@ -50,7 +63,9 @@ export class GitLab {
    * @returns Array of projects.
    */
   public static async getProjects(accessToken: string) {
-    const client = GitLabUtils.createClient(accessToken);
+    const customUrl = await this.getGitLabUrl();
+    const client = GitLabUtils.createClient(accessToken, customUrl);
+
     const projects = await client.Projects.all({
       simple: true,
       perPage: 100,
@@ -141,7 +156,8 @@ export class GitLab {
   };
 
   public static oauthAccess = async (code?: string | null) => {
-    const res = await fetch(GitLabUtils.oauthUrl + "/token", {
+    const customUrl = await this.getGitLabUrl();
+    const res = await fetch(GitLabUtils.getOauthUrl(customUrl) + "/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -173,8 +189,9 @@ export class GitLab {
       redirect_uri: GitLabUtils.callbackUrl(),
     });
 
+    const customUrl = await this.getGitLabUrl();
     const res = await fetch(
-      `${GitLabUtils.oauthUrl}/token?${queryParams.toString()}`,
+      `${GitLabUtils.getOauthUrl(customUrl)}/token?${queryParams.toString()}`,
       {
         method: "POST",
         headers: {

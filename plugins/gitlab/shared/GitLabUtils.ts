@@ -6,6 +6,7 @@ import { UnfurlResourceType } from "@shared/types";
 export class GitLabUtils {
   static defaultGitlabUrl = env.GITLAB_URL ?? "https://gitlab.com";
 
+  public static clientSecret = env.GITLAB_CLIENT_SECRET;
   private static clientId = env.GITLAB_CLIENT_ID;
   private static supportedResources = [
     UnfurlResourceType.Issue,
@@ -31,18 +32,6 @@ export class GitLabUtils {
   public static getOauthUrl(customUrl?: string): string {
     return `${this.getGitlabUrl(customUrl)}/oauth`;
   }
-
-  /**
-   * Gets the default OAuth URL using the environment-configured GitLab URL.
-   * For custom GitLab URLs, use getOauthUrl(customUrl) instead.
-   *
-   * @returns The default OAuth URL.
-   */
-  public static get oauthUrl(): string {
-    return this.getOauthUrl();
-  }
-
-  public static clientSecret = env.GITLAB_CLIENT_SECRET;
 
   public static get url() {
     return integrationSettingsPath("gitlab");

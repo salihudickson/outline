@@ -28,7 +28,6 @@ import useQuery from "~/hooks/useQuery";
 import useStores from "~/hooks/useStores";
 import GitLabIcon from "./components/Icon";
 import { GitLabConnectButton } from "./components/GitLabButton";
-import { GitLabUtils } from "../shared/GitLabUtils";
 
 type FormData = {
   url: string;
@@ -43,12 +42,14 @@ function GitLab() {
   const installRequest = query.get("install_request");
   const appName = env.APP_NAME;
 
-  const integration = find(integrations.orderedData, {
-    type: IntegrationType.Embed,
-    service: IntegrationService.GitLab,
-  }) as Integration<IntegrationType.Embed> | undefined;
+  const url = React.useMemo(() => {
+    const integration = find(integrations.orderedData, {
+      type: IntegrationType.Embed,
+      service: IntegrationService.GitLab,
+    }) as Integration<IntegrationType.Embed> | undefined;
 
-  const url = integration?.settings?.gitlab?.url;
+    return integration?.settings?.gitlab?.url;
+  }, [integrations.orderedData]);
 
   const {
     register,
@@ -194,18 +195,17 @@ function GitLab() {
           <Text as="p" type="secondary">
             <Trans>
               Configure a custom GitLab installation URL to use your own
-              self-hosted instance. Leave empty to use the default gitlab.com
+              self-hosted instance. Leave empty to use default URL set in the
+              environment configuration
             </Trans>
           </Text>
           <form onSubmit={formHandleSubmit(handleSubmit)}>
             <SettingRow
               label={t("GitLab URL")}
               name="url"
-              description={
-                t(
-                  "Enter the URL of your GitLab installation. If left empty, the default URL set in the environment configuration will be used: "
-                ) + GitLabUtils.defaultGitlabUrl
-              }
+              description={t(
+                "Configure a custom GitLab installation URL to use your own self-hosted instance. Leave empty to use default URL set in the environment configuration"
+              )}
               border={false}
             >
               <Input
