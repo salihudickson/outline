@@ -16,46 +16,29 @@ export default class DocumentMovedProcessor extends BaseProcessor {
         return;
       }
 
-      // If there are any sourced memberships for this document, we need to go to the source
-      // memberships and recalculate the membership for the user or group.
-      const [
-        userMemberships,
-        parentDocumentUserMemberships,
-        groupMemberships,
-        parentDocumentGroupMemberships,
-      ] = await Promise.all([
-        UserMembership.findRootMembershipsForDocument(document.id, undefined, {
+      // Only recalculate memberships that are directly on the moved document (root memberships
+      // where sourceId is null). We should not recalculate inherited memberships (sourced from
+      // parent documents) as that would reapply parent permissions to all sibling documents,
+      // including those that had permissions explicitly removed.
+      const [userMemberships, groupMemberships] = await Promise.all([
+        UserMembership.findAll({
+          where: {
+            documentId: document.id,
+            sourceId: null,
+          },
           transaction,
         }),
-        document.parentDocumentId
-          ? UserMembership.findRootMembershipsForDocument(
-              document.parentDocumentId,
-              undefined,
-              { transaction }
-            )
-          : [],
-        GroupMembership.findRootMembershipsForDocument(document.id, undefined, {
+        GroupMembership.findAll({
+          where: {
+            documentId: document.id,
+            sourceId: null,
+          },
           transaction,
         }),
-        document.parentDocumentId
-          ? GroupMembership.findRootMembershipsForDocument(
-              document.parentDocumentId,
-              undefined,
-              { transaction }
-            )
-          : [],
       ]);
 
       await this.recalculateUserMemberships(userMemberships, transaction);
-      await this.recalculateUserMemberships(
-        parentDocumentUserMemberships,
-        transaction
-      );
       await this.recalculateGroupMemberships(groupMemberships, transaction);
-      await this.recalculateGroupMemberships(
-        parentDocumentGroupMemberships,
-        transaction
-      );
     });
   }
 
