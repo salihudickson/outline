@@ -62,9 +62,6 @@ describe("DocumentMovedProcessor", () => {
         createdById: user.id,
       });
 
-      // Wait for the sourced memberships to be created
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
       // Verify user2 has access to all documents via sourced memberships
       let doc1Memberships = await UserMembership.findAll({
         where: { documentId: doc1.id, userId: user2.id },
@@ -158,9 +155,6 @@ describe("DocumentMovedProcessor", () => {
         permission: DocumentPermission.ReadWrite,
         createdById: user.id,
       });
-
-      // Wait for the sourced memberships to be created
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Get initial count
       let childMemberships = await UserMembership.findAll({
