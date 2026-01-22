@@ -39,6 +39,8 @@ export type SearchParams = {
   collectionId?: string;
   userId?: string;
   shareId?: string;
+  sort?: "createdAt" | "updatedAt" | "title";
+  direction?: "ASC" | "DESC";
 };
 
 type ImportOptions = {

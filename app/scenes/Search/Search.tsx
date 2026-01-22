@@ -32,6 +32,7 @@ import { DocumentFilter } from "./components/DocumentFilter";
 import DocumentTypeFilter from "./components/DocumentTypeFilter";
 import RecentSearches from "./components/RecentSearches";
 import SearchInput from "./components/SearchInput";
+import SortFilter from "./components/SortFilter";
 import UserFilter from "./components/UserFilter";
 import { HStack } from "~/components/primitives/HStack";
 
@@ -63,6 +64,8 @@ function Search() {
     ? (params.getAll("statusFilter") as TStatusFilter[])
     : [TStatusFilter.Published, TStatusFilter.Draft];
   const titleFilter = params.get("titleFilter") === "true";
+  const sort = params.get("sort") as "createdAt" | "updatedAt" | "title" | undefined;
+  const direction = params.get("direction") as "ASC" | "DESC" | undefined;
 
   const isSearchable = !!(query || collectionId || userId);
 
@@ -75,6 +78,7 @@ function Search() {
     documentType: isSearchable,
     date: isSearchable,
     title: !!query && !document,
+    sort: isSearchable,
   };
 
   const filters = React.useMemo(
@@ -86,6 +90,8 @@ function Search() {
       dateFilter,
       titleFilter,
       documentId,
+      sort: sort || undefined,
+      direction: direction || undefined,
     }),
     [
       query,
@@ -95,6 +101,8 @@ function Search() {
       dateFilter,
       titleFilter,
       documentId,
+      sort,
+      direction,
     ]
   );
 
@@ -147,6 +155,8 @@ function Search() {
     dateFilter?: TDateFilter;
     statusFilter?: TStatusFilter[];
     titleFilter?: boolean | undefined;
+    sort?: string | undefined;
+    direction?: string | undefined;
   }) => {
     history.replace({
       pathname: location.pathname,
@@ -265,6 +275,15 @@ function Search() {
               <DateFilter
                 dateFilter={dateFilter}
                 onSelect={(dateFilter) => handleFilterChange({ dateFilter })}
+              />
+            )}
+            {filterVisibility.sort && (
+              <SortFilter
+                sort={sort}
+                direction={direction}
+                onSelect={(sort, direction) =>
+                  handleFilterChange({ sort, direction })
+                }
               />
             )}
             {filterVisibility.title && (

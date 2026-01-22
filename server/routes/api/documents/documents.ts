@@ -1066,6 +1066,8 @@ router.post(
       shareId,
       snippetMinWords,
       snippetMaxWords,
+      sort,
+      direction,
     } = ctx.input.body;
     const { offset, limit } = ctx.state.pagination;
     const { user } = ctx.state.auth;
@@ -1119,6 +1121,8 @@ router.post(
         limit,
         snippetMinWords,
         snippetMaxWords,
+        sort,
+        direction,
       });
     } else {
       if (!user) {
@@ -1163,6 +1167,8 @@ router.post(
         limit,
         snippetMinWords,
         snippetMaxWords,
+        sort,
+        direction,
       });
     }
 
