@@ -13,7 +13,11 @@ import mime from "mime-types";
 import type { Order, ScopeOptions, WhereOptions } from "sequelize";
 import { Op, Sequelize } from "sequelize";
 import { randomUUID } from "crypto";
-import type { NavigationNode } from "@shared/types";
+import type {
+  DirectionFilter,
+  NavigationNode,
+  SortFilter,
+} from "@shared/types";
 import {
   FileOperationFormat,
   FileOperationState,
@@ -1121,8 +1125,8 @@ router.post(
         limit,
         snippetMinWords,
         snippetMaxWords,
-        sort,
-        direction,
+        sort: sort as SortFilter,
+        direction: direction as DirectionFilter,
       });
     } else {
       if (!user) {
@@ -1167,8 +1171,8 @@ router.post(
         limit,
         snippetMinWords,
         snippetMaxWords,
-        sort,
-        direction,
+        sort: sort as SortFilter,
+        direction: direction as DirectionFilter,
       });
     }
 

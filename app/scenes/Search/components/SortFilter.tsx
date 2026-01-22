@@ -43,7 +43,8 @@ const SortFilter = ({ sort, direction, onSelect }: Props) => {
     [t]
   );
 
-  const selectedKey = sort && direction ? `${sort}-${direction}` : "updatedAt-DESC";
+  const selectedKey =
+    sort && direction ? `${sort}-${direction}` : "updatedAt-DESC";
 
   const handleSelect = (key: string) => {
     const [sortField, sortDirection] = key.split("-");
@@ -52,6 +53,8 @@ const SortFilter = ({ sort, direction, onSelect }: Props) => {
 
   return (
     <FilterOptions
+      noSort
+      showFilter={false}
       options={options}
       selectedKeys={[selectedKey]}
       onSelect={handleSelect}

@@ -1,10 +1,16 @@
 import type formidable from "formidable";
 import isEmpty from "lodash/isEmpty";
 import { z } from "zod";
-import { DocumentPermission, StatusFilter, TextEditMode } from "@shared/types";
+import {
+  DirectionFilter,
+  DocumentPermission,
+  StatusFilter,
+  TextEditMode,
+} from "@shared/types";
 import { BaseSchema } from "@server/routes/api/schema";
 import { zodIconType, zodIdType, zodShareIdType } from "@server/utils/zod";
 import { ValidateColor } from "@server/validation";
+import SortFilter from "~/scenes/Search/components/SortFilter";
 
 const DocumentsSortParamsSchema = z.object({
   /** Specifies the attributes by which documents will be sorted in the list */
@@ -178,15 +184,12 @@ export const DocumentsSearchSchema = BaseSchema.extend({
     query: z.string().optional(),
 
     /** Specifies the attributes by which search results will be sorted */
-    sort: z
-      .enum(["createdAt", "updatedAt", "title"])
-      .optional(),
+    sort: z.enum(Object.values(SortFilter) as [string, ...string[]]).optional(),
 
     /** Specifies the sort order with respect to sort field */
     direction: z
-      .enum(["ASC", "DESC"])
-      .optional()
-      .transform((val) => (val !== "ASC" ? "DESC" : val)),
+      .enum(Object.values(DirectionFilter) as [string, ...string[]])
+      .optional(),
   }),
 });
 

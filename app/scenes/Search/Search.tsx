@@ -8,7 +8,11 @@ import { Waypoint } from "react-waypoint";
 import styled from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import { Pagination } from "@shared/constants";
-import type { DateFilter as TDateFilter } from "@shared/types";
+import type {
+  SortFilter as TSortFilter,
+  DirectionFilter as TDirectionFilter,
+  DateFilter as TDateFilter,
+} from "@shared/types";
 import { StatusFilter as TStatusFilter } from "@shared/types";
 import ArrowKeyNavigation from "~/components/ArrowKeyNavigation";
 import DocumentListItem from "~/components/DocumentListItem";
@@ -64,8 +68,8 @@ function Search() {
     ? (params.getAll("statusFilter") as TStatusFilter[])
     : [TStatusFilter.Published, TStatusFilter.Draft];
   const titleFilter = params.get("titleFilter") === "true";
-  const sort = params.get("sort") as "createdAt" | "updatedAt" | "title" | undefined;
-  const direction = params.get("direction") as "ASC" | "DESC" | undefined;
+  const sort = (params.get("sort") as TSortFilter) ?? "";
+  const direction = (params.get("direction") as TDirectionFilter) ?? "";
 
   const isSearchable = !!(query || collectionId || userId);
 
@@ -90,8 +94,8 @@ function Search() {
       dateFilter,
       titleFilter,
       documentId,
-      sort: sort || undefined,
-      direction: direction || undefined,
+      sort,
+      direction,
     }),
     [
       query,
