@@ -4,13 +4,13 @@ import { z } from "zod";
 import {
   DirectionFilter,
   DocumentPermission,
+  SortFilter,
   StatusFilter,
   TextEditMode,
 } from "@shared/types";
 import { BaseSchema } from "@server/routes/api/schema";
 import { zodIconType, zodIdType, zodShareIdType } from "@server/utils/zod";
 import { ValidateColor } from "@server/validation";
-import SortFilter from "~/scenes/Search/components/SortFilter";
 
 const DocumentsSortParamsSchema = z.object({
   /** Specifies the attributes by which documents will be sorted in the list */
