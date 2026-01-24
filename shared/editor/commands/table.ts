@@ -131,10 +131,15 @@ export function exportTable({
 
       for (let r = 0; r < rect.map.height; r++) {
         const cells = [];
+        const seenPositions = new Set<number>();
         for (let c = 0; c < rect.map.width; c++) {
-          const cell = state.doc.nodeAt(
-            rect.tableStart + rect.map.map[r * rect.map.width + c]
-          );
+          const cellPos = rect.map.map[r * rect.map.width + c];
+          // Skip if we've already processed this cell (handles merged cells)
+          if (seenPositions.has(cellPos)) {
+            continue;
+          }
+          seenPositions.add(cellPos);
+          const cell = state.doc.nodeAt(rect.tableStart + cellPos);
           if (cell) {
             cells.push(cell);
           }
@@ -287,10 +292,15 @@ export function sortTable({
 
       for (let r = 0; r < rect.map.height; r++) {
         const cells = [];
+        const seenPositions = new Set<number>();
         for (let c = 0; c < rect.map.width; c++) {
-          const cell = state.doc.nodeAt(
-            rect.tableStart + rect.map.map[r * rect.map.width + c]
-          );
+          const cellPos = rect.map.map[r * rect.map.width + c];
+          // Skip if we've already processed this cell (handles merged cells)
+          if (seenPositions.has(cellPos)) {
+            continue;
+          }
+          seenPositions.add(cellPos);
+          const cell = state.doc.nodeAt(rect.tableStart + cellPos);
           if (cell) {
             cells.push(cell);
           }
