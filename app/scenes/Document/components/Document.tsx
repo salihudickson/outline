@@ -4,34 +4,27 @@ import isEqual from "lodash/isEqual";
 import { action, observable } from "mobx";
 import { observer } from "mobx-react";
 import { Node } from "prosemirror-model";
-import { AllSelection, Selection, TextSelection } from "prosemirror-state";
+import type { Selection } from "prosemirror-state";
+import { AllSelection, TextSelection } from "prosemirror-state";
 import * as React from "react";
-import { WithTranslation, withTranslation } from "react-i18next";
-import {
-  Prompt,
-  RouteComponentProps,
-  StaticContext,
-  withRouter,
-  Redirect,
-} from "react-router";
+import type { WithTranslation } from "react-i18next";
+import { withTranslation } from "react-i18next";
+import type { RouteComponentProps, StaticContext } from "react-router";
+import { Prompt, withRouter, Redirect } from "react-router";
 import { toast } from "sonner";
 import styled from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import { EditorStyleHelper } from "@shared/editor/styles/EditorStyleHelper";
 import { s } from "@shared/styles";
-import {
-  IconType,
-  NavigationNode,
-  TOCPosition,
-  TeamPreference,
-} from "@shared/types";
+import type { NavigationNode } from "@shared/types";
+import { IconType, TOCPosition, TeamPreference } from "@shared/types";
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { TextHelper } from "@shared/utils/TextHelper";
 import { determineIconType } from "@shared/utils/icon";
 import { isModKey } from "@shared/utils/keyboard";
-import RootStore from "~/stores/RootStore";
+import type RootStore from "~/stores/RootStore";
 import Document from "~/models/Document";
-import Revision from "~/models/Revision";
+import type Revision from "~/models/Revision";
 import DocumentMove from "~/scenes/DocumentMove";
 import DocumentPublish from "~/scenes/DocumentPublish";
 import ErrorBoundary from "~/components/ErrorBoundary";
@@ -39,11 +32,11 @@ import LoadingIndicator from "~/components/LoadingIndicator";
 import PageTitle from "~/components/PageTitle";
 import PlaceholderDocument from "~/components/PlaceholderDocument";
 import RegisterKeyDown from "~/components/RegisterKeyDown";
-import { SidebarContextType } from "~/components/Sidebar/components/SidebarContext";
+import type { SidebarContextType } from "~/components/Sidebar/components/SidebarContext";
 import withStores from "~/components/withStores";
 import { MeasuredContainer } from "~/components/MeasuredContainer";
 import type { Editor as TEditor } from "~/editor";
-import { Properties } from "~/types";
+import type { Properties } from "~/types";
 import { client } from "~/utils/ApiClient";
 import { emojiToUrl } from "~/utils/emoji";
 import {
@@ -56,7 +49,6 @@ import Contents from "./Contents";
 import Editor from "./Editor";
 import Header from "./Header";
 import Notices from "./Notices";
-import PublicReferences from "./PublicReferences";
 import References from "./References";
 import RevisionViewer from "./RevisionViewer";
 
@@ -207,7 +199,18 @@ class DocumentScene extends React.Component<Props> {
     const revisionId = location.state?.revisionId;
     const editorRef = this.editor.current;
 
-    if (!editorRef || !restore) {
+    if (!editorRef) {
+      return;
+    }
+
+    // Highlight search term when navigating from search results
+    const params = new URLSearchParams(location.search);
+    const searchTerm = params.get("q");
+    if (searchTerm) {
+      editorRef.commands.find({ text: searchTerm });
+    }
+
+    if (!restore) {
       return;
     }
 
@@ -535,6 +538,7 @@ class DocumentScene extends React.Component<Props> {
               />
             )}
             <Header
+              editorRef={this.editor}
               document={document}
               revision={revision}
               isDraft={document.isDraft}
@@ -564,23 +568,22 @@ class DocumentScene extends React.Component<Props> {
                   </EditorContainer>
                 }
               >
-                {revision ? (
-                  <RevisionContainer docFullWidth={document.fullWidth}>
+                <MeasuredContainer
+                  name="document"
+                  as={EditorContainer}
+                  docFullWidth={document.fullWidth}
+                  showContents={showContents}
+                  tocPosition={tocPos}
+                >
+                  {revision ? (
                     <RevisionViewer
+                      ref={this.editor}
                       document={document}
                       revision={revision}
                       id={revision.id}
                     />
-                  </RevisionContainer>
-                ) : (
-                  <>
-                    <MeasuredContainer
-                      name="document"
-                      as={EditorContainer}
-                      docFullWidth={document.fullWidth}
-                      showContents={showContents}
-                      tocPosition={tocPos}
-                    >
+                  ) : (
+                    <>
                       <Notices document={document} readOnly={readOnly} />
 
                       {showContents && (
@@ -613,26 +616,22 @@ class DocumentScene extends React.Component<Props> {
                         canComment={abilities.comment}
                         autoFocus={document.createdAt === document.updatedAt}
                       >
-                        {shareId ? (
-                          <ReferencesWrapper>
-                            <PublicReferences documentId={document.id} />
-                          </ReferencesWrapper>
-                        ) : !revision ? (
+                        {!revision && (
                           <ReferencesWrapper>
                             <References document={document} />
                           </ReferencesWrapper>
-                        ) : null}
+                        )}
                       </Editor>
-                    </MeasuredContainer>
-                    {showContents && (
-                      <ContentsContainer
-                        docFullWidth={document.fullWidth}
-                        position={tocPos}
-                      >
-                        <Contents />
-                      </ContentsContainer>
-                    )}
-                  </>
+                    </>
+                  )}
+                </MeasuredContainer>
+                {showContents && (
+                  <ContentsContainer
+                    docFullWidth={document.fullWidth}
+                    position={tocPos}
+                  >
+                    <Contents />
+                  </ContentsContainer>
                 )}
               </React.Suspense>
             </Main>
@@ -659,7 +658,7 @@ const Main = styled.div<MainProps>`
         ? tocPosition === TOCPosition.Left
           ? `${EditorStyleHelper.tocWidth}px minmax(0, 1fr)`
           : `minmax(0, 1fr) ${EditorStyleHelper.tocWidth}px`
-        : `1fr minmax(0, ${`calc(46em + 88px)`}) 1fr`};
+        : `1fr minmax(0, ${`calc(46em + ${EditorStyleHelper.documentGutter})`}) 1fr`};
   `};
 
   ${breakpoint("desktopLarge")`
@@ -668,7 +667,7 @@ const Main = styled.div<MainProps>`
         ? tocPosition === TOCPosition.Left
           ? `${EditorStyleHelper.tocWidth}px minmax(0, 1fr)`
           : `minmax(0, 1fr) ${EditorStyleHelper.tocWidth}px`
-        : `1fr minmax(0, ${`calc(52em + 88px)`}) 1fr`};
+        : `1fr minmax(0, ${`calc(${EditorStyleHelper.documentWidth} + ${EditorStyleHelper.documentGutter})`}) 1fr`};
   `};
 `;
 
@@ -731,28 +730,17 @@ const EditorContainer = styled.div<EditorContainerProps>`
   `};
 `;
 
-type RevisionContainerProps = {
-  docFullWidth: boolean;
-};
-
-const RevisionContainer = styled.div<RevisionContainerProps>`
-  // Adds space to the gutter to make room for icon
-  padding: 0 40px;
-
-  ${breakpoint("tablet")`
-    grid-row: 1;
-    grid-column: ${({ docFullWidth }: RevisionContainerProps) =>
-      docFullWidth ? "1 / -1" : 2};
-  `}
-`;
-
 const Background = styled(Container)`
   position: relative;
   background: ${s("background")};
 `;
 
 const ReferencesWrapper = styled.div`
-  margin: 12px 0;
+  margin: 12px 0 60px;
+
+  ${breakpoint("tablet")`
+    margin-bottom: 12px;
+  `}
 
   @media print {
     display: none;

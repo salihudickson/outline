@@ -2,21 +2,24 @@ import concat from "lodash/concat";
 import { PlusIcon } from "outline-icons";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { EmojiCategory, EmojiSkinTone, IconType } from "@shared/types";
+import type { EmojiSkinTone } from "@shared/types";
+import { EmojiCategory, IconType } from "@shared/types";
 import { getEmojis, getEmojisWithCategory, search } from "@shared/utils/emoji";
 import Flex from "~/components/Flex";
 import { EmojiCreateDialog } from "~/components/EmojiCreateDialog";
 import { DisplayCategory } from "../utils";
-import GridTemplate, { DataNode, EmojiNode } from "./GridTemplate";
+import type { DataNode, EmojiNode } from "./GridTemplate";
+import GridTemplate from "./GridTemplate";
 import SkinTonePicker from "./SkinTonePicker";
 import { StyledInputSearch, UserInputContainer } from "./Components";
 import { useIconState } from "../useIconState";
 import useStores from "~/hooks/useStores";
-import Emoji from "~/models/Emoji";
+import type Emoji from "~/models/Emoji";
 import { useComputed } from "~/hooks/useComputed";
 import { MenuButton } from "./MenuButton";
 import useCurrentTeam from "~/hooks/useCurrentTeam";
 import usePolicy from "~/hooks/usePolicy";
+import { IconButton } from "./IconButton";
 
 const GRID_HEIGHT = 410;
 
@@ -157,7 +160,7 @@ const EmojiPanel = ({
 
   return (
     <Flex column>
-      <UserInputContainer align="center" gap={8}>
+      <UserInputContainer>
         <StyledInputSearch
           ref={searchRef}
           value={query}
@@ -180,6 +183,11 @@ const EmojiPanel = ({
         height={height - 48}
         data={templateData}
         onIconSelect={handleEmojiSelection}
+        empty={
+          <IconButton onClick={handleUploadClick}>
+            <PlusIcon />
+          </IconButton>
+        }
       />
     </Flex>
   );

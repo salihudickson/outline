@@ -5,13 +5,15 @@ import findIndex from "lodash/findIndex";
 import isNil from "lodash/isNil";
 import remove from "lodash/remove";
 import uniq from "lodash/uniq";
-import {
+import type {
   Identifier,
   Transaction,
   FindOptions,
   NonNullFindOptions,
   InferAttributes,
   InferCreationAttributes,
+} from "sequelize";
+import {
   EmptyResultError,
   type CreateOptions,
   type UpdateOptions,
@@ -49,14 +51,15 @@ import type {
   CollectionSort,
   ProsemirrorData,
   SourceMetadata,
+  NavigationNode,
 } from "@shared/types";
-import { CollectionPermission, NavigationNode } from "@shared/types";
+import { CollectionPermission } from "@shared/types";
 import { UrlHelper } from "@shared/utils/UrlHelper";
 import { sortNavigationNodes } from "@shared/utils/collections";
 import slugify from "@shared/utils/slugify";
 import { CollectionValidation } from "@shared/validations";
 import { ValidationError } from "@server/errors";
-import { APIContext } from "@server/types";
+import type { APIContext } from "@server/types";
 import { CacheHelper } from "@server/utils/CacheHelper";
 import removeIndexCollision from "@server/utils/removeIndexCollision";
 import { generateUrlId } from "@server/utils/url";
@@ -312,15 +315,6 @@ class Collection extends ParanoidModel<
 
   // getters
 
-  /**
-   * The frontend path to this collection.
-   *
-   * @deprecated Use `path` instead.
-   */
-  get url(): string {
-    return this.path;
-  }
-
   /** The frontend path to this collection. */
   get path(): string {
     if (!this.name) {
@@ -551,32 +545,12 @@ class Collection extends ParanoidModel<
    * either via group or direct membership.
    *
    * @param collectionId
-   * @param permission optional permission filter
-   *
    * @returns userIds
    */
-  static async membershipUserIds(
-    collectionId: string,
-    permission?: CollectionPermission
-  ) {
+  static async membershipUserIds(collectionId: string) {
     const collection = await this.scope("withAllMemberships").findOne({
       where: { id: collectionId },
-      include: [
-        {
-          association: "memberships",
-          required: false,
-          ...(permission && { where: { permission } }),
-          separate: true,
-        },
-        {
-          association: "groupMemberships",
-          required: false,
-          ...(permission && { where: { permission } }),
-          separate: true,
-        },
-      ],
     });
-
     if (!collection) {
       return [];
     }

@@ -1,8 +1,13 @@
 import { observer } from "mobx-react";
-import { ArrowIcon, CloseIcon, DocumentIcon, OpenIcon } from "outline-icons";
-import { Mark } from "prosemirror-model";
-import { Selection } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
+import {
+  ArrowIcon,
+  CloseIcon,
+  DocumentIcon,
+  OpenIcon,
+  ReturnIcon,
+} from "outline-icons";
+import type { Mark } from "prosemirror-model";
+import type { EditorView } from "prosemirror-view";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
@@ -13,7 +18,7 @@ import DocumentBreadcrumb from "~/components/DocumentBreadcrumb";
 import Flex from "~/components/Flex";
 import { ResizingHeightContainer } from "~/components/ResizingHeightContainer";
 import Scrollable from "~/components/Scrollable";
-import { Dictionary } from "~/hooks/useDictionary";
+import type { Dictionary } from "~/hooks/useDictionary";
 import useRequest from "~/hooks/useRequest";
 import useStores from "~/hooks/useStores";
 import { client } from "~/utils/ApiClient";
@@ -28,9 +33,25 @@ type Props = {
   mark?: Mark;
   dictionary: Dictionary;
   view: EditorView;
+  onLinkAdd: () => void;
+  onLinkUpdate: () => void;
+  onLinkRemove: () => void;
+  onEscape: () => void;
+  onClickOutside: (ev: MouseEvent | TouchEvent) => void;
+  onClickBack: () => void;
 };
 
-const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
+const LinkEditor: React.FC<Props> = ({
+  mark,
+  dictionary,
+  view,
+  onLinkAdd,
+  onLinkUpdate,
+  onLinkRemove,
+  onEscape,
+  onClickOutside,
+  onClickBack,
+}) => {
   const getHref = () => sanitizeUrl(mark?.attrs.href) ?? "";
   const initialValue = getHref();
   const { commands } = useEditor();
@@ -49,7 +70,7 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
     React.useCallback(async () => {
       const res = await client.post("/suggestions.mention", { query });
       res.data.documents.map(documents.add);
-    }, [query])
+    }, [documents, query])
   );
 
   useEffect(() => {
@@ -58,7 +79,7 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
     }
   }, [trimmedQuery, request]);
 
-  useOnClickOutside(wrapperRef, () => {
+  useOnClickOutside(wrapperRef, (ev) => {
     // If the link is totally empty or only spaces then remove the mark
     if (!trimmedQuery) {
       return removeLink();
@@ -66,7 +87,12 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
 
     // If the link in input is non-empty and same as it was when the editor opened, nothing to do
     if (trimmedQuery === initialValue) {
+      onClickOutside(ev);
       return;
+    }
+
+    if (!mark) {
+      return addLink(trimmedQuery);
     }
 
     updateLink(trimmedQuery);
@@ -78,26 +104,23 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
 
   const removeLink = React.useCallback(() => {
     commands["removeLink"]();
-  }, []);
+    onLinkRemove();
+  }, [commands, onLinkRemove]);
 
   const updateLink = (link: string) => {
     if (!link) {
       return;
     }
     commands["updateLink"]({ href: sanitizeUrl(link) ?? "" });
+    onLinkUpdate();
   };
 
-  const moveSelectionToEnd = () => {
-    const { state, dispatch } = view;
-    const nextSelection = Selection.findFrom(
-      state.tr.doc.resolve(state.selection.to),
-      1,
-      true
-    );
-    if (nextSelection) {
-      dispatch(state.tr.setSelection(nextSelection));
+  const addLink = (link: string) => {
+    if (!link) {
+      return;
     }
-    view.focus();
+    commands["addLink"]({ href: sanitizeUrl(link) ?? "" });
+    onLinkAdd();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -119,9 +142,11 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
 
         if (selectedIndex >= 0 && results[selectedIndex]) {
           const selectedDoc = results[selectedIndex];
-          updateLink(selectedDoc.url);
+          !mark ? addLink(selectedDoc.url) : updateLink(selectedDoc.url);
         } else if (!trimmedQuery) {
           removeLink();
+        } else if (!mark) {
+          addLink(trimmedQuery);
         } else {
           updateLink(trimmedQuery);
         }
@@ -135,11 +160,7 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
           return removeLink();
         }
 
-        // Moving selection to end causes editor state to change,
-        // forcing a re-render of the top-level editor component. As
-        // a result, the new selection, being devoid of any link mark,
-        // prevents LinkEditor from re-rendering.
-        moveSelectionToEnd();
+        onEscape();
         return;
       }
     }
@@ -168,6 +189,13 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
       visible: view.editable,
       disabled: false,
       handler: removeLink,
+    },
+    {
+      tooltip: dictionary.formattingControls,
+      icon: <ReturnIcon />,
+      visible: view.editable,
+      disabled: false,
+      handler: onClickBack,
     },
   ];
 
@@ -207,8 +235,8 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
             <>
               {results.map((doc, index) => (
                 <SuggestionsMenuItem
-                  onPointerDown={() => {
-                    updateLink(doc.url);
+                  onClick={() => {
+                    !mark ? addLink(doc.path) : updateLink(doc.path);
                   }}
                   onPointerMove={() => setSelectedIndex(index)}
                   selected={index === selectedIndex}
@@ -246,7 +274,8 @@ const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
 const InputWrapper = styled(Flex)`
   pointer-events: all;
   gap: 6px;
-  padding: 6px;
+  padding: 4px 6px;
+  align-items: center;
 `;
 
 const SearchResults = styled(Scrollable)<{ $hasResults: boolean }>`
@@ -269,7 +298,7 @@ const SearchResults = styled(Scrollable)<{ $hasResults: boolean }>`
   @media (hover: none) and (pointer: coarse) {
     position: fixed;
     top: auto;
-    bottom: 40px;
+    bottom: 46px;
     border-radius: 0;
     max-height: 50vh;
     padding: 8px 8px 4px;

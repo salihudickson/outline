@@ -1,10 +1,10 @@
-import { Optional } from "utility-types";
+import type { Optional } from "utility-types";
 import { ProsemirrorHelper as SharedProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { TextHelper } from "@shared/utils/TextHelper";
 import { Document } from "@server/models";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
 import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
-import { APIContext } from "@server/types";
+import type { APIContext } from "@server/types";
 
 type Props = Optional<
   Pick<
@@ -132,7 +132,7 @@ export default async function documentCreator(
     state,
   });
 
-  document.text = DocumentHelper.toMarkdown(document, {
+  document.text = await DocumentHelper.toMarkdown(document, {
     includeTitle: false,
   });
 

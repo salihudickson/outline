@@ -5,12 +5,11 @@ import CollectionSharedEmail from "@server/emails/templates/CollectionSharedEmai
 import CommentCreatedEmail from "@server/emails/templates/CommentCreatedEmail";
 import CommentMentionedEmail from "@server/emails/templates/CommentMentionedEmail";
 import CommentResolvedEmail from "@server/emails/templates/CommentResolvedEmail";
-import DocumentAccessRequestEmail from "@server/emails/templates/DocumentAccessRequestEmail";
 import DocumentMentionedEmail from "@server/emails/templates/DocumentMentionedEmail";
 import DocumentPublishedOrUpdatedEmail from "@server/emails/templates/DocumentPublishedOrUpdatedEmail";
 import DocumentSharedEmail from "@server/emails/templates/DocumentSharedEmail";
 import { Notification } from "@server/models";
-import { Event, NotificationEvent } from "@server/types";
+import type { Event, NotificationEvent } from "@server/types";
 import BaseProcessor from "./BaseProcessor";
 import GroupDocumentMentionedEmail from "@server/emails/templates/GroupDocumentMentionedEmail";
 import GroupCommentMentionedEmail from "@server/emails/templates/GroupCommentMentionedEmail";
@@ -198,22 +197,6 @@ export default class EmailsProcessor extends BaseProcessor {
         ).schedule({
           delay: Minute.ms,
         });
-        return;
-      }
-
-      case NotificationEventType.RequestDocumentAccess: {
-        await new DocumentAccessRequestEmail(
-          {
-            to: notification.user.email,
-            documentId: notification.documentId,
-            actorId: notification.actorId,
-            teamUrl: notification.team.url,
-          },
-          { notificationId: notification.id }
-        ).schedule({
-          delay: Minute.ms,
-        });
-        return;
       }
     }
   }

@@ -3,10 +3,12 @@ import escapeRegExp from "lodash/escapeRegExp";
 import { AttachmentPreset } from "@shared/types";
 import attachmentCreator from "@server/commands/attachmentCreator";
 import env from "@server/env";
+import Logger from "@server/logging/Logger";
 import { trace } from "@server/logging/tracing";
-import { Attachment, User } from "@server/models";
+import type { User } from "@server/models";
+import { Attachment } from "@server/models";
 import FileStorage from "@server/storage/files";
-import { APIContext } from "@server/types";
+import type { APIContext } from "@server/types";
 import parseAttachmentIds from "@server/utils/parseAttachmentIds";
 import parseImages from "@server/utils/parseImages";
 import { isInternalUrl } from "@shared/utils/urls";
@@ -96,22 +98,29 @@ export class TextHelper {
             return;
           }
 
-          const attachment = await attachmentCreator({
-            name: image.alt ?? "image",
-            url: image.src,
-            preset: AttachmentPreset.DocumentAttachment,
-            user,
-            fetchOptions: {
-              timeout: timeoutPerImage,
-            },
-            ctx,
-          });
+          try {
+            const attachment = await attachmentCreator({
+              name: image.alt ?? "image",
+              url: image.src,
+              preset: AttachmentPreset.DocumentAttachment,
+              user,
+              fetchOptions: {
+                timeout: timeoutPerImage,
+              },
+              ctx,
+            });
 
-          if (attachment) {
-            output = output.replace(
-              new RegExp(escapeRegExp(image.src), "g"),
-              attachment.redirectUrl
-            );
+            if (attachment) {
+              output = output.replace(
+                new RegExp(escapeRegExp(image.src), "g"),
+                attachment.redirectUrl
+              );
+            }
+          } catch (err) {
+            Logger.warn("Failed to download image for attachment", {
+              error: err.message,
+              src: image.src,
+            });
           }
         })
       );

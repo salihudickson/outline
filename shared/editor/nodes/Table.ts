@@ -1,6 +1,6 @@
 import { chainCommands } from "prosemirror-commands";
 import { InputRule } from "prosemirror-inputrules";
-import { NodeSpec, Node as ProsemirrorNode } from "prosemirror-model";
+import type { NodeSpec, Node as ProsemirrorNode } from "prosemirror-model";
 import { TextSelection } from "prosemirror-state";
 import {
   addColumnAfter,
@@ -33,13 +33,19 @@ import {
   deleteTableIfSelected,
   splitCellAndCollapse,
   mergeCellsAndCollapse,
+  toggleColumnBackground,
+  toggleRowBackground,
+  toggleCellSelectionBackground,
+  toggleCellSelectionBackgroundAndCollapseSelection,
+  toggleRowBackgroundAndCollapseSelection,
+  toggleColumnBackgroundAndCollapseSelection,
 } from "../commands/table";
-import { MarkdownSerializerState } from "../lib/markdown/serializer";
+import type { MarkdownSerializerState } from "../lib/markdown/serializer";
 import { FixTablesPlugin } from "../plugins/FixTablesPlugin";
 import { TableLayoutPlugin } from "../plugins/TableLayoutPlugin";
 import tablesRule from "../rules/tables";
 import { EditorStyleHelper } from "../styles/EditorStyleHelper";
-import { TableLayout } from "../types";
+import type { TableLayout } from "../types";
 import Node from "./Node";
 import { TableView } from "./TableView";
 
@@ -100,6 +106,12 @@ export default class Table extends Node {
       toggleHeaderRow: () => toggleHeader("row"),
       mergeCells: () => mergeCellsAndCollapse(),
       splitCell: () => splitCellAndCollapse(),
+      toggleRowBackground,
+      toggleRowBackgroundAndCollapseSelection,
+      toggleColumnBackground,
+      toggleColumnBackgroundAndCollapseSelection,
+      toggleCellSelectionBackground,
+      toggleCellSelectionBackgroundAndCollapseSelection,
     };
   }
 

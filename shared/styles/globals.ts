@@ -1,6 +1,7 @@
 import { createGlobalStyle } from "styled-components";
 import styledNormalize from "styled-normalize";
 import { breakpoints, depths, s } from ".";
+import { EditorStyleHelper } from "../editor/styles/EditorStyleHelper";
 
 type Props = {
   staticHTML?: boolean;
@@ -22,6 +23,7 @@ export default createGlobalStyle<Props>`
     padding: 0;
     print-color-adjust: exact;
     --pointer: ${(props) => (props.useCursorPointer ? "pointer" : "default")};
+    --scrollbar-width: calc(100vw - 100cqw);
     overscroll-behavior-x: none;
 
     @media print {
@@ -130,5 +132,13 @@ export default createGlobalStyle<Props>`
       position: absolute !important;
       left: -9999px !important;
       top: -9999px !important;
+  }
+
+  /* Table row/column drag and drop cursor */
+  &.${EditorStyleHelper.tableDragging},
+  &.${EditorStyleHelper.tableDragging} *,
+  &.${EditorStyleHelper.tableDragging} *::before,
+  &.${EditorStyleHelper.tableDragging} *::after {
+    cursor: grabbing !important;
   }
 `;

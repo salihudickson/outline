@@ -7,8 +7,7 @@ import { s } from "@shared/styles";
 import { AttachmentPreset } from "@shared/types";
 import { getDataTransferFiles } from "@shared/utils/files";
 import ConfirmationDialog from "~/components/ConfirmationDialog";
-import Flex from "~/components/Flex";
-import Input from "~/components/Input";
+import Input, { LabelText } from "~/components/Input";
 import Text from "~/components/Text";
 import useStores from "~/hooks/useStores";
 import { uploadFile } from "~/utils/files";
@@ -16,6 +15,7 @@ import { compressImage } from "~/utils/compressImage";
 import { generateEmojiNameFromFilename } from "~/utils/emoji";
 import { AttachmentValidation, EmojiValidation } from "@shared/validations";
 import { bytesToHumanReadable } from "@shared/utils/files";
+import { VStack } from "./primitives/VStack";
 
 type Props = {
   onSubmit: () => void;
@@ -151,29 +151,14 @@ export function EmojiCreateDialog({ onSubmit }: Props) {
     >
       <Text as="p" type="secondary">
         {t(
-          "The emoji name should be unique and contain only lowercase letters, numbers, and underscores."
+          "Square images with transparent backgrounds work best. If your image is too large, we’ll try to resize it for you."
         )}
       </Text>
 
-      <Input
-        label={t("Name")}
-        value={name}
-        onChange={handleNameChange}
-        placeholder="my_custom_emoji"
-        autoFocus
-        required
-        error={
-          !isValidName
-            ? t(
-                "name can only contain lowercase letters, numbers, and underscores."
-              )
-            : undefined
-        }
-      />
-
+      <LabelText as="label">{t("Upload an image")}</LabelText>
       <DropZone {...getRootProps()}>
         <input {...getInputProps()} />
-        <Flex column align="center" gap={8}>
+        <VStack>
           {file ? (
             <>
               <PreviewImage src={URL.createObjectURL(file)} alt="Preview" />
@@ -198,8 +183,24 @@ export function EmojiCreateDialog({ onSubmit }: Props) {
               </Text>
             </>
           )}
-        </Flex>
+        </VStack>
       </DropZone>
+
+      <Input
+        label={t("Choose a name")}
+        value={name}
+        onChange={handleNameChange}
+        placeholder="my_custom_emoji"
+        autoFocus
+        required
+        error={
+          !isValidName
+            ? t(
+                "name can only contain lowercase letters, numbers, and underscores."
+              )
+            : undefined
+        }
+      />
 
       {name.trim() && isValidName && (
         <Text type="secondary" style={{ marginTop: "8px" }}>
@@ -217,6 +218,7 @@ const DropZone = styled.div`
   text-align: center;
   cursor: var(--pointer);
   transition: border-color 0.2s;
+  margin-bottom: 1em;
 
   &:hover {
     border-color: ${s("inputBorderFocused")};

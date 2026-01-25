@@ -1,12 +1,11 @@
 import { observer } from "mobx-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import styled, { css, Keyframes, keyframes } from "styled-components";
+import type { Keyframes } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import {
-  ComponentProps,
   createContext,
   forwardRef,
-  HTMLAttributes,
-  ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -42,12 +41,12 @@ import { Separator } from "./Actions";
 import useSwipe from "~/hooks/useSwipe";
 import { toast } from "sonner";
 import { findIndex } from "lodash";
-import { LightboxImage } from "@shared/editor/lib/Lightbox";
+import type { LightboxImage } from "@shared/editor/lib/Lightbox";
+import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import {
   TransformWrapper,
   TransformComponent,
   useTransformEffect,
-  ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 import { transparentize } from "polished";
 import { mergeRefs } from "react-merge-refs";
@@ -55,6 +54,7 @@ import { useEditor } from "~/editor/components/EditorContext";
 import { NodeSelection } from "prosemirror-state";
 import { ImageSource } from "@shared/editor/lib/FileHelper";
 import Desktop from "~/utils/Desktop";
+import { HStack } from "./primitives/HStack";
 
 export enum LightboxStatus {
   READY_TO_OPEN,
@@ -97,6 +97,8 @@ type Props = {
   onUpdate: (activeImage: LightboxImage | null) => void;
   /** Callback triggered when Lightbox closes */
   onClose: () => void;
+  /** Whether the editor is read only */
+  readOnly?: boolean;
 };
 
 const ZoomPanPinchContext = createContext({ isImagePanning: false });
@@ -216,7 +218,7 @@ function usePanning() {
   };
 }
 
-function Lightbox({ images, activeImage, onUpdate, onClose }: Props) {
+function Lightbox({ images, activeImage, onUpdate, onClose, readOnly }: Props) {
   const isIdle = useIdle(3 * Second.ms);
   const { t } = useTranslation();
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -504,18 +506,16 @@ function Lightbox({ images, activeImage, onUpdate, onClose }: Props) {
         const toTx = to.center.x - final.center.x;
         const toTy = to.center.y - final.center.y;
 
-        const fromSx = from.width / final.width;
-        const fromSy = from.height / final.height;
-        const toSx = to.width / final.width;
-        const toSy = to.height / final.height;
+        const fromS = from.width / final.width;
+        const toS = to.width / final.width;
         return keyframes`
             from {
               translate: ${fromTx}px ${fromTy}px;
-              scale: ${fromSx} ${fromSy};
+              scale: ${fromS};
             }
             to {
               translate: ${toTx}px ${toTy}px;
-              scale: ${toSx} ${toSy};
+              scale: ${toS};
             }
         `;
       };
@@ -771,7 +771,8 @@ function Lightbox({ images, activeImage, onUpdate, onClose }: Props) {
               />
             </Tooltip>
             {activeImage.source === ImageSource.DiagramsNet &&
-              !Desktop.isElectron() && (
+              !Desktop.isElectron() &&
+              !readOnly && (
                 <Tooltip content={t("Edit diagram")} placement="bottom">
                   <ActionButton
                     tabIndex={-1}
@@ -904,7 +905,7 @@ type ImageProps = {
   onMaxZoom: () => void;
 };
 
-const Image = forwardRef<HTMLImageElement, ImageProps>(function _Image(
+const Image = forwardRef<HTMLImageElement, ImageProps>(function Image_(
   {
     src,
     alt,
@@ -1101,16 +1102,13 @@ const ActionButton = styled(Button)`
   background: transparent;
 `;
 
-const Actions = styled.div<{
+const Actions = styled(HStack)<{
   animation: Animation | null;
 }>`
   position: absolute;
   top: 0;
   right: 0;
   margin: 16px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   z-index: ${depths.modal};
   background: ${(props) => transparentize(0.2, props.theme.background)};
   backdrop-filter: blur(4px);

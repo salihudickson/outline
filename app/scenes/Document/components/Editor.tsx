@@ -9,10 +9,11 @@ import { richExtensions, withComments } from "@shared/editor/nodes";
 import { TeamPreference } from "@shared/types";
 import { colorPalette } from "@shared/utils/collections";
 import Comment from "~/models/Comment";
-import Document from "~/models/Document";
-import { RefHandle } from "~/components/ContentEditable";
+import type Document from "~/models/Document";
+import type { RefHandle } from "~/components/ContentEditable";
 import { useDocumentContext } from "~/components/DocumentContext";
-import Editor, { Props as EditorProps } from "~/components/Editor";
+import type { Props as EditorProps } from "~/components/Editor";
+import Editor from "~/components/Editor";
 import Flex from "~/components/Flex";
 import Time from "~/components/Time";
 import { withUIExtensions } from "~/editor/extensions";
@@ -246,6 +247,9 @@ function DocumentEditor(props: Props, ref: React.RefObject<any>) {
         }
         onDeleteCommentMark={
           commentingEnabled && can.comment ? handleRemoveComment : undefined
+        }
+        onOpenCommentsSidebar={
+          commentingEnabled ? ui.toggleComments : undefined
         }
         onInit={handleInit}
         onDestroy={handleDestroy}

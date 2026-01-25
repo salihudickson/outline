@@ -1,4 +1,4 @@
-import {
+import type {
   CollectionEvent,
   RevisionEvent,
   Event,
@@ -8,7 +8,6 @@ import {
   DocumentUserEvent,
   DocumentGroupEvent,
   CommentReactionEvent,
-  DocumentAccessRequestEvent,
 } from "@server/types";
 import CollectionAddUserNotificationsTask from "../tasks/CollectionAddUserNotificationsTask";
 import CollectionCreatedNotificationsTask from "../tasks/CollectionCreatedNotificationsTask";
@@ -16,7 +15,6 @@ import CommentCreatedNotificationsTask from "../tasks/CommentCreatedNotification
 import CommentUpdatedNotificationsTask from "../tasks/CommentUpdatedNotificationsTask";
 import ReactionCreatedNotificationsTask from "../tasks/ReactionCreatedNotificationsTask";
 import ReactionRemovedNotificationsTask from "../tasks/ReactionRemovedNotificationsTask";
-import DocumentAccessRequestNotificationsTask from "../tasks/DocumentAccessRequestNotificationsTask";
 import DocumentAddGroupNotificationsTask from "../tasks/DocumentAddGroupNotificationsTask";
 import DocumentAddUserNotificationsTask from "../tasks/DocumentAddUserNotificationsTask";
 import DocumentPublishedNotificationsTask from "../tasks/DocumentPublishedNotificationsTask";
@@ -28,7 +26,6 @@ export default class NotificationsProcessor extends BaseProcessor {
     "documents.publish",
     "documents.add_user",
     "documents.add_group",
-    "documents.request_access",
     "revisions.create",
     "collections.create",
     "collections.add_user",
@@ -46,8 +43,6 @@ export default class NotificationsProcessor extends BaseProcessor {
         return this.documentAddUser(event);
       case "documents.add_group":
         return this.documentAddGroup(event);
-      case "documents.request_access":
-        return this.documentAccessRequest(event);
       case "revisions.create":
         return this.revisionCreated(event);
       case "collections.create":
@@ -87,10 +82,6 @@ export default class NotificationsProcessor extends BaseProcessor {
       return;
     }
     await new DocumentAddGroupNotificationsTask().schedule(event);
-  }
-
-  async documentAccessRequest(event: DocumentAccessRequestEvent) {
-    await new DocumentAccessRequestNotificationsTask().schedule(event);
   }
 
   async revisionCreated(event: RevisionEvent) {
