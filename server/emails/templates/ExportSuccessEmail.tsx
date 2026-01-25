@@ -2,8 +2,7 @@ import * as React from "react";
 import { NotificationEventType } from "@shared/types";
 import env from "@server/env";
 import NotificationSettingsHelper from "@server/models/helpers/NotificationSettingsHelper";
-import type { EmailProps } from "./BaseEmail";
-import BaseEmail, { EmailMessageCategory } from "./BaseEmail";
+import BaseEmail, { EmailMessageCategory, EmailProps } from "./BaseEmail";
 import Body from "./components/Body";
 import Button from "./components/Button";
 import EmailTemplate from "./components/EmailLayout";
@@ -58,16 +57,11 @@ export default class ExportSuccessEmail extends BaseEmail<
     return `Here's your request data export from ${env.APP_NAME}`;
   }
 
-  protected renderAsText({ teamUrl, id }: Props) {
-    const downloadLink = `${teamUrl}/api/fileOperations.redirect?id=${id}`;
-
+  protected renderAsText() {
     return `
 Your Data Export
 
-Your requested data export is complete - you can download from the link below
-in a browser that is logged into your account:
-
-${downloadLink}
+Your requested data export is complete, the exported files are also available in the admin section.
 `;
   }
 
@@ -84,8 +78,16 @@ ${downloadLink}
         <Body>
           <Heading>Your Data Export</Heading>
           <p>
-            Your requested data export is complete - you can download from the
-            link below in a browser that is logged into your account.
+            Your requested data export is complete, the exported files are also
+            available in the{" "}
+            <a
+              href={`${teamUrl}/settings/export`}
+              rel="noreferrer"
+              target="_blank"
+            >
+              admin section
+            </a>
+            .
           </p>
           <EmptySpace height={10} />
           <p>

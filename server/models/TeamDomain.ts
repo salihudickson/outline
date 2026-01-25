@@ -1,5 +1,5 @@
 import emailProviders from "email-providers";
-import type { InferAttributes, InferCreationAttributes } from "sequelize";
+import { InferAttributes, InferCreationAttributes } from "sequelize";
 import {
   Column,
   Table,

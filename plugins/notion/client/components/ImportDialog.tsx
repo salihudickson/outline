@@ -1,9 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type { ImportInput } from "@shared/schema";
-import type { CollectionPermission } from "@shared/types";
-import { IntegrationService } from "@shared/types";
+import { ImportInput } from "@shared/schema";
+import { CollectionPermission, IntegrationService } from "@shared/types";
 import Button from "~/components/Button";
 import Flex from "~/components/Flex";
 import { InputSelectPermission } from "~/components/InputSelectPermission";

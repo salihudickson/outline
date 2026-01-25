@@ -1,7 +1,7 @@
 import passport from "@outlinewiki/koa-passport";
 import JWT from "jsonwebtoken";
 import type { Context } from "koa";
-import type Router from "koa-router";
+import Router from "koa-router";
 import get from "lodash/get";
 import { slugifyDomain } from "@shared/utils/domains";
 import { parseEmail } from "@shared/utils/email";
@@ -13,14 +13,12 @@ import {
 } from "@server/errors";
 import Logger from "@server/logging/Logger";
 import passportMiddleware from "@server/middlewares/passport";
-import type { User } from "@server/models";
-import { AuthenticationProvider } from "@server/models";
-import type { AuthenticationResult } from "@server/types";
+import { AuthenticationProvider, User } from "@server/models";
+import { AuthenticationResult } from "@server/types";
 import {
   StateStore,
   getTeamFromContext,
-  getClientFromOAuthState,
-  getUserFromOAuthState,
+  getClientFromContext,
   request,
 } from "@server/utils/passport";
 import config from "../../plugin.json";
@@ -122,9 +120,7 @@ export function createOIDCRouter(
           }
 
           const team = await getTeamFromContext(context);
-          const client = getClientFromOAuthState(context);
-          const user =
-            context.state?.auth?.user ?? (await getUserFromOAuthState(context));
+          const client = getClientFromContext(context);
           const { domain } = parseEmail(email);
 
           // Only a single OIDC provider is supported – find the existing, if any.
@@ -163,7 +159,7 @@ export function createOIDCRouter(
             get(profile, env.OIDC_USERNAME_CLAIM) ??
             get(token, env.OIDC_USERNAME_CLAIM);
           const name = profile.name || username || profile.username;
-          const profileId = profile.sub ?? token.sub ?? profile.id;
+          const profileId = profile.sub ? profile.sub : profile.id;
 
           if (!name) {
             throw AuthenticationError(
@@ -190,11 +186,7 @@ export function createOIDCRouter(
             avatarUrl = null;
           }
 
-          const ctx = createContext({
-            ip: context.ip,
-            user,
-            authType: context.state?.auth?.type,
-          });
+          const ctx = createContext({ ip: context.ip });
           const result = await accountProvisioner(ctx, {
             team: {
               teamId: team?.id,

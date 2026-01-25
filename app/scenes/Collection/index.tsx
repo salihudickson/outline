@@ -1,5 +1,5 @@
 import { observer } from "mobx-react";
-import { useState, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useParams,
@@ -11,9 +11,13 @@ import {
   Redirect,
 } from "react-router-dom";
 import styled from "styled-components";
+import breakpoint from "styled-components-breakpoint";
+import { IconTitleWrapper } from "@shared/components/Icon";
 import { s } from "@shared/styles";
 import { StatusFilter } from "@shared/types";
-import type Collection from "~/models/Collection";
+import { colorPalette } from "@shared/utils/collections";
+import Collection from "~/models/Collection";
+import { Action } from "~/components/Actions";
 import CenteredContent from "~/components/CenteredContent";
 import { CollectionBreadcrumb } from "~/components/CollectionBreadcrumb";
 import Heading from "~/components/Heading";
@@ -24,60 +28,75 @@ import PaginatedDocumentList from "~/components/PaginatedDocumentList";
 import PinnedDocuments from "~/components/PinnedDocuments";
 import PlaceholderText from "~/components/PlaceholderText";
 import Scene from "~/components/Scene";
+import Tab from "~/components/Tab";
+import Tabs from "~/components/Tabs";
 import { editCollection } from "~/actions/definitions/collections";
 import useCommandBarActions from "~/hooks/useCommandBarActions";
 import { useLastVisitedPath } from "~/hooks/useLastVisitedPath";
 import { useLocationSidebarContext } from "~/hooks/useLocationSidebarContext";
+import usePersistedState from "~/hooks/usePersistedState";
 import { usePinnedDocuments } from "~/hooks/usePinnedDocuments";
 import usePolicy from "~/hooks/usePolicy";
 import useStores from "~/hooks/useStores";
 import { NotFoundError } from "~/utils/errors";
-import {
-  collectionEditPath,
-  collectionPath,
-  matchCollectionEdit,
-  updateCollectionPath,
-} from "~/utils/routeHelpers";
+import { collectionPath, updateCollectionPath } from "~/utils/routeHelpers";
 import Error404 from "../Errors/Error404";
 import Actions from "./components/Actions";
 import DropToImport from "./components/DropToImport";
 import Empty from "./components/Empty";
 import MembershipPreview from "./components/MembershipPreview";
-import Navigation, { CollectionTab } from "./components/Navigation";
 import Notices from "./components/Notices";
 import Overview from "./components/Overview";
-import { Header } from "./components/Header";
-import usePersistedState from "~/hooks/usePersistedState";
-import useCurrentUser from "~/hooks/useCurrentUser";
+import first from "lodash/first";
+import lazyWithRetry from "~/utils/lazyWithRetry";
 
-const CollectionScene = observer(function CollectionScene_() {
-  const params = useParams<{ collectionSlug?: string }>();
+const IconPicker = lazyWithRetry(() => import("~/components/IconPicker"));
+
+const ShareButton = lazyWithRetry(() => import("./components/ShareButton"));
+
+enum CollectionPath {
+  Overview = "overview",
+  Recent = "recent",
+  Popular = "popular",
+  Updated = "updated",
+  Published = "published",
+  Old = "old",
+  Alphabetical = "alphabetical",
+}
+
+const CollectionScene = observer(function _CollectionScene() {
+  const params = useParams<{ id?: string }>();
   const history = useHistory();
   const match = useRouteMatch();
   const location = useLocation();
   const { t } = useTranslation();
-  const user = useCurrentUser();
   const { documents, collections, shares, ui } = useStores();
   const [error, setError] = useState<Error | undefined>();
   const currentPath = location.pathname;
   const [, setLastVisitedPath] = useLastVisitedPath();
   const sidebarContext = useLocationSidebarContext();
-  const isEditRoute = match.path === matchCollectionEdit;
 
-  const id = params.collectionSlug || "";
+  const id = params.id || "";
   const urlId = id.split("-").pop() ?? "";
 
   const collection: Collection | null | undefined = collections.get(id);
   const can = usePolicy(collection);
 
   const { pins, count } = usePinnedDocuments(urlId, collection?.id);
-
-  const [collectionTab, setCollectionTab] = usePersistedState<CollectionTab>(
+  const [collectionTab, setCollectionTab] = usePersistedState<CollectionPath>(
     `collection-tab:${collection?.id}`,
-    collection?.hasDescription ? CollectionTab.Overview : CollectionTab.Recent,
+    collection?.hasDescription
+      ? CollectionPath.Overview
+      : CollectionPath.Recent,
     {
       listen: false,
     }
+  );
+
+  const handleIconChange = useCallback(
+    (icon: string | null, color: string | null) =>
+      collection?.save({ icon, color }),
+    [collection]
   );
 
   useEffect(() => {
@@ -130,13 +149,23 @@ const CollectionScene = observer(function CollectionScene_() {
   if (!collection && error) {
     return <Error404 />;
   }
-  if (!collection) {
-    return <Loading />;
-  }
 
-  const showOverview = can.update || collection?.hasDescription;
+  const hasOverview = can.update || collection?.hasDescription;
 
-  return (
+  const fallbackIcon = collection ? (
+    <CollectionIcon collection={collection} size={40} expanded />
+  ) : null;
+
+  const tabProps = (path: CollectionPath) => ({
+    exact: true,
+    onClick: () => setCollectionTab(path),
+    to: {
+      pathname: collectionPath(collection!.path, path),
+      state: { sidebarContext },
+    },
+  });
+
+  return collection ? (
     <Scene
       centered={false}
       textTitle={collection.name}
@@ -161,11 +190,10 @@ const CollectionScene = observer(function CollectionScene_() {
       actions={
         <>
           <MembershipPreview collection={collection} />
-          <Actions
-            collection={collection}
-            isEditing={isEditRoute}
-            sidebarContext={sidebarContext}
-          />
+          <Action>
+            {can.update && <ShareButton collection={collection} />}
+          </Action>
+          <Actions collection={collection} />
         </>
       }
     >
@@ -176,7 +204,28 @@ const CollectionScene = observer(function CollectionScene_() {
       >
         <CenteredContent withStickyHeader>
           <Notices collection={collection} />
-          <Header collection={collection} />
+          <CollectionHeading>
+            <IconTitleWrapper>
+              {can.update ? (
+                <Suspense fallback={fallbackIcon}>
+                  <IconPicker
+                    icon={collection.icon ?? "collection"}
+                    color={collection.color ?? (first(colorPalette) as string)}
+                    initial={collection.initial}
+                    size={40}
+                    popoverPosition="bottom-start"
+                    onChange={handleIconChange}
+                    borderOnHover
+                  >
+                    {fallbackIcon}
+                  </IconPicker>
+                </Suspense>
+              ) : (
+                fallbackIcon
+              )}
+            </IconTitleWrapper>
+            {collection.name}
+          </CollectionHeading>
 
           <PinnedDocuments
             pins={pins}
@@ -184,39 +233,54 @@ const CollectionScene = observer(function CollectionScene_() {
             placeholderCount={count}
           />
 
-          <Content>
-            <Navigation
-              collection={collection}
-              onChangeTab={setCollectionTab}
-              showOverview={showOverview}
-              sidebarContext={sidebarContext}
-            />
+          <Documents>
+            <Tabs>
+              {hasOverview && (
+                <Tab {...tabProps(CollectionPath.Overview)}>
+                  {t("Overview")}
+                </Tab>
+              )}
+              <Tab {...tabProps(CollectionPath.Recent)}>{t("Documents")}</Tab>
+              {!collection.isArchived && (
+                <>
+                  <Tab {...tabProps(CollectionPath.Popular)}>
+                    {t("Popular")}
+                  </Tab>
+                  <Tab {...tabProps(CollectionPath.Updated)}>
+                    {t("Recently updated")}
+                  </Tab>
+                  <Tab {...tabProps(CollectionPath.Published)}>
+                    {t("Recently published")}
+                  </Tab>
+                  <Tab {...tabProps(CollectionPath.Old)}>
+                    {t("Least recently updated")}
+                  </Tab>
+                  <Tab {...tabProps(CollectionPath.Alphabetical)}>
+                    {t("A–Z")}
+                  </Tab>
+                </>
+              )}
+            </Tabs>
             <Switch>
-              <Route path={collectionPath(collection)} exact>
+              <Route path={collectionPath(collection.path)} exact>
                 <Redirect
                   to={{
-                    pathname: collectionPath(collection!, collectionTab),
+                    pathname: collectionPath(collection!.path, collectionTab),
                     state: { sidebarContext },
                   }}
                 />
               </Route>
               <Route
-                path={[
-                  collectionPath(collection, CollectionTab.Overview),
-                  collectionEditPath(collection),
-                ]}
+                path={collectionPath(collection.path, CollectionPath.Overview)}
               >
-                {showOverview ? (
-                  <Overview
-                    collection={collection}
-                    readOnly={!isEditRoute && !!user?.separateEditMode}
-                  />
+                {hasOverview ? (
+                  <Overview collection={collection} />
                 ) : (
                   <Redirect
                     to={{
                       pathname: collectionPath(
-                        collection,
-                        CollectionTab.Recent
+                        collection.path,
+                        CollectionPath.Recent
                       ),
                       state: { sidebarContext },
                     }}
@@ -229,8 +293,8 @@ const CollectionScene = observer(function CollectionScene_() {
                 <>
                   <Route
                     path={collectionPath(
-                      collection,
-                      CollectionTab.Alphabetical
+                      collection.path,
+                      CollectionPath.Alphabetical
                     )}
                   >
                     <PaginatedDocumentList
@@ -244,7 +308,9 @@ const CollectionScene = observer(function CollectionScene_() {
                       }}
                     />
                   </Route>
-                  <Route path={collectionPath(collection, CollectionTab.Old)}>
+                  <Route
+                    path={collectionPath(collection.path, CollectionPath.Old)}
+                  >
                     <PaginatedDocumentList
                       key="old"
                       documents={documents.leastRecentlyUpdatedInCollection(
@@ -257,7 +323,10 @@ const CollectionScene = observer(function CollectionScene_() {
                     />
                   </Route>
                   <Route
-                    path={collectionPath(collection, CollectionTab.Published)}
+                    path={collectionPath(
+                      collection.path,
+                      CollectionPath.Published
+                    )}
                   >
                     <PaginatedDocumentList
                       key="published"
@@ -272,7 +341,10 @@ const CollectionScene = observer(function CollectionScene_() {
                     />
                   </Route>
                   <Route
-                    path={collectionPath(collection, CollectionTab.Updated)}
+                    path={collectionPath(
+                      collection.path,
+                      CollectionPath.Updated
+                    )}
                   >
                     <PaginatedDocumentList
                       key="updated"
@@ -286,7 +358,10 @@ const CollectionScene = observer(function CollectionScene_() {
                     />
                   </Route>
                   <Route
-                    path={collectionPath(collection, CollectionTab.Popular)}
+                    path={collectionPath(
+                      collection.path,
+                      CollectionPath.Popular
+                    )}
                   >
                     <PaginatedDocumentList
                       key="popular"
@@ -298,18 +373,28 @@ const CollectionScene = observer(function CollectionScene_() {
                     />
                   </Route>
                   <Route
-                    path={collectionPath(collection, CollectionTab.Recent)}
+                    path={collectionPath(
+                      collection.path,
+                      CollectionPath.Recent
+                    )}
                     exact
                   >
-                    <RecentDocuments
-                      collection={collection}
-                      documents={documents}
+                    <PaginatedDocumentList
+                      documents={documents.rootInCollection(collection.id)}
+                      fetch={documents.fetchPage}
+                      options={{
+                        collectionId: collection.id,
+                        parentDocumentId: null,
+                        sort: collection.sort.field,
+                        direction: collection.sort.direction,
+                      }}
+                      showParentDocuments
                     />
                   </Route>
                 </>
               ) : (
                 <Route
-                  path={collectionPath(collection, CollectionTab.Recent)}
+                  path={collectionPath(collection.path, CollectionPath.Recent)}
                   exact
                 >
                   <PaginatedDocumentList
@@ -327,21 +412,19 @@ const CollectionScene = observer(function CollectionScene_() {
                 </Route>
               )}
             </Switch>
-          </Content>
+          </Documents>
         </CenteredContent>
       </DropToImport>
     </Scene>
+  ) : (
+    <CenteredContent>
+      <Heading>
+        <PlaceholderText height={35} />
+      </Heading>
+      <PlaceholderList count={5} />
+    </CenteredContent>
   );
 });
-
-const Loading = () => (
-  <CenteredContent>
-    <Heading>
-      <PlaceholderText height={35} />
-    </Heading>
-    <PlaceholderList count={5} />
-  </CenteredContent>
-);
 
 const KeyedCollection = () => {
   const params = useParams<{ id?: string }>();
@@ -351,31 +434,20 @@ const KeyedCollection = () => {
   return <CollectionScene key={params.id} />;
 };
 
-const Content = styled.div`
+const Documents = styled.div`
   position: relative;
   background: ${s("background")};
 `;
 
-const RecentDocuments = observer(
-  ({ collection, documents }: { collection: Collection; documents: any }) => {
-    useEffect(() => {
-      collection.fetchDocuments();
-    }, [collection]);
+const CollectionHeading = styled(Heading)`
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-left: 40px;
 
-    return (
-      <PaginatedDocumentList
-        documents={documents.rootInCollection(collection.id)}
-        fetch={documents.fetchPage}
-        options={{
-          collectionId: collection.id,
-          parentDocumentId: null,
-          sort: collection.sort.field,
-          direction: collection.sort.direction,
-        }}
-        showParentDocuments
-      />
-    );
-  }
-);
+  ${breakpoint("tablet")`
+    margin-left: 0;
+  `}
+`;
 
 export default KeyedCollection;

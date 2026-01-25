@@ -1,4 +1,4 @@
-import type { Attachment } from "@server/models";
+import { Attachment } from "@server/models";
 
 export default function presentAttachment(attachment: Attachment) {
   return {

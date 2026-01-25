@@ -1,4 +1,5 @@
 import invariant from "invariant";
+import filter from "lodash/filter";
 import { CollectionPermission } from "@shared/types";
 import { Collection, User, Team } from "@server/models";
 import { allow } from "./cancan";
@@ -6,10 +7,10 @@ import { and, isTeamAdmin, isTeamModel, isTeamMutable, or } from "./utils";
 
 allow(User, "createCollection", Team, (actor, team) =>
   and(
-    !actor.isGuest,
-    !actor.isViewer,
     isTeamModel(actor, team),
     isTeamMutable(actor),
+    !actor.isGuest,
+    !actor.isViewer,
     or(actor.isAdmin, !!team?.memberCollectionCreate)
   )
 );
@@ -25,9 +26,9 @@ allow(User, "importCollection", Team, (actor, team) =>
 allow(User, "move", Collection, (actor, collection) =>
   and(
     //
-    !!collection?.isActive,
     isTeamAdmin(actor, collection),
-    isTeamMutable(actor)
+    isTeamMutable(actor),
+    !!collection?.isActive
   )
 );
 
@@ -193,20 +194,10 @@ function includesMembership(
     "Development: collection groupMemberships not preloaded, did you forget `withMembership` scope?"
   );
 
-  const permissionSet = new Set(permissions);
-  const membershipIds: string[] = [];
-
-  for (const membership of collection.memberships) {
-    if (permissionSet.has(membership.permission as CollectionPermission)) {
-      membershipIds.push(membership.id);
-    }
-  }
-
-  for (const membership of collection.groupMemberships) {
-    if (permissionSet.has(membership.permission as CollectionPermission)) {
-      membershipIds.push(membership.id);
-    }
-  }
+  const membershipIds = filter(
+    [...collection.memberships, ...collection.groupMemberships],
+    (m) => permissions.includes(m.permission as CollectionPermission)
+  ).map((m) => m.id);
 
   return membershipIds.length > 0 ? membershipIds : false;
 }

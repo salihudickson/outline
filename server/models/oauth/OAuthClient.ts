@@ -5,7 +5,7 @@ import {
   ArrayUnique,
   IsUrl,
 } from "class-validator";
-import type { InferAttributes, InferCreationAttributes } from "sequelize";
+import { InferAttributes, InferCreationAttributes } from "sequelize";
 import {
   Column,
   DataType,

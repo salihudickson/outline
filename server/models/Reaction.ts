@@ -1,6 +1,6 @@
 import cloneDeep from "lodash/cloneDeep";
 import uniq from "lodash/uniq";
-import type {
+import {
   Attributes,
   CreationAttributes,
   FindOrCreateOptions,
@@ -18,7 +18,7 @@ import {
   Table,
 } from "sequelize-typescript";
 import { createContext } from "@server/context";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import Comment from "./Comment";
 import User from "./User";
 import IdModel from "./base/IdModel";

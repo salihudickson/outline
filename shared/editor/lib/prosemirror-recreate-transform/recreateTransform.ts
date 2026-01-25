@@ -1,15 +1,14 @@
-import type { Change } from "diff";
-import { diffWordsWithSpace, diffChars } from "diff";
-import type { Node, Schema } from "prosemirror-model";
+import { diffWordsWithSpace, diffChars, Change } from "diff";
+import { Node, Schema } from "prosemirror-model";
 import { Transform } from "prosemirror-transform";
-import type { Operation, ReplaceOperation } from "@shared/utils/rfc6902";
-import { applyPatch, createPatch } from "@shared/utils/rfc6902";
+import { applyPatch, createPatch, Operation } from "rfc6902";
+import { ReplaceOperation } from "rfc6902/diff";
 import { copy } from "./copy";
 import { getFromPath } from "./getFromPath";
 import { getReplaceStep } from "./getReplaceStep";
 import { removeMarks } from "./removeMarks";
 import { simplifyTransform } from "./simplifyTransform";
-import type { JSONObject } from "./types";
+import { JSONObject } from "./types";
 
 export interface Options {
   complexSteps?: boolean;
@@ -231,7 +230,7 @@ export class RecreateTransform {
     const op2Doc = this.schema.nodeFromJSON(afterOP2JSON);
 
     // get text diffs
-    const finalText = op.value as string;
+    const finalText = op.value;
     const currentText = getFromPath(this.currentJSON, op.path) as string;
     const textDiffs = this.wordDiffs
       ? diffWordsWithSpace(currentText, finalText)

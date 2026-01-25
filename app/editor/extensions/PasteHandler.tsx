@@ -1,13 +1,15 @@
 import { action, observable } from "mobx";
 import { v4 as uuidv4 } from "uuid";
 import { toggleMark } from "prosemirror-commands";
-import type { Node } from "prosemirror-model";
-import { Slice } from "prosemirror-model";
-import type { EditorState } from "prosemirror-state";
-import { Plugin, PluginKey, TextSelection } from "prosemirror-state";
+import { Node, Slice } from "prosemirror-model";
+import {
+  EditorState,
+  Plugin,
+  PluginKey,
+  TextSelection,
+} from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
-import type { WidgetProps } from "@shared/editor/lib/Extension";
-import Extension from "@shared/editor/lib/Extension";
+import Extension, { WidgetProps } from "@shared/editor/lib/Extension";
 import { codeLanguages } from "@shared/editor/lib/code";
 import isMarkdown from "@shared/editor/lib/isMarkdown";
 import normalizePastedMarkdown from "@shared/editor/lib/markdown/normalize";
@@ -15,7 +17,7 @@ import { isRemoteTransaction } from "@shared/editor/lib/multiplayer";
 import { recreateTransform } from "@shared/editor/lib/prosemirror-recreate-transform";
 import { isInCode } from "@shared/editor/queries/isInCode";
 import { isList } from "@shared/editor/queries/isList";
-import type { MenuItem } from "@shared/editor/types";
+import { MenuItem } from "@shared/editor/types";
 import { IconType, MentionType } from "@shared/types";
 import { determineIconType } from "@shared/utils/icon";
 import parseCollectionSlug from "@shared/utils/parseCollectionSlug";
@@ -447,25 +449,6 @@ export default class PasteHandler extends Extension {
     }
   };
 
-  // Not a list of embeds technically, but inserts many embeds at once.
-  private insertEmbedList = () => {
-    const { view } = this.editor;
-    const { state } = view;
-    const result = this.findPlaceholder(state, this.placeholderId());
-
-    // Remove just the placeholder here.
-    // Embed list will be created by SuggestionsMenu.
-    if (result) {
-      const tr = state.tr.setMeta(this.key, {
-        remove: { id: this.placeholderId() },
-      });
-
-      view.dispatch(
-        tr.setSelection(TextSelection.near(tr.doc.resolve(result[0])))
-      );
-    }
-  };
-
   private handleList(listNode: Node) {
     const { view, schema } = this.editor;
     const { state } = view;
@@ -564,11 +547,6 @@ export default class PasteHandler extends Extension {
       case "mention_list": {
         this.hidePasteMenu();
         this.insertMentionList();
-        break;
-      }
-      case "embed_list": {
-        this.hidePasteMenu();
-        this.insertEmbedList();
         break;
       }
       default:

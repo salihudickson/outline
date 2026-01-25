@@ -7,8 +7,14 @@ import {
   SubscriptionType,
 } from "@shared/types";
 import Logger from "@server/logging/Logger";
-import type { Document, Collection } from "@server/models";
-import { User, Subscription, Comment, View } from "@server/models";
+import {
+  User,
+  Document,
+  Collection,
+  Subscription,
+  Comment,
+  View,
+} from "@server/models";
 import { canUserAccessDocument } from "@server/utils/permissions";
 import { ProsemirrorHelper } from "./ProsemirrorHelper";
 

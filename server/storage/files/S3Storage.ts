@@ -1,17 +1,19 @@
 import path from "path";
-import type { Readable } from "stream";
-import type { ObjectCannedACL } from "@aws-sdk/client-s3";
+import { Readable } from "stream";
 import {
   S3Client,
   DeleteObjectCommand,
   GetObjectCommand,
+  ObjectCannedACL,
   HeadObjectCommand,
   CopyObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import "@aws-sdk/signature-v4-crt"; // https://github.com/aws/aws-sdk-js-v3#functionality-requiring-aws-common-runtime-crt
-import type { PresignedPostOptions } from "@aws-sdk/s3-presigned-post";
-import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import {
+  PresignedPostOptions,
+  createPresignedPost,
+} from "@aws-sdk/s3-presigned-post";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "fs-extra";
 import invariant from "invariant";
@@ -20,7 +22,7 @@ import tmp from "tmp";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
 import BaseStorage from "./BaseStorage";
-import type { AppContext } from "@server/types";
+import { AppContext } from "@server/types";
 
 export default class S3Storage extends BaseStorage {
   constructor() {
@@ -52,7 +54,7 @@ export default class S3Storage extends BaseStorage {
       Fields: {
         "Content-Disposition": this.getContentDisposition(contentType),
         key,
-        ...(acl && { acl }),
+        acl,
       },
       Expires: 3600,
     };
@@ -114,7 +116,7 @@ export default class S3Storage extends BaseStorage {
     const upload = new Upload({
       client: this.client,
       params: {
-        ...(acl && { ACL: acl as ObjectCannedACL }),
+        ACL: acl as ObjectCannedACL,
         Bucket: this.getBucket(),
         Key: key,
         ContentType: contentType,
@@ -152,11 +154,8 @@ export default class S3Storage extends BaseStorage {
     if (isDocker) {
       return `${this.getPublicEndpoint()}/${key}`;
     } else {
-      // Ensure expiration does not exceed AWS S3 Signature V4 limit of 7 days
-      const clampedExpiresIn = Math.min(expiresIn, S3Storage.maxSignedUrlExpires);
-
       const command = new GetObjectCommand(params);
-      const url = await getSignedUrl(this.client, command, { expiresIn: clampedExpiresIn });
+      const url = await getSignedUrl(this.client, command, { expiresIn });
 
       if (env.AWS_S3_ACCELERATE_URL) {
         return url.replace(

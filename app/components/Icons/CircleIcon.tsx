@@ -13,35 +13,17 @@ export default function CircleIcon({
   retainColor,
   ...rest
 }: Props) {
-  const isGradient = color === "rainbow";
-  const fillValue = isGradient ? "url(#circleIconGradient)" : color;
-
   return (
     <svg
-      fill={fillValue}
+      fill={color}
       width={size}
       height={size}
       viewBox="0 0 24 24"
       version="1.1"
-      style={retainColor ? { fill: fillValue } : undefined}
+      style={retainColor ? { fill: color } : undefined}
       {...rest}
     >
-      {isGradient && (
-        <defs>
-          <linearGradient
-            id="circleIconGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
-          >
-            <stop offset="0%" stopColor="#ff5858" />
-            <stop offset="50%" stopColor="#fbcc34" />
-            <stop offset="100%" stopColor="#00c6ff" />
-          </linearGradient>
-        </defs>
-      )}
-      <circle cx="12" cy="12" r="8" />
+      <circle xmlns="http://www.w3.org/2000/svg" cx="12" cy="12" r="8" />
     </svg>
   );
 }

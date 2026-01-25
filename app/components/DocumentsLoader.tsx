@@ -1,6 +1,6 @@
 import { observer } from "mobx-react";
 import * as React from "react";
-import type Collection from "~/models/Collection";
+import Collection from "~/models/Collection";
 
 type Props = {
   enabled: boolean;

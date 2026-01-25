@@ -1,4 +1,4 @@
-import type TurndownService from "turndown";
+import TurndownService from "turndown";
 
 /**
  * A turndown plugin for converting paragraphs with only breaks to newlines.

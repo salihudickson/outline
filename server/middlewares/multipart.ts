@@ -1,7 +1,7 @@
-import type { Next } from "koa";
+import { Next } from "koa";
 import { bytesToHumanReadable } from "@shared/utils/files";
 import { InvalidRequestError } from "@server/errors";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import { getFileFromRequest } from "@server/utils/koa";
 
 export default function multipart({

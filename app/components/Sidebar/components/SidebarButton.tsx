@@ -7,7 +7,6 @@ import Flex from "~/components/Flex";
 import Text from "~/components/Text";
 import { draggableOnDesktop, undraggableOnDesktop } from "~/styles";
 import Desktop from "~/utils/Desktop";
-import { HStack } from "~/components/primitives/HStack";
 
 export type SidebarButtonProps = React.ComponentProps<typeof Button> & {
   position: "top" | "bottom";
@@ -19,7 +18,7 @@ export type SidebarButtonProps = React.ComponentProps<typeof Button> & {
 };
 
 const SidebarButton = React.forwardRef<HTMLButtonElement, SidebarButtonProps>(
-  function SidebarButton_(
+  function _SidebarButton(
     {
       position = "top",
       showMoreMenu,
@@ -46,7 +45,7 @@ const SidebarButton = React.forwardRef<HTMLButtonElement, SidebarButtonProps>(
           ref={ref}
           role="button"
         >
-          <Content>
+          <Content gap={8} align="center">
             {image}
             {title && <Title>{title}</Title>}
           </Content>
@@ -75,7 +74,7 @@ const Title = styled(Text)`
   text-overflow: ellipsis;
 `;
 
-const Content = styled(HStack)`
+const Content = styled(Flex)`
   flex-shrink: 1;
   flex-grow: 1;
 `;

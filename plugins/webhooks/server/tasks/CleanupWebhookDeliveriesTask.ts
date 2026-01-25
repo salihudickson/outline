@@ -3,8 +3,11 @@ import { Op } from "sequelize";
 import Logger from "@server/logging/Logger";
 import { WebhookDelivery } from "@server/models";
 import { TaskPriority } from "@server/queues/tasks/base/BaseTask";
-import type { Props } from "@server/queues/tasks/base/CronTask";
-import { CronTask, TaskInterval } from "@server/queues/tasks/base/CronTask";
+import {
+  CronTask,
+  TaskInterval,
+  Props,
+} from "@server/queues/tasks/base/CronTask";
 import { Hour } from "@shared/utils/time";
 
 export default class CleanupWebhookDeliveriesTask extends CronTask {

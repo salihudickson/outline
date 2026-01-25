@@ -1,5 +1,5 @@
 import { signin } from "@shared/utils/routeHelpers";
-import type { Plugin, Hook } from "@server/utils/PluginManager";
+import { Plugin, Hook } from "@server/utils/PluginManager";
 
 export default function presentProviderConfig(
   config: Plugin<Hook.AuthProvider>

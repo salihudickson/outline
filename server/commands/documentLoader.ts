@@ -1,6 +1,5 @@
 import { NotFoundError, PaymentRequiredError } from "@server/errors";
-import type { User } from "@server/models";
-import { Document } from "@server/models";
+import { Document, User } from "@server/models";
 import { authorize } from "@server/policies";
 
 type Props = {

@@ -1,4 +1,4 @@
-import type { Subscription } from "@server/models";
+import { Subscription } from "@server/models";
 
 export default function presentSubscription(subscription: Subscription) {
   return {

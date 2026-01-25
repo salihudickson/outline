@@ -1,6 +1,6 @@
 import { MobXProviderContext } from "mobx-react";
 import { useContext } from "react";
-import type RootStore from "~/stores";
+import RootStore from "~/stores";
 
 /**
  * Hook to access the MobX stores from the React context.

@@ -1,11 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import styled from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import * as Toolbar from "@radix-ui/react-toolbar";
-import type { MenuItem } from "@shared/editor/types";
-import { hideScrollbars, s } from "@shared/styles";
+import { MenuItem } from "@shared/editor/types";
+import { s } from "@shared/styles";
 import { TooltipProvider } from "~/components/TooltipContext";
-import type { MenuItem as TMenuItem } from "~/types";
+import { MenuItem as TMenuItem } from "~/types";
 import { useEditor } from "./EditorContext";
 import { MediaDimension } from "./MediaDimension";
 import ToolbarButton from "./ToolbarButton";
@@ -20,28 +20,21 @@ import EventBoundary from "@shared/components/EventBoundary";
 
 type Props = {
   items: MenuItem[];
+  handlers?: Record<string, (...args: any[]) => void>;
 };
 
-type ToolbarDropdownProps = {
-  active: boolean;
-  item: MenuItem;
-  tooltip?: string;
-  shortcut?: string;
-};
-
-/**
+/*
  * Renders a dropdown menu in the floating toolbar.
  */
-function ToolbarDropdown(props: ToolbarDropdownProps) {
+function ToolbarDropdown(props: {
+  active: boolean;
+  item: MenuItem;
+  handlers?: Record<string, Function>;
+}) {
   const { commands, view } = useEditor();
   const { t } = useTranslation();
-  const { item, shortcut, tooltip } = props;
+  const { item, handlers } = props;
   const { state } = view;
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-
-  const handleOpenChange = useCallback((open: boolean) => {
-    setIsOpen(open);
-  }, []);
 
   const items: TMenuItem[] = useMemo(() => {
     const handleClick = (menuItem: MenuItem) => () => {
@@ -55,59 +48,42 @@ function ToolbarDropdown(props: ToolbarDropdownProps) {
             ? menuItem.attrs(state)
             : menuItem.attrs
         );
-      } else if (menuItem.onClick) {
-        menuItem.onClick();
+      } else if (handlers && handlers[menuItem.name]) {
+        handlers[menuItem.name](
+          typeof menuItem.attrs === "function"
+            ? menuItem.attrs(state)
+            : menuItem.attrs
+        );
       }
     };
 
-    const mapChildren = (children: MenuItem[]): TMenuItem[] =>
-      children.map((child) => {
-        if (child.name === "separator") {
-          return { type: "separator", visible: child.visible };
-        }
-        if ("content" in child) {
+    return item.children
+      ? item.children.map((child) => {
+          if (child.name === "separator") {
+            return { type: "separator", visible: child.visible };
+          }
           return {
-            type: "custom",
-            visible: child.visible,
-            content: child.content,
-          };
-        }
-        if (child.children) {
-          const childWithPreventClose = child.children.find(
-            (c) => "preventCloseCondition" in c
-          );
-          return {
-            type: "submenu",
+            type: "button",
             title: child.label,
             icon: child.icon,
+            dangerous: child.dangerous,
             visible: child.visible,
-            preventCloseCondition: childWithPreventClose?.preventCloseCondition,
-            items: mapChildren(child.children),
+            selected:
+              child.active !== undefined ? child.active(state) : undefined,
+            onClick: handleClick(child),
           };
-        }
-        return {
-          type: "button",
-          title: child.label,
-          icon: child.icon,
-          dangerous: child.dangerous,
-          visible: child.visible,
-          selected:
-            child.active !== undefined ? child.active(state) : undefined,
-          onClick: handleClick(child),
-        };
-      });
-
-    return item.children ? mapChildren(item.children) : [];
-  }, [isOpen, commands]);
+        })
+      : [];
+  }, [item.children, commands, state]);
 
   const handleCloseAutoFocus = useCallback((ev: Event) => {
     ev.stopImmediatePropagation();
   }, []);
 
   return (
-    <Tooltip shortcut={shortcut} content={tooltip} disabled={isOpen}>
+    <EventBoundary>
       <MenuProvider variant="dropdown">
-        <Menu open={isOpen} onOpenChange={handleOpenChange}>
+        <Menu>
           <MenuTrigger>
             <ToolbarButton aria-label={item.label ? undefined : item.tooltip}>
               {item.label && <Label>{item.label}</Label>}
@@ -119,11 +95,11 @@ function ToolbarDropdown(props: ToolbarDropdownProps) {
             aria-label={item.tooltip || t("More options")}
             onCloseAutoFocus={handleCloseAutoFocus}
           >
-            <EventBoundary>{toMenuItems(items)}</EventBoundary>
+            {toMenuItems(items)}
           </MenuContent>
         </Menu>
       </MenuProvider>
-    </Tooltip>
+    </EventBoundary>
   );
 }
 
@@ -137,13 +113,6 @@ function ToolbarMenu(props: Props) {
       return;
     }
 
-    // if item has an associated onClick prop, run it
-    if (item.onClick) {
-      item.onClick();
-      return;
-    }
-
-    // otherwise, run the associated editor command
     commands[item.name](
       typeof item.attrs === "function" ? item.attrs(state) : item.attrs
     );
@@ -162,20 +131,6 @@ function ToolbarMenu(props: Props) {
             }
             const isActive = item.active ? item.active(state) : false;
 
-            if (item.children) {
-              return (
-                <ToolbarDropdown
-                  key={index}
-                  active={isActive && !item.label}
-                  item={item}
-                  tooltip={
-                    item.label === item.tooltip ? undefined : item.tooltip
-                  }
-                  shortcut={item.shortcut}
-                />
-              );
-            }
-
             return (
               <Tooltip
                 key={index}
@@ -184,6 +139,12 @@ function ToolbarMenu(props: Props) {
               >
                 {item.name === "dimensions" ? (
                   <MediaDimension key={index} />
+                ) : item.children ? (
+                  <ToolbarDropdown
+                    handlers={props.handlers}
+                    active={isActive && !item.label}
+                    item={item}
+                  />
                 ) : (
                   <Toolbar.Button asChild>
                     <ToolbarButton
@@ -215,10 +176,6 @@ const FlexibleWrapper = styled.div`
   ${breakpoint("mobile", "tablet")`
     justify-content: space-evenly;
     align-items: center;
-    overflow-x: auto;
-    gap: 10px;
-
-    ${hideScrollbars()}
   `}
 `;
 

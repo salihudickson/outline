@@ -1,4 +1,4 @@
-import type { View } from "@server/models";
+import { View } from "@server/models";
 import { presentUser } from "../presenters";
 
 export default function presentView(view: View) {

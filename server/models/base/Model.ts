@@ -2,17 +2,17 @@ import isEqual from "fast-deep-equal";
 import isArray from "lodash/isArray";
 import isObject from "lodash/isObject";
 import pick from "lodash/pick";
-import type {
+import {
   Attributes,
   CreateOptions,
   CreationAttributes,
+  DataTypes,
   FindOptions,
   FindOrCreateOptions,
   ModelStatic,
   NonAttribute,
   SaveOptions,
 } from "sequelize";
-import { DataTypes } from "sequelize";
 import {
   AfterCreate,
   AfterDestroy,
@@ -23,7 +23,7 @@ import {
   Model as SequelizeModel,
 } from "sequelize-typescript";
 import Logger from "@server/logging/Logger";
-import type { Replace, APIContext } from "@server/types";
+import { Replace, APIContext } from "@server/types";
 import { getChangsetSkipped } from "../decorators/Changeset";
 import { InternalError } from "@server/errors";
 

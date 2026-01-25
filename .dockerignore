@@ -15,4 +15,3 @@ crowdin.yml
 build
 docker-compose.yml
 node_modules
-.yarn

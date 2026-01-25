@@ -1,7 +1,6 @@
 import { Event } from "@server/models";
 import { buildDocument, buildUser } from "@server/test/factories";
-import type { DocumentEvent } from "@server/types";
-import { AuthenticationType } from "@server/types";
+import { AuthenticationType, DocumentEvent } from "@server/types";
 import revisionCreator from "./revisionCreator";
 
 describe("revisionCreator", () => {

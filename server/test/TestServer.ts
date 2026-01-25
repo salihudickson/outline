@@ -1,6 +1,6 @@
 import http from "http";
-import type { AddressInfo } from "net";
-import type Koa from "koa";
+import { AddressInfo } from "net";
+import Koa from "koa";
 // oxlint-disable-next-line no-restricted-imports
 import nodeFetch from "node-fetch";
 
@@ -48,7 +48,6 @@ class TestServer {
   close() {
     this.listener = null;
     this.server.closeAllConnections();
-    this.server.close();
   }
 
   delete(path: string, options?: any) {

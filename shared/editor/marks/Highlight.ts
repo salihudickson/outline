@@ -1,17 +1,30 @@
 import { rgba } from "polished";
 import { toggleMark } from "prosemirror-commands";
-import type { MarkSpec, MarkType } from "prosemirror-model";
+import { MarkSpec, MarkType } from "prosemirror-model";
 import { markInputRuleForPattern } from "../lib/markInputRule";
 import markRule from "../rules/mark";
 import Mark from "./Mark";
-import { presetColorNames, presetColors } from "../presetColors";
 
 export default class Highlight extends Mark {
   /** The colors that can be used for highlighting */
-  static colors = presetColors;
+  static colors = [
+    "#FDEA9B",
+    "#FED46A",
+    "#FA551E",
+    "#B4DC19",
+    "#C8AFF0",
+    "#3CBEFC",
+  ];
 
   /** The names of the colors that can be used for highlighting, must match length of array above */
-  static colorNames = presetColorNames;
+  static colorNames = [
+    "Coral",
+    "Apricot",
+    "Sunset",
+    "Smoothie",
+    "Bubblegum",
+    "Neon",
+  ];
 
   /** The default opacity of the highlight */
   static opacity = 0.4;

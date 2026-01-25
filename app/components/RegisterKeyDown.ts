@@ -1,5 +1,4 @@
-import type { KeyFilter, Options } from "~/hooks/useKeyDown";
-import useKeyDown from "~/hooks/useKeyDown";
+import useKeyDown, { KeyFilter, Options } from "~/hooks/useKeyDown";
 
 type Props = {
   trigger: KeyFilter;

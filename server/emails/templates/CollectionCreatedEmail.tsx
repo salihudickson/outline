@@ -2,8 +2,7 @@ import * as React from "react";
 import { NotificationEventType } from "@shared/types";
 import { Collection } from "@server/models";
 import NotificationSettingsHelper from "@server/models/helpers/NotificationSettingsHelper";
-import type { EmailProps } from "./BaseEmail";
-import BaseEmail, { EmailMessageCategory } from "./BaseEmail";
+import BaseEmail, { EmailMessageCategory, EmailProps } from "./BaseEmail";
 import Body from "./components/Body";
 import Button from "./components/Button";
 import EmailTemplate from "./components/EmailLayout";
@@ -73,13 +72,13 @@ ${collection.name}
 
 ${collection.user.name} created the collection "${collection.name}"
 
-Open Collection: ${teamUrl}${collection.path}
+Open Collection: ${teamUrl}${collection.url}
 `;
   }
 
   protected render(props: Props) {
     const { collection, teamUrl, unsubscribeUrl } = props;
-    const collectionLink = `${teamUrl}${collection.path}`;
+    const collectionLink = `${teamUrl}${collection.url}`;
 
     return (
       <EmailTemplate

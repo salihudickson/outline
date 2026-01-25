@@ -123,7 +123,10 @@ declare module "styled-components" {
   }
 
   export interface DefaultTheme
-    extends Colors, Spacing, Breakpoints, EditorTheme {
+    extends Colors,
+      Spacing,
+      Breakpoints,
+      EditorTheme {
     background: string;
     backgroundSecondary: string;
     backgroundTertiary: string;

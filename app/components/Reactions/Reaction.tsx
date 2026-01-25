@@ -6,7 +6,7 @@ import styled, { css } from "styled-components";
 import { s, hover } from "@shared/styles";
 import type { ReactionSummary } from "@shared/types";
 import { getEmojiId } from "@shared/utils/emoji";
-import type User from "~/models/User";
+import User from "~/models/User";
 import { Emoji } from "~/components/Emoji";
 import Flex from "~/components/Flex";
 import NudeButton from "~/components/NudeButton";
@@ -15,7 +15,6 @@ import Tooltip from "~/components/Tooltip";
 import useCurrentUser from "~/hooks/useCurrentUser";
 import { isUUID } from "validator";
 import { CustomEmoji } from "@shared/components/CustomEmoji";
-import useStores from "~/hooks/useStores";
 
 type Props = {
   /** Thin reaction data - contains the emoji & active user ids for this reaction. */
@@ -42,24 +41,12 @@ const useTooltipContent = ({
   active: boolean;
 }) => {
   const { t } = useTranslation();
-  const { emojis } = useStores();
-  const customEmoji = emojis.get(emoji);
-  const [transformedEmoji, setTransformedEmoji] = React.useState(
-    customEmoji?.shortName ?? `:${getEmojiId(emoji)}:`
-  );
-
-  // If the emoji is a custom emoji ID, we need to get its short name for display
-  if (isUUID(emoji)) {
-    emojis.fetch(emoji).then((ce) => {
-      if (ce) {
-        setTransformedEmoji(ce.shortName);
-      }
-    });
-  }
 
   if (!reactedUsers.length) {
     return;
   }
+
+  const transformedEmoji = `:${getEmojiId(emoji)}:`;
 
   switch (reactedUsers.length) {
     case 1: {

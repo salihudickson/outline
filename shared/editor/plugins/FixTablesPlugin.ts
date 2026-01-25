@@ -1,6 +1,5 @@
-import type { Node } from "prosemirror-model";
-import type { EditorState, Transaction } from "prosemirror-state";
-import { Plugin } from "prosemirror-state";
+import { Node } from "prosemirror-model";
+import { EditorState, Plugin, Transaction } from "prosemirror-state";
 import { TableMap } from "prosemirror-tables";
 import { changedDescendants } from "../lib/changedDescendants";
 import { getCellsInColumn } from "../queries/table";
@@ -47,8 +46,8 @@ export class FixTablesPlugin extends Plugin {
     if (map.width === 1) {
       const cells = getCellsInColumn(0)(state);
       cells.forEach((cellPos) => {
-        const node = state.doc.nodeAt(cellPos);
-        if (node?.attrs.colwidth) {
+        const node = state.doc.nodeAt(pos);
+        if (node?.attrs.colspan) {
           fixed = true;
           tr = tr!.setNodeMarkup(cellPos, undefined, {
             ...node?.attrs,

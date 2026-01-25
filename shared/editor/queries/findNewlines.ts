@@ -1,4 +1,4 @@
-import type { ResolvedPos } from "prosemirror-model";
+import { ResolvedPos } from "prosemirror-model";
 
 /**
  * Find the position of the previous newline character.

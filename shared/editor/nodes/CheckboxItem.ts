@@ -1,9 +1,5 @@
-import type { Token } from "markdown-it";
-import type {
-  NodeSpec,
-  Node as ProsemirrorNode,
-  NodeType,
-} from "prosemirror-model";
+import { Token } from "markdown-it";
+import { NodeSpec, Node as ProsemirrorNode, NodeType } from "prosemirror-model";
 import {
   splitListItem,
   sinkListItem,
@@ -11,7 +7,7 @@ import {
 } from "prosemirror-schema-list";
 import { v4 as uuidv4 } from "uuid";
 import toggleCheckboxItem from "../commands/toggleCheckboxItem";
-import type { MarkdownSerializerState } from "../lib/markdown/serializer";
+import { MarkdownSerializerState } from "../lib/markdown/serializer";
 import checkboxRule from "../rules/checkboxes";
 import Node from "./Node";
 
@@ -116,16 +112,7 @@ export default class CheckboxItem extends Node {
   }
 
   toMarkdown(state: MarkdownSerializerState, node: ProsemirrorNode) {
-    state.out += node.attrs.checked ? "[x] " : "[ ] ";
-    if (state.inTable) {
-      node.forEach((block, _, i) => {
-        if (i > 0) {
-          state.out += " ";
-        }
-        state.renderInline(block);
-      });
-      return;
-    }
+    state.write(node.attrs.checked ? "[x] " : "[ ] ");
     state.renderContent(node);
   }
 

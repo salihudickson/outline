@@ -1,4 +1,4 @@
-import type { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 
 export enum PageType {
   Page = "page",

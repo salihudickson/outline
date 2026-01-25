@@ -1,7 +1,7 @@
 up:
 	docker compose up -d redis postgres
 	yarn install-local-ssl
-	yarn install --immutable
+	yarn install --pure-lockfile
 	yarn dev:watch
 
 build:

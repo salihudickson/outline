@@ -1,6 +1,7 @@
 import styled from "styled-components";
-import type { Props as ActionButtonProps } from "~/components/ActionButton";
-import ActionButton from "~/components/ActionButton";
+import ActionButton, {
+  Props as ActionButtonProps,
+} from "~/components/ActionButton";
 import { undraggableOnDesktop } from "~/styles";
 
 type Props = ActionButtonProps & {

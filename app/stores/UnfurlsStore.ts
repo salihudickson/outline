@@ -1,10 +1,10 @@
 import { subMinutes } from "date-fns";
 import { action } from "mobx";
-import type { UnfurlResourceType } from "@shared/types";
+import { UnfurlResourceType } from "@shared/types";
 import Unfurl from "~/models/Unfurl";
 import { client } from "~/utils/ApiClient";
 import Logger from "~/utils/Logger";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store from "./base/Store";
 
 // oxlint-disable-next-line @typescript-eslint/no-explicit-any

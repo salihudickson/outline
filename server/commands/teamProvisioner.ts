@@ -10,7 +10,7 @@ import Logger from "@server/logging/Logger";
 import { traceFunction } from "@server/logging/tracing";
 import { Team, AuthenticationProvider } from "@server/models";
 import { sequelize } from "@server/storage/database";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 
 type TeamProvisionerResult = {
   team: Team;

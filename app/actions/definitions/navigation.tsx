@@ -17,7 +17,7 @@ import {
 import { UrlHelper } from "@shared/utils/UrlHelper";
 import { isMac } from "@shared/utils/browser";
 import stores from "~/stores";
-import type SearchQuery from "~/models/SearchQuery";
+import SearchQuery from "~/models/SearchQuery";
 import KeyboardShortcuts from "~/scenes/KeyboardShortcuts";
 import {
   createAction,
@@ -224,13 +224,13 @@ export const openKeyboardShortcuts = createAction({
 export const downloadApp = createExternalLinkAction({
   name: ({ t }) =>
     t("Download {{ platform }} app", {
-      platform: isMac ? "macOS" : "Windows",
+      platform: isMac() ? "macOS" : "Windows",
     }),
   analyticsName: "Download app",
   section: NavigationSection,
   iconInContextMenu: false,
   icon: <BrowserIcon />,
-  visible: () => !Desktop.isElectron() && isMac && isCloudHosted,
+  visible: () => !Desktop.isElectron() && isMac() && isCloudHosted,
   url: "https://desktop.getoutline.com",
   target: "_blank",
 });

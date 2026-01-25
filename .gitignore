@@ -14,10 +14,3 @@ data/*
 *.pem
 *.key
 *.cert
-
-# Yarn Berry
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks

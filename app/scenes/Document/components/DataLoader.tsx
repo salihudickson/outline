@@ -1,12 +1,11 @@
 import { observer } from "mobx-react";
 import * as React from "react";
-import type { RouteComponentProps, StaticContext } from "react-router";
-import { useLocation } from "react-router";
+import { useLocation, RouteComponentProps, StaticContext } from "react-router";
 import { TeamPreference } from "@shared/types";
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { RevisionHelper } from "@shared/utils/RevisionHelper";
-import type Document from "~/models/Document";
-import type Revision from "~/models/Revision";
+import Document from "~/models/Document";
+import Revision from "~/models/Revision";
 import Error402 from "~/scenes/Errors/Error402";
 import Error403 from "~/scenes/Errors/Error403";
 import Error404 from "~/scenes/Errors/Error404";
@@ -17,7 +16,7 @@ import useCurrentTeam from "~/hooks/useCurrentTeam";
 import useCurrentUser from "~/hooks/useCurrentUser";
 import usePolicy from "~/hooks/usePolicy";
 import useStores from "~/hooks/useStores";
-import type { Properties } from "~/types";
+import { Properties } from "~/types";
 import Logger from "~/utils/Logger";
 import {
   AuthorizationError,
@@ -104,11 +103,9 @@ function DataLoader({ match, children }: Props) {
 
   React.useEffect(() => {
     async function fetchRevision() {
-      if (revisionId) {
+      if (revisionId && revisionId !== "latest") {
         try {
-          await revisions[revisionId === "latest" ? "fetchLatest" : "fetch"](
-            revisionId
-          );
+          await revisions.fetch(revisionId);
         } catch (err) {
           setError(err);
         }
@@ -116,6 +113,19 @@ function DataLoader({ match, children }: Props) {
     }
     void fetchRevision();
   }, [revisions, revisionId]);
+
+  React.useEffect(() => {
+    async function fetchRevision() {
+      if (document && revisionId === "latest") {
+        try {
+          await revisions.fetchLatest(document.id);
+        } catch (err) {
+          setError(err);
+        }
+      }
+    }
+    void fetchRevision();
+  }, [document, revisionId, revisions]);
 
   React.useEffect(() => {
     async function fetchViews() {
@@ -203,7 +213,7 @@ function DataLoader({ match, children }: Props) {
     ) : error instanceof PaymentRequiredError ? (
       <Error402 />
     ) : error instanceof AuthorizationError ? (
-      <Error403 />
+      <Error403 documentId={documentSlug} />
     ) : error instanceof NotFoundError ? (
       <Error404 />
     ) : (

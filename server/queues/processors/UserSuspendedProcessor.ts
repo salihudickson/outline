@@ -1,5 +1,5 @@
 import { OAuthAuthentication } from "@server/models";
-import type { Event as TEvent, UserEvent } from "@server/types";
+import { Event as TEvent, UserEvent } from "@server/types";
 import BaseProcessor from "./BaseProcessor";
 
 export default class UserSuspendedProcessor extends BaseProcessor {

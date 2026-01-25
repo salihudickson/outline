@@ -1,11 +1,10 @@
 /* oxlint-disable react/prop-types */
 import * as React from "react";
-import type { Props as TooltipProps } from "~/components/Tooltip";
-import Tooltip from "~/components/Tooltip";
+import Tooltip, { Props as TooltipProps } from "~/components/Tooltip";
 import { performAction, resolve } from "~/actions";
 import useIsMounted from "~/hooks/useIsMounted";
 import useActionContext from "~/hooks/useActionContext";
-import type { ActionVariant, ActionWithChildren } from "~/types";
+import { ActionVariant, ActionWithChildren } from "~/types";
 
 export type Props = React.HTMLAttributes<HTMLButtonElement> & {
   /** Show the button in a disabled state */
@@ -22,7 +21,7 @@ export type Props = React.HTMLAttributes<HTMLButtonElement> & {
  * Button that can be used to trigger an action definition.
  */
 const ActionButton = React.forwardRef<HTMLButtonElement, Props>(
-  function ActionButton_(
+  function _ActionButton(
     { action, tooltip, hideOnActionDisabled, ...rest }: Props,
     ref: React.Ref<HTMLButtonElement>
   ) {

@@ -1,15 +1,16 @@
 import crypto from "crypto";
 import { addHours, addMinutes, subMinutes } from "date-fns";
 import JWT from "jsonwebtoken";
-import type { Context } from "koa";
-import type {
+import { Context } from "koa";
+import {
   Transaction,
+  QueryTypes,
   SaveOptions,
+  Op,
   FindOptions,
   InferAttributes,
   InferCreationAttributes,
 } from "sequelize";
-import { QueryTypes, Op } from "sequelize";
 import { type InstanceUpdateOptions } from "sequelize";
 import {
   Table,
@@ -32,25 +33,23 @@ import {
 } from "sequelize-typescript";
 import { UserPreferenceDefaults } from "@shared/constants";
 import { languages } from "@shared/i18n";
-import type {
-  NotificationSettings,
+import type { NotificationSettings } from "@shared/types";
+import {
+  CollectionPermission,
   UserPreference,
   UserPreferences,
   NotificationEventType,
-} from "@shared/types";
-import {
-  CollectionPermission,
   NotificationEventDefaults,
   UserRole,
   DocumentPermission,
 } from "@shared/types";
 import { UserRoleHelper } from "@shared/utils/UserRoleHelper";
 import { stringToColor } from "@shared/utils/color";
-import type { locales } from "@shared/utils/date";
+import { locales } from "@shared/utils/date";
 import { UserValidation } from "@shared/validations";
 import env from "@server/env";
 import DeleteAttachmentTask from "@server/queues/tasks/DeleteAttachmentTask";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import { VerificationCode } from "@server/utils/VerificationCode";
 import parseAttachmentIds from "@server/utils/parseAttachmentIds";
 import { ValidationError } from "../errors";
@@ -61,7 +60,6 @@ import Group from "./Group";
 import Team from "./Team";
 import UserAuthentication from "./UserAuthentication";
 import UserMembership from "./UserMembership";
-import UserPasskey from "./UserPasskey";
 import ParanoidModel from "./base/ParanoidModel";
 import Encrypted from "./decorators/Encrypted";
 import Fix from "./decorators/Fix";
@@ -249,9 +247,6 @@ class User extends ParanoidModel<
 
   @HasMany(() => UserAuthentication)
   authentications: UserAuthentication[];
-
-  @HasMany(() => UserPasskey)
-  passkeys: UserPasskey[];
 
   // getters
 
@@ -466,65 +461,28 @@ class User extends ParanoidModel<
    * @returns An array of collection ids
    */
   public collectionIds = async (options: FindOptions<Collection> = {}) => {
-    const collectionStubs = await Collection.findAll({
-      attributes: ["id"],
+    const collectionStubs = await Collection.scope({
+      method: ["withMembership", this.id],
+    }).findAll({
+      attributes: ["id", "permission"],
       where: {
         teamId: this.teamId,
-        [Op.or]: [
-          ...(this.isGuest
-            ? []
-            : [
-                {
-                  permission: {
-                    [Op.in]: Object.values(CollectionPermission),
-                  },
-                },
-              ]),
-          {
-            "$memberships.id$": { [Op.ne]: null },
-          },
-          {
-            "$groupMemberships.id$": { [Op.ne]: null },
-          },
-        ],
       },
-      include: [
-        {
-          association: "memberships",
-          attributes: [],
-          required: false,
-          where: {
-            userId: this.id,
-          },
-        },
-        {
-          association: "groupMemberships",
-          attributes: [],
-          required: false,
-          include: [
-            {
-              association: "group",
-              attributes: [],
-              required: true,
-              include: [
-                {
-                  association: "groupUsers",
-                  attributes: [],
-                  required: true,
-                  where: {
-                    userId: this.id,
-                  },
-                },
-              ],
-            },
-          ],
-        },
-      ],
       paranoid: true,
       ...options,
     });
 
-    return Array.from(new Set(collectionStubs.map((c) => c.id)));
+    return collectionStubs
+      .filter(
+        (c) =>
+          (Object.values(CollectionPermission).includes(
+            c.permission as CollectionPermission
+          ) &&
+            !this.isGuest) ||
+          c.memberships.length > 0 ||
+          c.groupMemberships.length > 0
+      )
+      .map((c) => c.id);
   };
 
   updateActiveAt = async (ctx: Context, force = false) => {
@@ -579,16 +537,14 @@ class User extends ParanoidModel<
    * in the client browser cookies to remain logged in.
    *
    * @param expiresAt The time the token will expire at
-   * @param service The authentication service used to generate the token, if applicable
    * @returns The session token
    */
-  getJwtToken = (expiresAt?: Date, service?: string) =>
+  getJwtToken = (expiresAt?: Date) =>
     JWT.sign(
       {
         id: this.id,
         expiresAt: expiresAt ? expiresAt.toISOString() : undefined,
         type: "session",
-        service,
       },
       this.jwtSecret
     );
@@ -614,17 +570,15 @@ class User extends ParanoidModel<
    * between subdomains or domains. It has a short expiry and can only be used
    * once.
    *
-   * @param The authentication service used to generate the token, if applicable
    * @returns The transfer token
    */
-  getTransferToken = (service?: string) =>
+  getTransferToken = () =>
     JWT.sign(
       {
         id: this.id,
         createdAt: new Date().toISOString(),
         expiresAt: addMinutes(new Date(), 1).toISOString(),
         type: "transfer",
-        service,
       },
       this.jwtSecret
     );
@@ -633,7 +587,6 @@ class User extends ParanoidModel<
    * Returns a temporary token that is only used for logging in from an email
    * It can only be used to sign in once and has a medium length expiry
    *
-   * @param ctx The request context, used to get the IP address of the request
    * @returns The email signin token
    */
   getEmailSigninToken = (ctx: Context) =>
@@ -810,7 +763,7 @@ class User extends ParanoidModel<
       previousRole &&
       model.changed("role") &&
       UserRoleHelper.isRoleLower(model.role, UserRole.Member) &&
-      !UserRoleHelper.isRoleLower(previousRole, UserRole.Viewer)
+      UserRoleHelper.isRoleHigher(previousRole, UserRole.Viewer)
     ) {
       await UserMembership.update(
         {

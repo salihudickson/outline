@@ -1,61 +1,65 @@
 /* global File Promise */
-import type { PluginSimple } from "markdown-it";
+import { PluginSimple } from "markdown-it";
 import { observable } from "mobx";
 import { Observer } from "mobx-react";
 import { darken, transparentize } from "polished";
 import { baseKeymap } from "prosemirror-commands";
 import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
-import type { InputRule } from "prosemirror-inputrules";
-import { inputRules } from "prosemirror-inputrules";
+import { inputRules, InputRule } from "prosemirror-inputrules";
 import { keymap } from "prosemirror-keymap";
-import type { MarkdownParser } from "prosemirror-markdown";
-import type { NodeSpec, MarkSpec } from "prosemirror-model";
-import { Schema, Node as ProsemirrorNode } from "prosemirror-model";
-import type { Plugin, Transaction } from "prosemirror-state";
-import { EditorState, Selection } from "prosemirror-state";
+import { MarkdownParser } from "prosemirror-markdown";
+import {
+  Schema,
+  NodeSpec,
+  MarkSpec,
+  Node as ProsemirrorNode,
+} from "prosemirror-model";
+import { EditorState, Selection, Plugin, Transaction } from "prosemirror-state";
 import {
   AddMarkStep,
   RemoveMarkStep,
   ReplaceAroundStep,
   ReplaceStep,
 } from "prosemirror-transform";
-import type { Decoration, NodeViewConstructor } from "prosemirror-view";
-import { EditorView } from "prosemirror-view";
+import { Decoration, EditorView, NodeViewConstructor } from "prosemirror-view";
 import * as React from "react";
-import type { DefaultTheme, ThemeProps } from "styled-components";
-import styled, { css } from "styled-components";
+import styled, { css, DefaultTheme, ThemeProps } from "styled-components";
 import insertFiles from "@shared/editor/commands/insertFiles";
 import Styles from "@shared/editor/components/Styles";
-import type { EmbedDescriptor } from "@shared/editor/embeds";
-import type { CommandFactory, WidgetProps } from "@shared/editor/lib/Extension";
-import type Extension from "@shared/editor/lib/Extension";
+import { EmbedDescriptor } from "@shared/editor/embeds";
+import Extension, {
+  CommandFactory,
+  WidgetProps,
+} from "@shared/editor/lib/Extension";
 import ExtensionManager from "@shared/editor/lib/ExtensionManager";
-import type { MarkdownSerializer } from "@shared/editor/lib/markdown/serializer";
+import { MarkdownSerializer } from "@shared/editor/lib/markdown/serializer";
 import textBetween from "@shared/editor/lib/textBetween";
-import type Mark from "@shared/editor/marks/Mark";
+import Mark from "@shared/editor/marks/Mark";
 import { basicExtensions as extensions } from "@shared/editor/nodes";
-import type Node from "@shared/editor/nodes/Node";
-import type ReactNode from "@shared/editor/nodes/ReactNode";
-import type { ComponentProps } from "@shared/editor/types";
-import type { ProsemirrorData, UserPreferences } from "@shared/types";
+import Node from "@shared/editor/nodes/Node";
+import ReactNode from "@shared/editor/nodes/ReactNode";
+import { ComponentProps } from "@shared/editor/types";
+import { ProsemirrorData, UserPreferences } from "@shared/types";
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import EventEmitter from "@shared/utils/events";
-import type Document from "~/models/Document";
+import Document from "~/models/Document";
 import Flex from "~/components/Flex";
 import { PortalContext } from "~/components/Portal";
-import type { Dictionary } from "~/hooks/useDictionary";
-import type { Properties } from "~/types";
+import { Dictionary } from "~/hooks/useDictionary";
+import { Properties } from "~/types";
 import Logger from "~/utils/Logger";
 import ComponentView from "./components/ComponentView";
 import EditorContext from "./components/EditorContext";
-import type { NodeViewRenderer } from "./components/NodeViewRenderer";
+import { NodeViewRenderer } from "./components/NodeViewRenderer";
 
 import WithTheme from "./components/WithTheme";
 import isNull from "lodash/isNull";
 import { isArray, map } from "lodash";
-import type { LightboxImage } from "@shared/editor/lib/Lightbox";
-import { LightboxImageFactory } from "@shared/editor/lib/Lightbox";
+import {
+  LightboxImage,
+  LightboxImageFactory,
+} from "@shared/editor/lib/Lightbox";
 import Lightbox from "~/components/Lightbox";
 import { anchorPlugin } from "@shared/editor/plugins/AnchorPlugin";
 
@@ -65,9 +69,9 @@ export type Props = {
   /** The user id of the current user */
   userId?: string;
   /** The editor content, should only be changed if you wish to reset the content */
-  value?: string | ProsemirrorData | ProsemirrorNode;
-  /** The initial editor content as a markdown string, JSON object, or ProsemirrorNode */
-  defaultValue: string | ProsemirrorData | ProsemirrorNode;
+  value?: string | ProsemirrorData;
+  /** The initial editor content as a markdown string or JSON object */
+  defaultValue: string | object;
   /** Placeholder displayed when the editor is empty */
   placeholder: string;
   /** Extensions to load into the editor */
@@ -95,10 +99,7 @@ export type Props = {
   /** Heading id to scroll to when the editor has loaded */
   scrollTo?: string;
   /** Callback for handling uploaded images, should return the url of uploaded file */
-  uploadFile?: (
-    file: File | string,
-    options?: { id?: string; onProgress?: (fractionComplete: number) => void }
-  ) => Promise<string>;
+  uploadFile?: (file: File) => Promise<string>;
   /** Callback when prosemirror nodes are initialized on document mount. */
   onInit?: () => void;
   /** Callback when prosemirror nodes are destroyed on document unmount. */
@@ -119,14 +120,10 @@ export type Props = {
   onCreateCommentMark?: (commentId: string, userId: string) => void;
   /** Callback when a comment mark is removed */
   onDeleteCommentMark?: (commentId: string) => void;
-  /** Callback when comments sidebar should be opened */
-  onOpenCommentsSidebar?: () => void;
   /** Callback when a file upload begins */
   onFileUploadStart?: () => void;
   /** Callback when a file upload ends */
   onFileUploadStop?: () => void;
-  /** Callback when file upload progress changes */
-  onFileUploadProgress?: (id: string, fractionComplete: number) => void;
   /** Callback when a link is created, should return url to created document */
   onCreateLink?: (params: Properties<Document>) => Promise<string>;
   /** Callback when user clicks on any link in the document */
@@ -172,7 +169,6 @@ export class Editor extends React.PureComponent<
     defaultValue: "",
     dir: "auto",
     placeholder: "Write something nice…",
-    readOnly: false,
     onFileUploadStart: () => {
       // no default behavior
     },
@@ -403,7 +399,7 @@ export class Editor extends React.PureComponent<
     });
   }
 
-  private createState(value?: string | ProsemirrorData | ProsemirrorNode) {
+  private createState(value?: string | object) {
     const doc = this.createDocument(value || this.props.defaultValue);
 
     return EditorState.create({
@@ -425,12 +421,7 @@ export class Editor extends React.PureComponent<
     });
   }
 
-  private createDocument(content: string | object | ProsemirrorNode) {
-    // Already a ProsemirrorNode
-    if (content instanceof ProsemirrorNode) {
-      return content;
-    }
-
+  private createDocument(content: string | object) {
     // Looks like Markdown
     if (typeof content === "string") {
       return this.parser.parse(content) || undefined;
@@ -876,11 +867,10 @@ export class Editor extends React.PureComponent<
           </Flex>
           {!isNull(this.state.activeLightboxImage) && (
             <Lightbox
-              readOnly={readOnly}
               images={this.getLightboxImages()}
               activeImage={this.state.activeLightboxImage}
               onUpdate={this.updateActiveLightboxImage}
-              onClose={this.view.focus}
+              onClose={() => this.view.focus()}
             />
           )}
         </EditorContext.Provider>
@@ -924,7 +914,7 @@ const EditorContainer = styled(Styles)<{
 `;
 
 const LazyLoadedEditor = React.forwardRef<Editor, Props>(
-  function LazyLoadedEditor_(props: Props, ref) {
+  function _LazyLoadedEditor(props: Props, ref) {
     return (
       <WithTheme>
         {(theme) => <Editor theme={theme} {...props} ref={ref} />}

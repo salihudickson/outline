@@ -1,9 +1,8 @@
-import type { EmailAddress } from "addressparser";
-import addressparser from "addressparser";
-import type Bull from "bull";
+import addressparser, { EmailAddress } from "addressparser";
+import Bull from "bull";
 import invariant from "invariant";
 import { subMinutes } from "date-fns";
-import type { Node } from "prosemirror-model";
+import { Node } from "prosemirror-model";
 import { randomString } from "@shared/random";
 import { TeamPreference } from "@shared/types";
 import { Day } from "@shared/utils/time";
@@ -11,14 +10,14 @@ import mailer from "@server/emails/mailer";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
 import Metrics from "@server/logging/Metrics";
-import type { Team } from "@server/models";
+import { Team } from "@server/models";
 import Notification from "@server/models/Notification";
 import HTMLHelper from "@server/models/helpers/HTMLHelper";
 import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
 import { TextHelper } from "@server/models/helpers/TextHelper";
 import { taskQueue } from "@server/queues";
 import { TaskPriority } from "@server/queues/tasks/base/BaseTask";
-import type { NotificationMetadata } from "@server/types";
+import { NotificationMetadata } from "@server/types";
 
 export enum EmailMessageCategory {
   Authentication = "authentication",
@@ -69,7 +68,7 @@ export default abstract class BaseEmail<
 
     // Ideally we'd use EmailTask.schedule here but importing creates a circular
     // dependency so we're pushing onto the task queue in the expected format
-    return taskQueue().add(
+    return taskQueue.add(
       {
         name: "EmailTask",
         props: {

@@ -8,16 +8,14 @@ import {
   AlignFullWidthIcon,
   EditIcon,
   CommentIcon,
-  LinkIcon,
 } from "outline-icons";
-import type { EditorState } from "prosemirror-state";
+import { EditorState } from "prosemirror-state";
 import { isNodeActive } from "@shared/editor/queries/isNodeActive";
-import type { MenuItem } from "@shared/editor/types";
-import type { Dictionary } from "~/hooks/useDictionary";
+import { MenuItem } from "@shared/editor/types";
+import { Dictionary } from "~/hooks/useDictionary";
 import { metaDisplay } from "@shared/utils/keyboard";
 import { ImageSource } from "@shared/editor/lib/FileHelper";
 import Desktop from "~/utils/Desktop";
-import { isMarkActive } from "@shared/editor/queries/isMarkActive";
 
 export default function imageMenuItems(
   state: EditorState,
@@ -92,7 +90,7 @@ export default function imageMenuItems(
     },
     {
       name: "editDiagram",
-      tooltip: dictionary.editDiagram,
+      tooltip: "Edit diagram",
       icon: <EditIcon />,
       visible: isDiagram(state) && !Desktop.isElectron(),
     },
@@ -124,13 +122,6 @@ export default function imageMenuItems(
     },
     {
       name: "separator",
-    },
-    {
-      name: "linkOnImage",
-      tooltip: dictionary.createLink,
-      shortcut: `${metaDisplay}+K`,
-      active: isMarkActive(schema.marks.link),
-      icon: <LinkIcon />,
     },
     {
       name: "commentOnImage",

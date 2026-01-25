@@ -1,4 +1,4 @@
-import type { locales } from "../utils/date";
+import { locales } from "../utils/date";
 
 type LanguageOption = {
   label: string;

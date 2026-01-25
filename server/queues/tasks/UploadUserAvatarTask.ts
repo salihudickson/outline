@@ -1,8 +1,7 @@
-import { createHash } from "crypto";
-import { AttachmentPreset } from "@shared/types";
-import attachmentCreator from "@server/commands/attachmentCreator";
-import { createContext } from "@server/context";
+import { createHash, randomUUID } from "crypto";
 import { User } from "@server/models";
+import { Buckets } from "@server/models/helpers/AttachmentHelper";
+import FileStorage from "@server/storage/files";
 import { BaseTask, TaskPriority } from "./base/BaseTask";
 
 type Props = {
@@ -29,16 +28,14 @@ export default class UploadUserAvatarTask extends BaseTask<Props> {
       return;
     }
 
-    const attachment = await attachmentCreator({
-      name: hash,
-      url: props.avatarUrl,
-      user,
-      preset: AttachmentPreset.Avatar,
-      ctx: createContext({ user }),
-    });
+    const res = await FileStorage.storeFromUrl(
+      props.avatarUrl,
+      `${Buckets.avatars}/${user.id}/${randomUUID()}/${hash}`,
+      "public-read"
+    );
 
-    if (attachment) {
-      await user.update({ avatarUrl: attachment.url });
+    if (res?.url) {
+      await user.update({ avatarUrl: res.url });
     }
   }
 

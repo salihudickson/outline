@@ -1,11 +1,11 @@
 import fractionalIndex from "fractional-index";
-import type { Location } from "history";
+import { Location } from "history";
 import { observer } from "mobx-react";
 import * as React from "react";
 import styled from "styled-components";
 import { IconType, NotificationEventType } from "@shared/types";
 import { determineIconType } from "@shared/utils/icon";
-import type GroupMembership from "~/models/GroupMembership";
+import GroupMembership from "~/models/GroupMembership";
 import UserMembership from "~/models/UserMembership";
 import Fade from "~/components/Fade";
 import useBoolean from "~/hooks/useBoolean";

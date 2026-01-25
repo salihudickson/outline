@@ -1,7 +1,7 @@
 import { ArchiveIcon } from "outline-icons";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import type Collection from "~/models/Collection";
+import Collection from "~/models/Collection";
 import CollectionIcon from "~/components/Icons/CollectionIcon";
 import { archivePath, collectionPath } from "~/utils/routeHelpers";
 import Breadcrumb from "./Breadcrumb";
@@ -28,7 +28,7 @@ export const CollectionBreadcrumb: React.FC<Props> = ({ collection }) => {
         name: collection.name,
         section: ActiveCollectionSection,
         icon: <CollectionIcon collection={collection} expanded />,
-        to: collectionPath(collection),
+        to: collectionPath(collection.path),
       }),
     ],
     [collection, t]

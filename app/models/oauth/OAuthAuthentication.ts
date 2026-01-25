@@ -4,7 +4,7 @@ import User from "../User";
 import ParanoidModel from "../base/ParanoidModel";
 import Field from "../decorators/Field";
 import Relation from "../decorators/Relation";
-import type OAuthClient from "./OAuthClient";
+import OAuthClient from "./OAuthClient";
 
 class OAuthAuthentication extends ParanoidModel {
   static modelName = "OAuthAuthentication";

@@ -1,4 +1,4 @@
-import type { SearchQuery } from "@server/models";
+import { SearchQuery } from "@server/models";
 
 export default function presentSearchQuery(searchQuery: SearchQuery) {
   return {

@@ -2,7 +2,8 @@ import compact from "lodash/compact";
 import { observer } from "mobx-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import type Emoji from "~/models/Emoji";
+import Flex from "@shared/components/Flex";
+import Emoji from "~/models/Emoji";
 import { Avatar, AvatarSize } from "~/components/Avatar";
 import { HEADER_HEIGHT } from "~/components/Header";
 import {
@@ -16,7 +17,6 @@ import { CustomEmoji } from "@shared/components/CustomEmoji";
 import EmojisMenu from "~/menus/EmojisMenu";
 import { s } from "@shared/styles";
 import styled from "styled-components";
-import { HStack } from "~/components/primitives/HStack";
 
 const ROW_HEIGHT = 60;
 const STICKY_OFFSET = HEADER_HEIGHT + FILTER_HEIGHT;
@@ -54,14 +54,14 @@ const EmojisTable = observer(function EmojisTable({
           accessor: (emoji) => emoji.createdBy,
           sortable: false,
           component: (emoji) => (
-            <HStack>
+            <Flex align="center" gap={8}>
               {emoji.createdBy && (
                 <>
                   <Avatar model={emoji.createdBy} size={AvatarSize.Small} />
                   {emoji.createdBy.name}
                 </>
               )}
-            </HStack>
+            </Flex>
           ),
           width: "2fr",
         },
@@ -93,7 +93,10 @@ const EmojisTable = observer(function EmojisTable({
   );
 });
 
-export const EmojiPreview = styled(HStack)`
+export const EmojiPreview = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: monospace;
   font-size: 14px;
   color: ${s("textSecondary")};

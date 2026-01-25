@@ -1,9 +1,9 @@
 import { subMinutes } from "date-fns";
 import JWT from "jsonwebtoken";
-import type { FindOptions } from "sequelize";
+import { FindOptions } from "sequelize";
 import { Team, User } from "@server/models";
 import { AuthenticationError, UserSuspendedError } from "../errors";
-import type { Context } from "koa";
+import { Context } from "koa";
 
 export function getJWTPayload(token: string) {
   let payload;
@@ -24,19 +24,10 @@ export function getJWTPayload(token: string) {
   }
 }
 
-/**
- * Retrieves the user associated with a JWT token, validating the token's type and expiration.
- *
- * @param token The JWT token to validate and extract the user from.
- * @param allowedTypes An array of allowed token types (default: ["session", "transfer"]). The token's type must be included in this array to be considered valid.
- * @returns An object containing the user associated with the token and an optional service string if included in the token's payload.
- * @throws AuthenticationError if the token is missing, invalid, expired, or if the token's type is not allowed.
- * @throws UserSuspendedError if the user associated with the token is suspended.
- */
 export async function getUserForJWT(
   token: string,
   allowedTypes = ["session", "transfer"]
-): Promise<{ user: User; service?: string }> {
+): Promise<User> {
   const payload = getJWTPayload(token);
 
   if (!allowedTypes.includes(payload.type)) {
@@ -90,10 +81,7 @@ export async function getUserForJWT(
     throw AuthenticationError("Invalid token");
   }
 
-  return {
-    user,
-    service: payload.service as string | undefined,
-  };
+  return user;
 }
 
 export async function getUserForEmailSigninToken(

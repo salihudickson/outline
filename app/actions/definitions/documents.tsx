@@ -35,12 +35,13 @@ import {
 } from "outline-icons";
 import { toast } from "sonner";
 import Icon from "@shared/components/Icon";
-import type { NavigationNode } from "@shared/types";
-import { ExportContentType, TeamPreference } from "@shared/types";
+import {
+  ExportContentType,
+  TeamPreference,
+  NavigationNode,
+} from "@shared/types";
 import { getEventFiles } from "@shared/utils/files";
-import { Week } from "@shared/utils/time";
-import type UserMembership from "~/models/UserMembership";
-import { client } from "~/utils/ApiClient";
+import UserMembership from "~/models/UserMembership";
 import DocumentDelete from "~/scenes/DocumentDelete";
 import DocumentMove from "~/scenes/DocumentMove";
 import DocumentPermanentDelete from "~/scenes/DocumentPermanentDelete";
@@ -48,7 +49,6 @@ import DocumentPublish from "~/scenes/DocumentPublish";
 import DeleteDocumentsInTrash from "~/scenes/Trash/components/DeleteDocumentsInTrash";
 import ConfirmationDialog from "~/components/ConfirmationDialog";
 import DocumentCopy from "~/components/DocumentCopy";
-import { DocumentDownload } from "~/components/DocumentDownload";
 import MarkdownIcon from "~/components/Icons/MarkdownIcon";
 import { getHeaderExpandedKey } from "~/components/Sidebar/components/Header";
 import DocumentTemplatizeDialog from "~/components/TemplatizeDialog";
@@ -63,6 +63,7 @@ import {
   DocumentSection,
   TrashSection,
 } from "~/actions/sections";
+import env from "~/env";
 import { setPersistedState } from "~/hooks/usePersistedState";
 import history from "~/utils/history";
 import {
@@ -78,9 +79,8 @@ import {
 } from "~/utils/routeHelpers";
 import capitalize from "lodash/capitalize";
 import CollectionIcon from "~/components/Icons/CollectionIcon";
-import type { Action, ActionGroup, ActionSeparator } from "~/types";
+import { Action, ActionGroup, ActionSeparator } from "~/types";
 import lazyWithRetry from "~/utils/lazyWithRetry";
-import env from "~/env";
 
 const Insights = lazyWithRetry(
   () => import("~/scenes/Document/components/Insights")
@@ -509,6 +509,7 @@ export const shareDocument = createAction({
     }
 
     stores.dialogs.openModal({
+      style: { marginBottom: -12 },
       title: t("Share this document"),
       content: (
         <SharePopover
@@ -521,61 +522,13 @@ export const shareDocument = createAction({
   },
 });
 
-export const downloadDocument = createAction({
-  name: ({ t, isMenu }) => (isMenu ? t("Download") : t("Download document")),
-  analyticsName: "Download document",
-  section: ActiveDocumentSection,
-  icon: <DownloadIcon />,
-  keywords: "export md markdown html",
-  visible: ({ activeDocumentId, stores }) =>
-    !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
-  perform: ({ activeDocumentId, t, stores }) => {
-    if (!activeDocumentId) {
-      return;
-    }
-
-    const document = stores.documents.get(activeDocumentId);
-    invariant(document, "Document must exist");
-
-    stores.dialogs.openModal({
-      title: t("Download document"),
-      content: (
-        <DocumentDownload
-          document={document}
-          onSubmit={stores.dialogs.closeAllModals}
-        />
-      ),
-    });
-  },
-});
-
-export const downloadDocumentAsMarkdown = createAction({
-  name: ({ t }) => t("Download as Markdown"),
-  analyticsName: "Download document as Markdown",
-  section: ActiveDocumentSection,
-  keywords: "md markdown export",
-  icon: <DownloadIcon />,
-  visible: ({ activeDocumentId, stores }) =>
-    !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
-  perform: async ({ activeDocumentId, stores }) => {
-    if (!activeDocumentId) {
-      return;
-    }
-
-    const document = stores.documents.get(activeDocumentId);
-    await document?.download({
-      contentType: ExportContentType.Markdown,
-      includeChildDocuments: false,
-    });
-  },
-});
-
 export const downloadDocumentAsHTML = createAction({
-  name: ({ t }) => t("Download as HTML"),
+  name: ({ t }) => t("HTML"),
   analyticsName: "Download document as HTML",
   section: ActiveDocumentSection,
-  keywords: "xml html export",
+  keywords: "html export",
   icon: <DownloadIcon />,
+  iconInContextMenu: false,
   visible: ({ activeDocumentId, stores }) =>
     !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
   perform: async ({ activeDocumentId, stores }) => {
@@ -584,36 +537,68 @@ export const downloadDocumentAsHTML = createAction({
     }
 
     const document = stores.documents.get(activeDocumentId);
-    await document?.download({
-      contentType: ExportContentType.Html,
-      includeChildDocuments: false,
-    });
+    await document?.download(ExportContentType.Html);
   },
 });
 
 export const downloadDocumentAsPDF = createAction({
-  name: ({ t }) => t("Download as PDF"),
+  name: ({ t }) => t("PDF"),
   analyticsName: "Download document as PDF",
   section: ActiveDocumentSection,
-  keywords: "pdf export",
+  keywords: "export",
   icon: <DownloadIcon />,
+  iconInContextMenu: false,
   visible: ({ activeDocumentId, stores }) =>
     !!(
       activeDocumentId &&
       stores.policies.abilities(activeDocumentId).download &&
       env.PDF_EXPORT_ENABLED
     ),
+  perform: ({ activeDocumentId, t, stores }) => {
+    if (!activeDocumentId) {
+      return;
+    }
+
+    const id = toast.loading(`${t("Exporting")}…`);
+    const document = stores.documents.get(activeDocumentId);
+    return document
+      ?.download(ExportContentType.Pdf)
+      .finally(() => id && toast.dismiss(id));
+  },
+});
+
+export const downloadDocumentAsMarkdown = createAction({
+  name: ({ t }) => t("Markdown"),
+  analyticsName: "Download document as Markdown",
+  section: ActiveDocumentSection,
+  keywords: "md markdown export",
+  icon: <DownloadIcon />,
+  iconInContextMenu: false,
+  visible: ({ activeDocumentId, stores }) =>
+    !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
   perform: async ({ activeDocumentId, stores }) => {
     if (!activeDocumentId) {
       return;
     }
 
     const document = stores.documents.get(activeDocumentId);
-    await document?.download({
-      contentType: ExportContentType.Pdf,
-      includeChildDocuments: false,
-    });
+    await document?.download(ExportContentType.Markdown);
   },
+});
+
+export const downloadDocument = createActionWithChildren({
+  name: ({ t, isMenu }) => (isMenu ? t("Download") : t("Download document")),
+  analyticsName: "Download document",
+  section: ActiveDocumentSection,
+  icon: <DownloadIcon />,
+  keywords: "export",
+  visible: ({ activeDocumentId, stores }) =>
+    !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
+  children: [
+    downloadDocumentAsHTML,
+    downloadDocumentAsPDF,
+    downloadDocumentAsMarkdown,
+  ],
 });
 
 export const copyDocumentAsMarkdown = createAction({
@@ -629,11 +614,10 @@ export const copyDocumentAsMarkdown = createAction({
       ? stores.documents.get(activeDocumentId)
       : undefined;
     if (document) {
-      const res = await client.post("/documents.export", {
-        id: document.id,
-        signedUrls: Week.seconds, // 7 days (AWS S3 max for presigned URLs)
-      });
-      copy(res.data);
+      const { ProsemirrorHelper } = await import(
+        "~/models/helpers/ProsemirrorHelper"
+      );
+      copy(ProsemirrorHelper.toMarkdown(document));
       toast.success(t("Markdown copied to clipboard"));
     }
   },
@@ -652,8 +636,9 @@ export const copyDocumentAsPlainText = createAction({
       ? stores.documents.get(activeDocumentId)
       : undefined;
     if (document) {
-      const { ProsemirrorHelper } =
-        await import("~/models/helpers/ProsemirrorHelper");
+      const { ProsemirrorHelper } = await import(
+        "~/models/helpers/ProsemirrorHelper"
+      );
       copy(ProsemirrorHelper.toPlainText(document));
       toast.success(t("Text copied to clipboard"));
     }
@@ -1461,9 +1446,6 @@ export const rootDocumentActions = [
   deleteDocument,
   importDocument,
   downloadDocument,
-  downloadDocumentAsMarkdown,
-  downloadDocumentAsHTML,
-  downloadDocumentAsPDF,
   copyDocumentLink,
   copyDocumentShareLink,
   copyDocumentAsMarkdown,

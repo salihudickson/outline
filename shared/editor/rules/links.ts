@@ -1,5 +1,4 @@
-import type { Token } from "markdown-it";
-import type MarkdownIt from "markdown-it";
+import MarkdownIt, { Token } from "markdown-it";
 import env from "../../env";
 
 function isParagraph(token: Token) {

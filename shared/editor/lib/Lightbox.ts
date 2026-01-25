@@ -1,6 +1,6 @@
-import type { Node } from "prosemirror-model";
-import { isMermaid } from "./isCode";
-import type { EditorView } from "prosemirror-view";
+import { Node } from "prosemirror-model";
+import { isCode } from "./isCode";
+import { EditorView } from "prosemirror-view";
 import { sanitizeUrl } from "@shared/utils/urls";
 
 export abstract class LightboxImage {
@@ -80,5 +80,7 @@ export class LightboxImageFactory {
 }
 
 const isImage = (node: Node) => node.type.name === "image";
+const isMermaid = (node: Node) =>
+  isCode(node) && node.attrs.language === "mermaidjs";
 
 export const isLightboxNode = (node: Node) => isImage(node) || isMermaid(node);

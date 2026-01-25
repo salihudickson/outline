@@ -1,11 +1,12 @@
 import "reflect-metadata";
 import sharedEnv from "@shared/env";
 import env from "@server/env";
-import { EventEmitter } from "events";
+import Redis from "ioredis-mock";
 
-// Increase the default max listeners for EventEmitter to prevent warnings in tests
-// This needs to be done before any modules that use EventEmitter are loaded
-EventEmitter.defaultMaxListeners = 100;
+// Enable mocks for Redis-related modules
+jest.mock("ioredis", () => require("ioredis-mock"));
+jest.mock("@server/utils/MutexLock");
+jest.mock("@server/utils/CacheHelper");
 
 // Enable fetch mocks for testing
 require("jest-fetch-mock").enableMocks();
@@ -38,16 +39,10 @@ jest.mock("@aws-sdk/s3-request-presigner", () => ({
 // Initialize the database models
 require("@server/storage/database");
 
-// Import Redis after mocking
-const Redis = require("ioredis");
-
 beforeEach(() => {
   env.URL = sharedEnv.URL = "https://app.outline.dev";
 });
 
-afterEach(async () => {
-  // Create a new Redis instance for cleanup
-  const redis = new Redis();
-  await redis.flushall();
-  redis.disconnect();
+afterEach((done) => {
+  new Redis().flushall().then(() => done());
 });

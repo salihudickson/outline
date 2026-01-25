@@ -9,7 +9,7 @@ import type {
   ProsemirrorData,
 } from "@shared/types";
 import {
-  type ExportContentType,
+  ExportContentType,
   FileOperationFormat,
   NavigationNodeType,
   NotificationEventType,
@@ -17,18 +17,19 @@ import {
 import Storage from "@shared/utils/Storage";
 import { isRTL } from "@shared/utils/rtl";
 import slugify from "@shared/utils/slugify";
-import type DocumentsStore from "~/stores/DocumentsStore";
+import DocumentsStore from "~/stores/DocumentsStore";
 import User from "~/models/User";
 import type { Properties } from "~/types";
 import { client } from "~/utils/ApiClient";
 import { settingsPath } from "~/utils/routeHelpers";
 import Collection from "./Collection";
-import type Notification from "./Notification";
-import type View from "./View";
+import Notification from "./Notification";
+import Pin from "./Pin";
+import View from "./View";
 import ArchivableModel from "./base/ArchivableModel";
 import Field from "./decorators/Field";
 import Relation from "./decorators/Relation";
-import type { Searchable } from "./interfaces/Searchable";
+import { Searchable } from "./interfaces/Searchable";
 
 type SaveOptions = JSONObject & {
   publish?: boolean;
@@ -230,13 +231,6 @@ export default class Document extends ArchivableModel implements Searchable {
   isCollectionDeleted: boolean;
 
   /**
-   * Array of backlink document IDs for publicly shared documents.
-   * Only populated when viewing through a share link.
-   */
-  @observable
-  backlinkIds?: string[];
-
-  /**
    * Returns the notifications associated with this document.
    */
   @computed
@@ -354,18 +348,11 @@ export default class Document extends ArchivableModel implements Searchable {
 
   /**
    * Returns the documents that link to this document.
-   * For publicly shared documents, uses the backlinkIds provided by the server.
-   * For authenticated users, uses the store's backlink data.
    *
-   * @returns documents that link to this document.
+   * @returns documents that link to this document
    */
   @computed
   get backlinks(): Document[] {
-    if (this.backlinkIds) {
-      return this.backlinkIds
-        .map((id) => this.store.get(id))
-        .filter(Boolean) as Document[];
-    }
     return this.store.getBacklinkedDocuments(this.id);
   }
 
@@ -428,7 +415,7 @@ export default class Document extends ArchivableModel implements Searchable {
 
   @computed
   get isTasks(): boolean {
-    return !!this.tasks?.total;
+    return !!this.tasks.total;
   }
 
   @computed
@@ -507,11 +494,16 @@ export default class Document extends ArchivableModel implements Searchable {
   };
 
   @action
-  pin = (collectionId?: string | null) =>
-    this.store.rootStore.pins.create({
+  pin = async (collectionId?: string | null) => {
+    const pin = new Pin({}, this.store.rootStore.pins);
+
+    await pin.save({
       documentId: this.id,
       ...(collectionId ? { collectionId } : {}),
     });
+
+    return pin;
+  };
 
   @action
   unpin = (collectionId?: string) => {
@@ -702,21 +694,14 @@ export default class Document extends ArchivableModel implements Searchable {
     );
   }
 
-  download = ({
-    contentType,
-    includeChildDocuments,
-  }: {
-    contentType: ExportContentType;
-    includeChildDocuments?: boolean;
-  }) =>
+  download = (contentType: ExportContentType) =>
     client.post(
       `/documents.export`,
       {
         id: this.id,
-        includeChildDocuments: includeChildDocuments ?? false,
       },
       {
-        ...(includeChildDocuments ? {} : { download: true }),
+        download: true,
         headers: {
           accept: contentType,
         },

@@ -4,8 +4,7 @@ import { FileOperationState } from "@shared/types";
 import Logger from "@server/logging/Logger";
 import { FileOperation } from "@server/models";
 import { TaskPriority } from "./base/BaseTask";
-import type { Props } from "./base/CronTask";
-import { CronTask, TaskInterval } from "./base/CronTask";
+import { CronTask, Props, TaskInterval } from "./base/CronTask";
 
 export default class CleanupExpiredFileOperationsTask extends CronTask {
   public async perform({ limit }: Props) {
