@@ -2,13 +2,11 @@
 // This file is pulled almost 100% from react-router with the addition of one
 // thing, automatic scroll to the active link. It's worth the copy paste because
 // it avoids recalculating the link match again.
-import { Location, createLocation, LocationDescriptor } from "history";
+import type { Location, LocationDescriptor } from "history";
+import { createLocation } from "history";
 import * as React from "react";
-import {
-  __RouterContext as RouterContext,
-  matchPath,
-  match,
-} from "react-router";
+import type { match } from "react-router";
+import { __RouterContext as RouterContext, matchPath } from "react-router";
 import { Link } from "react-router-dom";
 import scrollIntoView from "scroll-into-view-if-needed";
 import history from "~/utils/history";
@@ -125,7 +123,9 @@ const NavLink = ({
       !event.altKey &&
       !event.metaKey &&
       !event.ctrlKey &&
-      !isActive,
+      !isActive &&
+      // Don't navigate if a context menu trigger inside this link is open
+      !event.currentTarget.querySelector('[data-state="open"]'),
     [rest.target, isActive]
   );
 
@@ -141,7 +141,7 @@ const NavLink = ({
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       onClick?.(event);
 
-      if (isActive) {
+      if (isActive && !event.defaultPrevented) {
         onActiveClick?.(event);
       }
 
@@ -162,7 +162,12 @@ const NavLink = ({
 
   const handleClick = React.useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
-      if (isActive) {
+      // Prevent navigation if link is active, event is synthetic, or context menu is open
+      if (
+        isActive ||
+        !event.isTrusted ||
+        event.currentTarget.querySelector('[data-state="open"]')
+      ) {
         event.preventDefault();
       }
     },

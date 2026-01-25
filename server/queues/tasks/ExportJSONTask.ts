@@ -1,25 +1,24 @@
 import JSZip from "jszip";
 import omit from "lodash/omit";
-import { NavigationNode } from "@shared/types";
+import type { NavigationNode } from "@shared/types";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
-import {
-  Attachment,
-  Collection,
-  Document,
-  FileOperation,
-} from "@server/models";
+import type { Collection, FileOperation } from "@server/models";
+import { Attachment, Document } from "@server/models";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
 import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
 import { presentAttachment, presentCollection } from "@server/presenters";
-import { CollectionJSONExport, JSONExportMetadata } from "@server/types";
+import type { CollectionJSONExport, JSONExportMetadata } from "@server/types";
 import ZipHelper from "@server/utils/ZipHelper";
 import { serializeFilename } from "@server/utils/fs";
 import packageJson from "../../../package.json";
 import ExportTask from "./ExportTask";
 
 export default class ExportJSONTask extends ExportTask {
-  public async export(collections: Collection[], fileOperation: FileOperation) {
+  public async exportCollections(
+    collections: Collection[],
+    fileOperation: FileOperation
+  ) {
     const zip = new JSZip();
 
     // serial to avoid overloading, slow and steady wins the race
@@ -173,5 +172,9 @@ export default class ExportJSONTask extends ExportTask {
         ? JSON.stringify(output, null, 2)
         : JSON.stringify(output)
     );
+  }
+
+  public async exportDocument(): Promise<string> {
+    throw new Error("JSON export unsupported for individual document.");
   }
 }

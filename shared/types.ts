@@ -129,6 +129,7 @@ export enum IntegrationService {
   Umami = "umami",
   GitHub = "github",
   Linear = "linear",
+  Figma = "figma",
   Notion = "notion",
 }
 
@@ -211,28 +212,38 @@ export type IntegrationSettings<T> = T extends IntegrationType.Embed
           ? {
               externalWorkspace: { id: string; name: string; iconUrl?: string };
             }
-          :
-              | { url: string }
-              | {
-                  github?: {
-                    installation: {
-                      id: number;
-                      account: {
-                        id?: number;
-                        name: string;
-                        avatarUrl?: string;
+          : T extends IntegrationType.LinkedAccount
+            ? {
+                slack?: { serviceTeamId: string; serviceUserId: string };
+                figma?: {
+                  account: {
+                    id: string;
+                    name: string;
+                    email: string;
+                    avatarUrl: string;
+                  };
+                };
+              }
+            :
+                | { url: string }
+                | {
+                    github?: {
+                      installation: {
+                        id: number;
+                        account: {
+                          id?: number;
+                          name: string;
+                          avatarUrl?: string;
+                        };
                       };
                     };
-                  };
-                  diagrams?: {
-                    url: string;
-                  };
-                }
-              | { url: string; channel: string; channelId: string }
-              | { serviceTeamId: string }
-              | { measurementId: string }
-              | { slack: { serviceTeamId: string; serviceUserId: string } }
-              | undefined;
+                    diagrams?: {
+                      url: string;
+                    };
+                  }
+                | { serviceTeamId: string }
+                | { measurementId: string }
+                | undefined;
 
 export enum UserPreference {
   /** Whether reopening the app should redirect to the last viewed document. */
@@ -287,6 +298,12 @@ export enum TOCPosition {
   Right = "right",
 }
 
+export enum EmailDisplay {
+  None = "none",
+  Members = "members",
+  Everyone = "everyone",
+}
+
 export enum TeamPreference {
   /** Whether documents have a separate edit mode instead of always editing. */
   SeamlessEdit = "seamlessEdit",
@@ -310,6 +327,8 @@ export enum TeamPreference {
   TocPosition = "tocPosition",
   /** Whether to prevent shared documents from being embedded in iframes on external websites. */
   PreventDocumentEmbedding = "preventDocumentEmbedding",
+  /** Who can see user email addresses. */
+  EmailDisplay = "emailDisplay",
 }
 
 export type TeamPreferences = {
@@ -324,6 +343,7 @@ export type TeamPreferences = {
   [TeamPreference.CustomTheme]?: Partial<CustomTheme>;
   [TeamPreference.TocPosition]?: TOCPosition;
   [TeamPreference.PreventDocumentEmbedding]?: boolean;
+  [TeamPreference.EmailDisplay]?: EmailDisplay;
 };
 
 export enum NavigationNodeType {
@@ -375,7 +395,6 @@ export enum NotificationEventType {
   Onboarding = "emails.onboarding",
   Features = "emails.features",
   ExportCompleted = "emails.export_completed",
-  RequestDocumentAccess = "documents.request_access",
 }
 
 export enum NotificationChannelType {
@@ -415,7 +434,6 @@ export const NotificationEventDefaults: Record<NotificationEventType, boolean> =
     [NotificationEventType.ExportCompleted]: true,
     [NotificationEventType.AddUserToDocument]: true,
     [NotificationEventType.AddUserToCollection]: true,
-    [NotificationEventType.RequestDocumentAccess]: true,
   };
 
 export enum UnfurlResourceType {
@@ -555,7 +573,7 @@ export type ProsemirrorData = {
   attrs?: JSONObject;
   marks?: {
     type: string;
-    attrs: JSONObject;
+    attrs?: JSONObject;
   }[];
 };
 
@@ -568,6 +586,16 @@ export enum IconType {
   SVG = "svg",
   Emoji = "emoji",
   Custom = "custom",
+}
+
+/** Edit modes for document text updates. */
+export enum TextEditMode {
+  /** Replace existing content with new content (default). */
+  Replace = "replace",
+  /** Append new content to the end of the document. */
+  Append = "append",
+  /** Prepend new content to the beginning of the document. */
+  Prepend = "prepend",
 }
 
 export enum EmojiCategory {

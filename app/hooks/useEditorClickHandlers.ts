@@ -28,7 +28,7 @@ export default function useEditorClickHandlers({ shareId }: Params) {
       // Middle-click events in Firefox are not prevented in the same way as other browsers
       // so we need to explicitly return here to prevent two tabs from being opened when
       // middle-clicking a link (#10083).
-      if (event?.button === 1 && isFirefox()) {
+      if (event?.button === 1 && isFirefox) {
         return;
       }
 
@@ -37,7 +37,7 @@ export default function useEditorClickHandlers({ shareId }: Params) {
         if (href[0] !== "/") {
           try {
             const url = new URL(href);
-            navigateTo = url.pathname + url.hash;
+            navigateTo = url.pathname + url.search + url.hash;
           } catch (_err) {
             navigateTo = href;
           }

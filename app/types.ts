@@ -1,19 +1,19 @@
-import { Location, LocationDescriptor } from "history";
-import { TFunction } from "i18next";
-import {
+import type { Location, LocationDescriptor } from "history";
+import type { TFunction } from "i18next";
+import type {
   JSONValue,
   CollectionPermission,
   DocumentPermission,
   GroupPermission,
 } from "@shared/types";
-import RootStore from "~/stores/RootStore";
-import { SidebarContextType } from "./components/Sidebar/components/SidebarContext";
-import Document from "./models/Document";
-import FileOperation from "./models/FileOperation";
-import Pin from "./models/Pin";
-import Star from "./models/Star";
-import User from "./models/User";
-import UserMembership from "./models/UserMembership";
+import type RootStore from "~/stores/RootStore";
+import type { SidebarContextType } from "./components/Sidebar/components/SidebarContext";
+import type Document from "./models/Document";
+import type FileOperation from "./models/FileOperation";
+import type Pin from "./models/Pin";
+import type Star from "./models/Star";
+import type User from "./models/User";
+import type UserMembership from "./models/UserMembership";
 
 export type PartialExcept<T, K extends keyof T> = Partial<Omit<T, K>> &
   Required<Pick<T, K>>;
@@ -37,7 +37,8 @@ export type MenuItemWithChildren = {
   disabled?: boolean;
   style?: React.CSSProperties;
   hover?: boolean;
-
+  /** Condition to check before preventing the submenu from closing */
+  preventCloseCondition?: () => boolean;
   items: MenuItem[];
   icon?: React.ReactNode;
 };
@@ -82,6 +83,12 @@ export type MenuGroup = {
   items: MenuItem[];
 };
 
+export type MenuCustomContent = {
+  type: "custom";
+  visible?: boolean;
+  content: React.ReactNode;
+};
+
 export type MenuItem =
   | MenuInternalLink
   | MenuItemButton
@@ -89,7 +96,8 @@ export type MenuItem =
   | MenuItemWithChildren
   | MenuSeparator
   | MenuHeading
-  | MenuGroup;
+  | MenuGroup
+  | MenuCustomContent;
 
 export type ActionContext = {
   isMenu: boolean;

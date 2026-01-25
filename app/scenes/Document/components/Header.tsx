@@ -7,8 +7,8 @@ import styled, { useTheme } from "styled-components";
 import Icon from "@shared/components/Icon";
 import useMeasure from "react-use-measure";
 import { altDisplay, metaDisplay } from "@shared/utils/keyboard";
-import Document from "~/models/Document";
-import Revision from "~/models/Revision";
+import type Document from "~/models/Document";
+import type Revision from "~/models/Revision";
 import { Action, Separator } from "~/components/Actions";
 import Badge from "~/components/Badge";
 import Button from "~/components/Button";
@@ -40,8 +40,11 @@ import PublicBreadcrumb from "./PublicBreadcrumb";
 import ShareButton from "./ShareButton";
 import { AppearanceAction } from "~/components/Sharing/components/Actions";
 import useShare from "@shared/hooks/useShare";
+import { type Editor } from "~/editor";
+import { ChangesNavigation } from "./ChangesNavigation";
 
 type Props = {
+  editorRef: React.RefObject<Editor>;
   document: Document;
   revision: Revision | undefined;
   isDraft: boolean;
@@ -59,6 +62,7 @@ type Props = {
 };
 
 function DocumentHeader({
+  editorRef,
   document,
   revision,
   isEditing,
@@ -303,14 +307,27 @@ function DocumentHeader({
                   <NewChildDocumentMenu document={document} />
                 </Action>
               )}
-            {revision && revision.createdAt !== document.updatedAt && (
-              <Action>
-                <Tooltip content={t("Restore version")} placement="bottom">
-                  <Button action={restoreRevision} neutral hideOnActionDisabled>
-                    {t("Restore")}
-                  </Button>
-                </Tooltip>
-              </Action>
+            {revision && (
+              <>
+                <Action>
+                  <ChangesNavigation
+                    revision={revision}
+                    editorRef={editorRef}
+                  />
+                </Action>
+                <Action>
+                  <Tooltip content={t("Restore version")} placement="bottom">
+                    <Button
+                      action={restoreRevision}
+                      disabled={revision.createdAt === document.updatedAt}
+                      neutral
+                      hideOnActionDisabled
+                    >
+                      {t("Restore")}
+                    </Button>
+                  </Tooltip>
+                </Action>
+              </>
             )}
             {can.publish && (
               <Action>

@@ -4,18 +4,21 @@ import find from "lodash/find";
 import mime from "mime-types";
 import { Fragment, Node } from "prosemirror-model";
 import { randomUUID } from "crypto";
-import { ProsemirrorData } from "@shared/types";
+import type { ProsemirrorData } from "@shared/types";
 import { schema, serializer } from "@server/editor";
 import Logger from "@server/logging/Logger";
-import { Attachment, FileOperation } from "@server/models";
-import {
+import type { FileOperation } from "@server/models";
+import { Attachment } from "@server/models";
+import type {
   AttachmentJSONExport,
   CollectionJSONExport,
   DocumentJSONExport,
   JSONExportMetadata,
 } from "@server/types";
-import ImportHelper, { FileTreeNode } from "@server/utils/ImportHelper";
-import ImportTask, { StructuredImportData } from "./ImportTask";
+import type { FileTreeNode } from "@server/utils/ImportHelper";
+import ImportHelper from "@server/utils/ImportHelper";
+import type { StructuredImportData } from "./ImportTask";
+import ImportTask from "./ImportTask";
 
 export default class ImportJSONTask extends ImportTask {
   public async parseData(
@@ -97,17 +100,28 @@ export default class ImportJSONTask extends ImportTask {
       });
     }
 
-    async function mapAttachments(attachments: {
+    function mapAttachments(attachments: {
       [id: string]: AttachmentJSONExport;
     }) {
       Object.values(attachments).forEach((node) => {
         const id = randomUUID();
         const mimeType = mime.lookup(node.key) || "application/octet-stream";
+        const filePath = path.join(rootPath, node.key);
+
+        // Block path traversal attempts
+        if (node.key.includes("..")) {
+          throw new Error(`Invalid attachment path: ${node.key}`);
+        }
+
+        const resolvedPath = path.resolve(filePath);
+        if (!resolvedPath.startsWith(path.resolve(rootPath) + path.sep)) {
+          throw new Error(`Invalid attachment path: ${node.key}`);
+        }
 
         output.attachments.push({
           id,
           name: node.name,
-          buffer: () => fs.readFile(path.join(rootPath, node.key)),
+          buffer: () => fs.readFile(filePath),
           mimeType,
           path: node.key,
           externalId: node.id,

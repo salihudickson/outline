@@ -5,7 +5,7 @@ import {
   CollectionIcon,
   WarningIcon,
 } from "outline-icons";
-import { Node } from "prosemirror-model";
+import type { Node } from "prosemirror-model";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -27,7 +27,7 @@ import {
   type UnfurlResponse,
 } from "../../types";
 import { cn } from "../styles/utils";
-import { ComponentProps } from "../types";
+import type { ComponentProps } from "../types";
 import { toDisplayUrl, cdnPath } from "../../utils/urls";
 
 type Attrs = {
@@ -193,7 +193,7 @@ export const MentionURL = (props: IssueUrlProps) => {
   } = getAttributesFromNode(node);
 
   const url = String(attrs.href);
-  const unfurl = unfurls.get(attrs.href)?.data ?? unfurlAttr;
+  const unfurl = unfurls.get(url)?.data ?? unfurlAttr;
 
   React.useEffect(() => {
     const fetchUnfurl = async () => {
@@ -204,31 +204,37 @@ export const MentionURL = (props: IssueUrlProps) => {
           return;
         }
 
+        // We got a result back from the server, so update the unfurl in the node attributes.
         if (unfurlModel) {
           onChangeUnfurl(
             unfurlModel.data satisfies UnfurlResponse[UnfurlResourceType.URL]
           );
-        } else {
-          // If we didn't get a result back, we still want to add a basic unfurl
-          // to avoid refetching again in future. This will just show the URL
-          // with a generic link icon.
-          unfurls.add({
-            id: url,
-            type: UnfurlResourceType.URL,
-            fetchedAt: new Date().toISOString(),
-            data: {
+          return;
+        }
+
+        const attrs = getAttributesFromNode(node);
+        // If we have a unfurl attribute, use that.
+        // Otherwise, set a basic unfurl to avoid refetching again in future.
+        // This will just show the URL with a generic link icon.
+        const data = attrs.unfurl
+          ? attrs.unfurl
+          : {
               title: toDisplayUrl(url),
               faviconUrl: cdnPath("/images/link.png"),
-            },
-          });
-        }
+            };
+        unfurls.add({
+          id: url,
+          type: UnfurlResourceType.URL,
+          fetchedAt: new Date().toISOString(),
+          data,
+        });
       } finally {
         setLoaded(true);
       }
     };
 
     void fetchUnfurl();
-  }, [unfurls, attrs.href, isMounted]);
+  }, [unfurls, url, node, isMounted]);
 
   if (!unfurl) {
     return !loaded ? (
@@ -244,7 +250,7 @@ export const MentionURL = (props: IssueUrlProps) => {
       className={cn(className, {
         "ProseMirror-selectednode": isSelected,
       })}
-      href={attrs.href as string}
+      href={url}
       target="_blank"
       rel="noopener noreferrer nofollow"
     >

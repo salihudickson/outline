@@ -1,24 +1,25 @@
-import { Token } from "markdown-it";
+import type { Token } from "markdown-it";
 import { InputRule } from "prosemirror-inputrules";
-import { Node as ProsemirrorNode, NodeSpec, NodeType } from "prosemirror-model";
-import {
-  NodeSelection,
-  Plugin,
-  Command,
-  TextSelection,
-} from "prosemirror-state";
+import type {
+  Node as ProsemirrorNode,
+  NodeSpec,
+  NodeType,
+} from "prosemirror-model";
+import type { Command } from "prosemirror-state";
+import { NodeSelection, Plugin, TextSelection } from "prosemirror-state";
 import * as React from "react";
 import { sanitizeUrl } from "../../utils/urls";
 import Caption from "../components/Caption";
 import ImageComponent from "../components/Image";
-import { addComment } from "../commands/comment";
-import { MarkdownSerializerState } from "../lib/markdown/serializer";
+import type { MarkdownSerializerState } from "../lib/markdown/serializer";
 import { EditorStyleHelper } from "../styles/EditorStyleHelper";
-import { ComponentProps } from "../types";
+import type { ComponentProps } from "../types";
 import SimpleImage from "./SimpleImage";
 import { LightboxImageFactory } from "../lib/Lightbox";
 import { ImageSource } from "../lib/FileHelper";
 import { DiagramPlaceholder } from "../components/DiagramPlaceholder";
+import { addComment } from "../commands/comment";
+import { addLink } from "../commands/link";
 
 const imageSizeRegex = /\s=(\d+)?x(\d+)?$/;
 
@@ -152,6 +153,7 @@ export default class Image extends SimpleImage {
               src: img?.getAttribute("src"),
               alt: img?.getAttribute("alt"),
               title: img?.getAttribute("title"),
+              source: img?.getAttribute("source"),
               width: width ? parseInt(width, 10) : undefined,
               height: height ? parseInt(height, 10) : undefined,
               layoutClass,
@@ -302,7 +304,7 @@ export default class Image extends SimpleImage {
         return;
       }
 
-      // Pressing Backspace in an an empty caption field focused the image.
+      // Pressing Backspace in an empty caption field focused the image.
       if (event.key === "Backspace" && event.currentTarget.innerText === "") {
         event.preventDefault();
         event.stopPropagation();
@@ -333,6 +335,14 @@ export default class Image extends SimpleImage {
         alt: caption,
       });
       view.dispatch(transaction);
+    };
+
+  handleZoomIn =
+    ({ getPos, view }: ComponentProps) =>
+    () => {
+      this.editor.updateActiveLightboxImage(
+        LightboxImageFactory.createLightboxImage(view, getPos())
+      );
     };
 
   handleClick =
@@ -379,6 +389,7 @@ export default class Image extends SimpleImage {
         {...props}
         onClick={this.handleClick(props)}
         onDownload={this.handleDownload(props)}
+        onZoomIn={this.handleZoomIn(props)}
         onChangeSize={this.handleChangeSize(props)}
       >
         <Caption
@@ -536,6 +547,7 @@ export default class Image extends SimpleImage {
         },
       commentOnImage: (): Command =>
         addComment({ userId: this.options.userId }),
+      linkOnImage: (): Command => addLink({ href: "" }),
     };
   }
 

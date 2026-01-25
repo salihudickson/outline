@@ -9,15 +9,10 @@ import type {
   NonNullFindOptions,
   SaveOptions,
   ScopeOptions,
-} from "sequelize";
-import {
-  Transaction,
-  Op,
   FindOptions,
   WhereOptions,
-  EmptyResultError,
-  Sequelize,
 } from "sequelize";
+import { Transaction, Op, EmptyResultError, Sequelize } from "sequelize";
 import {
   ForeignKey,
   BelongsTo,
@@ -45,7 +40,6 @@ import {
 import { MaxLength } from "class-validator";
 import isUUID from "validator/lib/isUUID";
 import type {
-  DocumentPermission,
   NavigationNode,
   ProsemirrorData,
   SourceMetadata,
@@ -75,9 +69,10 @@ import Fix from "./decorators/Fix";
 import { DocumentHelper } from "./helpers/DocumentHelper";
 import IsHexColor from "./validators/IsHexColor";
 import Length from "./validators/Length";
-import { APIContext } from "@server/types";
+import type { APIContext } from "@server/types";
+import { APIUpdateExtension } from "@server/collaboration/APIUpdateExtension";
 import { SkipChangeset } from "./decorators/Changeset";
-import { HookContext } from "./base/Model";
+import type { HookContext } from "./base/Model";
 
 export const DOCUMENT_VERSION = 2;
 
@@ -592,6 +587,17 @@ class Document extends ArchivableModel<
     }
   }
 
+  @AfterUpdate
+  static notifyCollaborationServer(model: Document, ctx: HookContext) {
+    if (model.changed("state") && ctx.transaction && ctx.auth?.user?.id) {
+      const actorId = ctx.auth.user.id;
+      const transaction = ctx.transaction.parent || ctx.transaction;
+      transaction.afterCommit(async () => {
+        await APIUpdateExtension.notifyUpdate(model.id, actorId);
+      });
+    }
+  }
+
   // associations
 
   @BelongsTo(() => FileOperation, "importId")
@@ -680,30 +686,11 @@ class Document extends ArchivableModel<
    * either via group or direct membership.
    *
    * @param documentId
-   * @param permission optional permission filter
-   *
    * @returns userIds
    */
-  static async membershipUserIds(
-    documentId: string,
-    permission?: DocumentPermission
-  ) {
+  static async membershipUserIds(documentId: string) {
     const document = await this.scope("withAllMemberships").findOne({
       where: { id: documentId },
-      include: [
-        {
-          association: "memberships",
-          required: false,
-          ...(permission && { where: { permission } }),
-          separate: true,
-        },
-        {
-          association: "groupMemberships",
-          required: false,
-          ...(permission && { where: { permission } }),
-          separate: true,
-        },
-      ],
     });
     if (!document) {
       return [];
@@ -922,13 +909,13 @@ class Document extends ArchivableModel<
    *
    * @param revision The revision to revert to.
    */
-  restoreFromRevision = (revision: Revision) => {
+  restoreFromRevision = async (revision: Revision) => {
     if (revision.documentId !== this.id) {
       throw new Error("Revision does not belong to this document");
     }
 
     this.content = revision.content;
-    this.text = DocumentHelper.toMarkdown(revision, {
+    this.text = await DocumentHelper.toMarkdown(revision, {
       includeTitle: false,
     });
     this.title = revision.title;

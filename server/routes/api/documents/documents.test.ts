@@ -9,6 +9,7 @@ import {
 import { TextHelper } from "@shared/utils/TextHelper";
 import { createContext } from "@server/context";
 import { parser } from "@server/editor";
+import type { User } from "@server/models";
 import {
   Document,
   View,
@@ -16,7 +17,6 @@ import {
   UserMembership,
   SearchQuery,
   Event,
-  User,
   GroupMembership,
   Relationship,
 } from "@server/models";
@@ -525,7 +525,7 @@ describe("#documents.export", () => {
     });
     const body = await res.json();
     expect(res.status).toEqual(200);
-    expect(body.data).toEqual(DocumentHelper.toMarkdown(document));
+    expect(body.data).toEqual(await DocumentHelper.toMarkdown(document));
   });
 
   it("should return document text with accept=text/markdown", async () => {
@@ -544,7 +544,7 @@ describe("#documents.export", () => {
       },
     });
     const body = await res.text();
-    expect(body).toEqual(DocumentHelper.toMarkdown(document));
+    expect(body).toEqual(await DocumentHelper.toMarkdown(document));
   });
 
   it("should return archived document", async () => {
@@ -562,7 +562,7 @@ describe("#documents.export", () => {
     });
     const body = await res.json();
     expect(res.status).toEqual(200);
-    expect(body.data).toEqual(DocumentHelper.toMarkdown(document));
+    expect(body.data).toEqual(await DocumentHelper.toMarkdown(document));
   });
 
   it("should not return published document in collection not a member of", async () => {
@@ -597,7 +597,7 @@ describe("#documents.export", () => {
     });
     const body = await res.json();
     expect(res.status).toEqual(200);
-    expect(body.data).toEqual(DocumentHelper.toMarkdown(document));
+    expect(body.data).toEqual(await DocumentHelper.toMarkdown(document));
   });
 
   it("should require authorization without token", async () => {
@@ -912,6 +912,82 @@ describe("#documents.list", () => {
     expect(res.status).toEqual(200);
     expect(body.data[0].id).toEqual(anotherDoc.id);
     expect(body.data[1].id).toEqual(document.id);
+  });
+
+  it("should allow pagination with collection index sort", async () => {
+    const user = await buildUser();
+    const collection = await buildCollection({
+      userId: user.id,
+      teamId: user.teamId,
+    });
+
+    // Create 25 documents for pagination testing
+    // Note: buildDocument adds each doc to position 0, so they'll be in reverse order
+    const documents = [];
+    for (let i = 0; i < 25; i++) {
+      const doc = await buildDocument({
+        title: `document ${i}`,
+        userId: user.id,
+        collectionId: collection.id,
+        teamId: user.teamId,
+      });
+      documents.push(doc);
+    }
+
+    // Documents are added at position 0, so the order in documentStructure is reversed
+    // documents[24] is first, documents[0] is last
+    const expectedOrder = documents.slice().reverse();
+
+    // First page (offset=0, limit=10)
+    const res1 = await server.post("/api/documents.list", {
+      body: {
+        token: user.getJwtToken(),
+        collectionId: collection.id,
+        sort: "index",
+        direction: "ASC",
+        offset: 0,
+        limit: 10,
+      },
+    });
+    const body1 = await res1.json();
+    expect(res1.status).toEqual(200);
+    expect(body1.data).toHaveLength(10);
+    expect(body1.data[0].id).toEqual(expectedOrder[0].id);
+    expect(body1.data[9].id).toEqual(expectedOrder[9].id);
+
+    // Second page (offset=10, limit=10) - this tests the bug fix
+    const res2 = await server.post("/api/documents.list", {
+      body: {
+        token: user.getJwtToken(),
+        collectionId: collection.id,
+        sort: "index",
+        direction: "ASC",
+        offset: 10,
+        limit: 10,
+      },
+    });
+    const body2 = await res2.json();
+    expect(res2.status).toEqual(200);
+    expect(body2.data).toHaveLength(10);
+    expect(body2.data[0].id).toEqual(expectedOrder[10].id);
+    expect(body2.data[9].id).toEqual(expectedOrder[19].id);
+
+    // Third page (offset=20, limit=10)
+    const res3 = await server.post("/api/documents.list", {
+      body: {
+        token: user.getJwtToken(),
+        collectionId: collection.id,
+        sort: "index",
+        direction: "ASC",
+        offset: 20,
+        limit: 10,
+      },
+    });
+    const body3 = await res3.json();
+    expect(res3.status).toEqual(200);
+    expect(body3.data).toHaveLength(5);
+    expect(body3.data[0].id).toEqual(expectedOrder[20].id);
+    expect(body3.data[4].id).toEqual(expectedOrder[24].id);
   });
 
   it("should allow filtering by collection", async () => {
@@ -2140,26 +2216,6 @@ describe("#documents.templatize", () => {
 });
 
 describe("#documents.archived", () => {
-  it("should succeed with 200 ok if sort parameter in request is set to index", async () => {
-    const user = await buildUser();
-    const document = await buildDocument({
-      userId: user.id,
-      teamId: user.teamId,
-    });
-    await withAPIContext(user, (ctx) => document.archiveWithCtx(ctx));
-    const res = await server.post("/api/documents.archived", {
-      body: {
-        token: user.getJwtToken(),
-        sort: "index",
-      },
-    });
-    const body = await res.json();
-    expect(res.status).toEqual(200);
-    expect(body.data).toHaveLength(1);
-    expect(body.data[0].id).toEqual(document.id);
-    expect(body.data[0].archivedAt).toBeTruthy();
-  });
-
   it("should return archived documents in a given collection", async () => {
     const user = await buildUser();
     const [firstCollection, secondCollection] = await Promise.all([
@@ -5854,94 +5910,5 @@ describe("#documents.documents", () => {
 
     expect(res.status).toBe(403);
     expect(body).toMatchSnapshot();
-  });
-});
-
-describe("#documents.request_access", () => {
-  it("should require id", async () => {
-    const user = await buildUser();
-    const res = await server.post("/api/documents.request_access", {
-      body: {
-        token: user.getJwtToken(),
-      },
-    });
-    const body = await res.json();
-    expect(res.status).toEqual(400);
-    expect(body.message).toEqual("id: Must be a valid UUID or slug");
-  });
-
-  it("should require authentication", async () => {
-    const document = await buildDocument();
-    const res = await server.post("/api/documents.request_access", {
-      body: {
-        id: document.id,
-      },
-    });
-    expect(res.status).toEqual(401);
-  });
-
-  it("should return 404 for non-existent document", async () => {
-    const user = await buildUser();
-    const res = await server.post("/api/documents.request_access", {
-      body: {
-        token: user.getJwtToken(),
-        id: "a8f22c38-f4eb-4909-8c30-b927af36c5f3",
-      },
-    });
-    const body = await res.json();
-    expect(res.status).toEqual(404);
-    expect(body.message).toEqual("Document could not be found");
-  });
-
-  it("should create event when requesting access to a document", async () => {
-    const team = await buildTeam();
-    const owner = await buildUser({ teamId: team.id });
-    const requester = await buildUser({ teamId: team.id });
-    const document = await buildDocument({
-      teamId: team.id,
-      createdById: owner.id,
-    });
-
-    const res = await server.post("/api/documents.request_access", {
-      body: {
-        token: requester.getJwtToken(),
-        id: document.id,
-      },
-    });
-
-    const body = await res.json();
-    expect(res.status).toEqual(200);
-    expect(body.success).toEqual(true);
-
-    const events = await Event.findAll({
-      where: {
-        teamId: team.id,
-        name: "documents.request_access",
-      },
-    });
-    expect(events.length).toEqual(1);
-    expect(events[0].documentId).toEqual(document.id);
-    expect(events[0].actorId).toEqual(requester.id);
-  });
-
-  it("should work with document urlId", async () => {
-    const team = await buildTeam();
-    const owner = await buildUser({ teamId: team.id });
-    const requester = await buildUser({ teamId: team.id });
-    const document = await buildDocument({
-      teamId: team.id,
-      createdById: owner.id,
-    });
-
-    const res = await server.post("/api/documents.request_access", {
-      body: {
-        token: requester.getJwtToken(),
-        id: document.urlId,
-      },
-    });
-
-    const body = await res.json();
-    expect(res.status).toEqual(200);
-    expect(body.success).toEqual(true);
   });
 });

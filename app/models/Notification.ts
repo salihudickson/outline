@@ -1,6 +1,7 @@
-import { TFunction } from "i18next";
+import type { TFunction } from "i18next";
 import { action, computed, observable } from "mobx";
-import { NotificationData, NotificationEventType } from "@shared/types";
+import type { NotificationData } from "@shared/types";
+import { NotificationEventType } from "@shared/types";
 import {
   collectionPath,
   commentPath,
@@ -15,8 +16,50 @@ import Model from "./base/Model";
 import Field from "./decorators/Field";
 import Relation from "./decorators/Relation";
 
+export type NotificationFilter =
+  | "all"
+  | "mentions"
+  | "comments"
+  | "reactions"
+  | "documents"
+  | "collections"
+  | "system";
+
 class Notification extends Model {
   static modelName = "Notification";
+
+  static filterCategories: Record<NotificationFilter, NotificationEventType[]> =
+    {
+      all: [],
+      mentions: [
+        NotificationEventType.MentionedInDocument,
+        NotificationEventType.MentionedInComment,
+        NotificationEventType.GroupMentionedInDocument,
+        NotificationEventType.GroupMentionedInComment,
+      ],
+      comments: [
+        NotificationEventType.CreateComment,
+        NotificationEventType.ResolveComment,
+        NotificationEventType.ReactionsCreate,
+      ],
+      reactions: [NotificationEventType.ReactionsCreate],
+      documents: [
+        NotificationEventType.PublishDocument,
+        NotificationEventType.UpdateDocument,
+        NotificationEventType.CreateRevision,
+        NotificationEventType.AddUserToDocument,
+      ],
+      collections: [
+        NotificationEventType.CreateCollection,
+        NotificationEventType.AddUserToCollection,
+      ],
+      system: [
+        NotificationEventType.InviteAccepted,
+        NotificationEventType.Onboarding,
+        NotificationEventType.Features,
+        NotificationEventType.ExportCompleted,
+      ],
+    };
 
   /**
    * The date the notification was marked as read.
@@ -105,6 +148,21 @@ class Notification extends Model {
   }
 
   /**
+   * Archive the notification
+   *
+   * @returns A promise that resolves when the notification has been archived.
+   */
+  @action
+  archive() {
+    if (this.archivedAt) {
+      return;
+    }
+
+    this.archivedAt = new Date();
+    return this.save();
+  }
+
+  /**
    * Returns translated text that describes the notification
    *
    * @param t - The translation function
@@ -137,8 +195,6 @@ class Notification extends Model {
         return t("shared");
       case NotificationEventType.AddUserToCollection:
         return t("invited you to");
-      case NotificationEventType.RequestDocumentAccess:
-        return t("is requesting access to");
       default:
         return this.event;
     }
@@ -179,9 +235,8 @@ class Notification extends Model {
         const collection = this.collectionId
           ? this.store.rootStore.collections.get(this.collectionId)
           : undefined;
-        return collection ? collectionPath(collection.path) : "";
+        return collection ? collectionPath(collection) : "";
       }
-      case NotificationEventType.RequestDocumentAccess:
       case NotificationEventType.AddUserToDocument:
       case NotificationEventType.GroupMentionedInDocument:
       case NotificationEventType.MentionedInDocument: {

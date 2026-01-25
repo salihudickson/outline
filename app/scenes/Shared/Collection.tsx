@@ -6,7 +6,7 @@ import styled from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import { IconTitleWrapper } from "@shared/components/Icon";
 import useShare from "@shared/hooks/useShare";
-import CollectionModel from "~/models/Collection";
+import type CollectionModel from "~/models/Collection";
 import { Action } from "~/components/Actions";
 import Button from "~/components/Button";
 import CenteredContent from "~/components/CenteredContent";
@@ -40,7 +40,7 @@ function SharedCollection({ collection }: Props) {
           as={Link}
           icon={<EditIcon />}
           to={{
-            pathname: collectionPath(collection.path, "overview"),
+            pathname: collectionPath(collection, "overview"),
           }}
           neutral
         >
@@ -83,7 +83,7 @@ function SharedCollection({ collection }: Props) {
             </SharedMeta>
           ) : null}
         </Flex>
-        <Overview collection={collection} shareId={shareId} />
+        <Overview collection={collection} readOnly />
       </CenteredContent>
     </Scene>
   );

@@ -1,15 +1,13 @@
-import { Issue, LinearClient, WorkflowState } from "@linear/sdk";
+import type { Issue, WorkflowState } from "@linear/sdk";
+import { LinearClient } from "@linear/sdk";
 import sortBy from "lodash/sortBy";
 import { z } from "zod";
-import {
-  IntegrationService,
-  IntegrationType,
-  UnfurlResourceType,
-} from "@shared/types";
+import type { IntegrationType } from "@shared/types";
+import { IntegrationService, UnfurlResourceType } from "@shared/types";
 import Logger from "@server/logging/Logger";
 import { Integration } from "@server/models";
-import User from "@server/models/User";
-import { UnfurlIssueOrPR, UnfurlSignature } from "@server/types";
+import type User from "@server/models/User";
+import type { UnfurlIssueOrPR, UnfurlSignature } from "@server/types";
 import { LinearUtils } from "../shared/LinearUtils";
 import env from "./env";
 import { Minute } from "@shared/utils/time";
@@ -106,10 +104,10 @@ export class Linear {
    * @param actor User attempting to unfurl resource url
    * @returns An object containing resource details e.g, a Linear issue details
    */
-  static unfurl: UnfurlSignature = async (url: string, actor: User) => {
+  static unfurl: UnfurlSignature = async (url: string, actor?: User) => {
     const resource = Linear.parseUrl(url);
 
-    if (!resource) {
+    if (!resource || !actor) {
       return;
     }
 
@@ -243,21 +241,26 @@ export class Linear {
    * @returns An object containing resource identifiers - `workspaceKey`, `type`, `id` and `name`.
    */
   private static parseUrl(url: string) {
-    const { hostname, pathname } = new URL(url);
-    if (hostname !== "linear.app") {
+    try {
+      const { hostname, pathname } = new URL(url);
+      if (hostname !== "linear.app") {
+        return;
+      }
+
+      const parts = pathname.split("/");
+      const workspaceKey = parts[1];
+      const type = parts[2] ? (parts[2] as UnfurlResourceType) : undefined;
+      const id = parts[3];
+      const name = parts[4];
+
+      if (!type || !Linear.supportedUnfurls.includes(type)) {
+        return;
+      }
+
+      return { workspaceKey, type, id, name };
+    } catch (_err) {
+      // Invalid URL format
       return;
     }
-
-    const parts = pathname.split("/");
-    const workspaceKey = parts[1];
-    const type = parts[2] ? (parts[2] as UnfurlResourceType) : undefined;
-    const id = parts[3];
-    const name = parts[4];
-
-    if (!type || !Linear.supportedUnfurls.includes(type)) {
-      return;
-    }
-
-    return { workspaceKey, type, id, name };
   }
 }
