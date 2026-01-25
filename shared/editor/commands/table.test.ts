@@ -10,6 +10,47 @@ import { sortTable } from "./table";
 
 describe("sortTable", () => {
   describe("with merged cells", () => {
+    it("should sort by column index considering colspan", () => {
+      // Create a table where we sort by the 3rd column (index 2)
+      // | Header 1 | Header 2 | Header 3 |
+      // | A (merged across 2 cols) | Z     |  <- Should come last (Z > C)
+      // | D        | E        | C        |  <- Should come first (C < Z)
+      const testTable = table([
+        tr([th("Header 1"), th("Header 2"), th("Header 3")]),
+        tr([td("A", { colspan: 2 }), td("Z")]),
+        tr([td("D"), td("E"), td("C")]),
+      ]);
+
+      const testDoc = doc(testTable);
+      const state = createEditorState(testDoc);
+
+      // Sort by third column (index 2) ascending
+      const command = sortTable({ index: 2, direction: "asc" });
+      let newState = state;
+      command(state, (tr) => {
+        newState = state.apply(tr);
+      });
+
+      const newTable = newState.doc.firstChild!;
+
+      // After sorting by column 2: C should come before Z
+      expect(newTable.childCount).toBe(3); // 1 header + 2 data rows
+
+      // First data row should be the one with C in column 2
+      const firstDataRow = newTable.child(1);
+      expect(firstDataRow.childCount).toBe(3);
+      expect(firstDataRow.child(0).textContent).toBe("D");
+      expect(firstDataRow.child(1).textContent).toBe("E");
+      expect(firstDataRow.child(2).textContent).toBe("C");
+
+      // Second data row should be the one with Z in column 2
+      const secondDataRow = newTable.child(2);
+      expect(secondDataRow.childCount).toBe(2);
+      expect(secondDataRow.child(0).textContent).toBe("A");
+      expect(secondDataRow.child(0).attrs.colspan).toBe(2);
+      expect(secondDataRow.child(1).textContent).toBe("Z");
+    });
+
     it("should not duplicate merged cell content when sorting", () => {
       // Create a table with a merged cell (colspan=2) in first data row
       // | Header 1 | Header 2 | Header 3 |

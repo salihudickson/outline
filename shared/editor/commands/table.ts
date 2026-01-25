@@ -315,15 +315,31 @@ export function sortTable({
       // remove the header row
       const header = hasHeaderRow ? table.shift() : undefined;
 
+      // Helper function to find the cell at a given visual column index
+      // considering colspan/rowspan
+      const getCellAtColumn = (row: Node[], columnIndex: number): Node | null => {
+        let currentColumn = 0;
+        for (const cell of row) {
+          const colspan = cell.attrs.colspan || 1;
+          if (columnIndex >= currentColumn && columnIndex < currentColumn + colspan) {
+            return cell;
+          }
+          currentColumn += colspan;
+        }
+        return null;
+      };
+
       // column data before sort
-      const columnData = table.map((row) => row[index]?.textContent ?? "");
+      const columnData = table.map(
+        (row) => getCellAtColumn(row, index)?.textContent ?? ""
+      );
 
       // determine sorting type: date, number, or text
       let compareAsDate = false;
       let compareAsNumber = false;
 
       const nonEmptyCells = table
-        .map((row) => row[index]?.textContent?.trim())
+        .map((row) => getCellAtColumn(row, index)?.textContent?.trim())
         .filter((cell): cell is string => !!cell && cell.length > 0);
       if (nonEmptyCells.length > 0) {
         // check if all non-empty cells are valid dates
@@ -338,8 +354,8 @@ export function sortTable({
 
       // sort table data based on column at index
       table.sort((a, b) => {
-        const aContent = a[index]?.textContent ?? "";
-        const bContent = b[index]?.textContent ?? "";
+        const aContent = getCellAtColumn(a, index)?.textContent ?? "";
+        const bContent = getCellAtColumn(b, index)?.textContent ?? "";
 
         // empty cells always go to the end
         if (!aContent) {
@@ -369,7 +385,8 @@ export function sortTable({
 
       // check if column data changed, if not then do not replace table
       if (
-        columnData.join() === table.map((row) => row[index]?.textContent).join()
+        columnData.join() ===
+        table.map((row) => getCellAtColumn(row, index)?.textContent).join()
       ) {
         return true;
       }
