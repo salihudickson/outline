@@ -16,7 +16,7 @@ type Props = {
   action: React.ReactNode;
 };
 
-export const SearchInput = React.forwardRef(function SearchInput_(
+export const SearchInput = React.forwardRef(function _SearchInput(
   { onChange, onClick, onKeyDown, query, back, action }: Props,
   ref: React.Ref<HTMLInputElement>
 ) {

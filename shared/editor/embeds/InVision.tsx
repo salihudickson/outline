@@ -1,5 +1,5 @@
 import Frame from "../components/Frame";
-import type { EmbedProps as Props } from ".";
+import { EmbedProps as Props } from ".";
 
 function InVision({ matches, ...props }: Props) {
   return <Frame {...props} src={props.attrs.href} title="InVision Embed" />;

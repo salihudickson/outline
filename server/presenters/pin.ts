@@ -1,4 +1,4 @@
-import type { Pin } from "@server/models";
+import { Pin } from "@server/models";
 
 export default function presentPin(pin: Pin) {
   return {

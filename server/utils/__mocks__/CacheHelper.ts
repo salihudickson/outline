@@ -1,5 +1,4 @@
 import { Day } from "@shared/utils/time";
-import type { CacheResult } from "../CacheHelper";
 
 /**
  * A Mock Helper class for server-side cache management
@@ -13,15 +12,11 @@ export class CacheHelper {
    */
   public static async getDataOrSet<T>(
     key: string,
-    callback: () => Promise<T | CacheResult<T> | undefined>,
+    callback: () => Promise<T | undefined>,
     _expiry: number,
-    _lockTimeout?: number
+    _lockTimeout: number
   ): Promise<T | undefined> {
-    const result = await callback();
-    if (result && typeof result === "object" && "data" in result) {
-      return (result as CacheResult<T>).data;
-    }
-    return result as T | undefined;
+    return await callback();
   }
 
   /**

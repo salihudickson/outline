@@ -2,9 +2,9 @@ import { TrashIcon } from "outline-icons";
 import stores from "~/stores";
 import { createAction } from "..";
 import { SettingsSection } from "../sections";
-import type Integration from "~/models/Integration";
+import Integration from "~/models/Integration";
 import { DisconnectAnalyticsDialog } from "~/scenes/Settings/components/DisconnectAnalyticsDialog";
-import type { IntegrationType } from "@shared/types";
+import { IntegrationType } from "@shared/types";
 import { settingsPath } from "@shared/utils/routeHelpers";
 import history from "~/utils/history";
 

@@ -2,9 +2,8 @@ import has from "lodash/has";
 import isEqual from "lodash/isEqual";
 import { TeamPreference } from "@shared/types";
 import env from "@server/env";
-import type { Team, User } from "@server/models";
-import { TeamDomain } from "@server/models";
-import type { APIContext } from "@server/types";
+import { Team, TeamDomain, User } from "@server/models";
+import { APIContext } from "@server/types";
 
 type Props = {
   params: Partial<Omit<Team, "allowedDomains">> & { allowedDomains?: string[] };

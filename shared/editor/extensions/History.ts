@@ -1,8 +1,7 @@
 import { history, undo, redo } from "prosemirror-history";
 import { undoInputRule } from "prosemirror-inputrules";
-import type { Command } from "prosemirror-state";
-import type { CommandFactory } from "../lib/Extension";
-import Extension from "../lib/Extension";
+import { Command } from "prosemirror-state";
+import Extension, { CommandFactory } from "../lib/Extension";
 
 export default class History extends Extension {
   get name() {

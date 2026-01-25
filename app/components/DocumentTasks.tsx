@@ -1,9 +1,9 @@
-import type { TFunction } from "i18next";
+import { TFunction } from "i18next";
 import { observer } from "mobx-react";
 import { DoneIcon } from "outline-icons";
 import { useTranslation } from "react-i18next";
 import styled, { useTheme } from "styled-components";
-import type Document from "~/models/Document";
+import Document from "~/models/Document";
 import CircularProgressBar from "~/components/CircularProgressBar";
 import usePrevious from "~/hooks/usePrevious";
 import { bounceIn } from "~/styles/animations";
@@ -42,7 +42,7 @@ function DocumentTasks({ document }: Props) {
   const message = getMessage(t, total, completed);
 
   return (
-    <Flex align="center" style={{ padding: "0 1px" }} gap={2} shrink={false}>
+    <Flex align="center" style={{ padding: "0 1px" }} gap={2}>
       {completed === total ? (
         <Done
           color={theme.accent}

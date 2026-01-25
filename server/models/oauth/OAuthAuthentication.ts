@@ -1,6 +1,6 @@
 import { Matches } from "class-validator";
 import { subMinutes } from "date-fns";
-import type {
+import {
   FindOptions,
   InferAttributes,
   InferCreationAttributes,
@@ -73,14 +73,6 @@ class OAuthAuthentication extends ParanoidModel<
   @IsDate
   @Column
   refreshTokenExpiresAt: Date;
-
-  /**
-   * The ID of the grant that this authentication belongs to. Used for
-   * refresh token rotation and revocation of all tokens in a grant.
-   */
-  @Column(DataType.UUID)
-  @SkipChangeset
-  grantId: string | null;
 
   /** A list of scopes that this authentication has access to */
   @Matches(/[\/\.\w\s]*/, {

@@ -1,12 +1,12 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { breakpoints } from "@shared/styles";
 import {
   buildDarkTheme,
   buildLightTheme,
   buildPitchBlackTheme,
 } from "@shared/styles/theme";
-import type { CustomTheme } from "@shared/types";
-import { Theme } from "~/stores/UiStore";
+import { CustomTheme } from "@shared/types";
+import type { Theme } from "~/stores/UiStore";
 import useMediaQuery from "~/hooks/useMediaQuery";
 import useStores from "./useStores";
 import useQuery from "./useQuery";
@@ -28,18 +28,7 @@ export default function useBuildTheme(
   const isMobile = useMediaQuery(`(max-width: ${breakpoints.tablet}px)`);
   const isPrinting = useMediaQuery("print");
   const queryTheme = (params.get("theme") as Theme) || undefined;
-
-  // Store the theme override in UiStore so it persists during navigation
-  useEffect(() => {
-    if (
-      queryTheme &&
-      (queryTheme === Theme.Light || queryTheme === Theme.Dark)
-    ) {
-      ui.setThemeOverride(queryTheme);
-    }
-  }, [queryTheme, ui]);
-
-  const resolvedTheme = overrideTheme ?? ui.resolvedTheme;
+  const resolvedTheme = overrideTheme ?? queryTheme ?? ui.resolvedTheme;
 
   const theme = useMemo(
     () =>

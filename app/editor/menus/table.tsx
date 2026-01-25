@@ -4,11 +4,10 @@ import {
   TableColumnsDistributeIcon,
   TrashIcon,
 } from "outline-icons";
-import type { EditorState } from "prosemirror-state";
+import { EditorState } from "prosemirror-state";
 import { isNodeActive } from "@shared/editor/queries/isNodeActive";
-import type { MenuItem } from "@shared/editor/types";
-import { TableLayout } from "@shared/editor/types";
-import type { Dictionary } from "~/hooks/useDictionary";
+import { MenuItem, TableLayout } from "@shared/editor/types";
+import { Dictionary } from "~/hooks/useDictionary";
 
 export default function tableMenuItems(
   state: EditorState,

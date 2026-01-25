@@ -1,5 +1,5 @@
 import Event from "~/models/Event";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store, { RPCAction } from "./base/Store";
 
 export default class EventsStore extends Store<Event<any>> {

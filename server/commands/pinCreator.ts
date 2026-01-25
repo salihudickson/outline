@@ -1,11 +1,9 @@
 import fractionalIndex from "fractional-index";
-import type { WhereOptions } from "sequelize";
-import { Sequelize, Op } from "sequelize";
+import { Sequelize, Op, WhereOptions } from "sequelize";
 import { PinValidation } from "@shared/validations";
 import { ValidationError } from "@server/errors";
-import type { User } from "@server/models";
-import { Pin } from "@server/models";
-import type { APIContext } from "@server/types";
+import { Pin, User } from "@server/models";
+import { APIContext } from "@server/types";
 
 type Props = {
   /** The request context */

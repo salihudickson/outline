@@ -1,8 +1,7 @@
 import * as React from "react";
 import ReactDOMServer from "react-dom/server";
 import env from "@server/env";
-import type { ManifestStructure } from "./readManifestFile";
-import readManifestFile from "./readManifestFile";
+import readManifestFile, { ManifestStructure } from "./readManifestFile";
 
 const prefetchTags = [];
 

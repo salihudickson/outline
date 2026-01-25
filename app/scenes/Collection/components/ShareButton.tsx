@@ -2,7 +2,7 @@ import { observer } from "mobx-react";
 import { GlobeIcon, PadlockIcon } from "outline-icons";
 import { Suspense, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type Collection from "~/models/Collection";
+import Collection from "~/models/Collection";
 import Button from "~/components/Button";
 import {
   Popover,
@@ -37,10 +37,6 @@ function ShareButton({ collection }: Props) {
     setOpen(false);
   }, []);
 
-  const handleMouseEnter = useCallback(() => {
-    void collection.share();
-  }, [collection]);
-
   if (isMobile) {
     return null;
   }
@@ -54,14 +50,13 @@ function ShareButton({ collection }: Props) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger>
-        <Button icon={icon} neutral onMouseEnter={handleMouseEnter}>
+        <Button icon={icon} neutral>
           {t("Share")}
         </Button>
       </PopoverTrigger>
       <PopoverContent
         aria-label={t("Share")}
         width={400}
-        minHeight={175}
         side="bottom"
         align="end"
       >

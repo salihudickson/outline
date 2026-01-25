@@ -1,6 +1,5 @@
 import * as React from "react";
-import type { XYCoord } from "react-dnd";
-import { useDragLayer } from "react-dnd";
+import { useDragLayer, XYCoord } from "react-dnd";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 import useStores from "~/hooks/useStores";

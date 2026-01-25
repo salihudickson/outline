@@ -3,9 +3,9 @@ import filter from "lodash/filter";
 import { action, runInAction, computed } from "mobx";
 import naturalSort from "@shared/utils/naturalSort";
 import Group from "~/models/Group";
-import type { PaginationParams } from "~/types";
+import { PaginationParams } from "~/types";
 import { client } from "~/utils/ApiClient";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store from "./base/Store";
 
 type FetchPageParams = PaginationParams & { query?: string };

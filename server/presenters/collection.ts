@@ -1,7 +1,7 @@
 import { Hour } from "@shared/utils/time";
-import type Collection from "@server/models/Collection";
+import Collection from "@server/models/Collection";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import presentUser from "./user";
 
 type Options = {
@@ -22,7 +22,7 @@ export default async function presentCollection(
 
   const res: Record<string, any> = {
     id: collection.id,
-    url: collection.path,
+    url: collection.url,
     urlId: collection.urlId,
     name: collection.name,
     data: asData

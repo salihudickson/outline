@@ -1,5 +1,4 @@
-import type { RouteComponentProps } from "react-router-dom";
-import { Switch } from "react-router-dom";
+import { RouteComponentProps, Switch } from "react-router-dom";
 import DocumentNew from "~/scenes/DocumentNew";
 import Error404 from "~/scenes/Errors/Error404";
 import Route from "~/components/ProfiledRoute";

@@ -1,5 +1,5 @@
-import type { Mark } from "prosemirror-model";
-import type { EditorState } from "prosemirror-state";
+import { Mark } from "prosemirror-model";
+import { EditorState } from "prosemirror-state";
 
 /**
  * Get all marks that are applied to text between two positions.

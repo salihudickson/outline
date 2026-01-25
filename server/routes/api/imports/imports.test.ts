@@ -1,4 +1,4 @@
-import type { NotionImportInput } from "@shared/schema";
+import { NotionImportInput } from "@shared/schema";
 import {
   CollectionPermission,
   ImportableIntegrationService,
@@ -6,8 +6,7 @@ import {
   IntegrationService,
   IntegrationType,
 } from "@shared/types";
-import type { Import } from "@server/models";
-import { Integration } from "@server/models";
+import { Import, Integration } from "@server/models";
 import {
   buildAdmin,
   buildImport,

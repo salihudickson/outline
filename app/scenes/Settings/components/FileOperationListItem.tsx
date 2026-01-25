@@ -10,7 +10,7 @@ import {
   FileOperationState,
   FileOperationType,
 } from "@shared/types";
-import type FileOperation from "~/models/FileOperation";
+import FileOperation from "~/models/FileOperation";
 import { Action } from "~/components/Actions";
 import ConfirmationDialog from "~/components/ConfirmationDialog";
 import ListItem from "~/components/List/Item";
@@ -57,8 +57,7 @@ const FileOperationListItem = ({ fileOperation }: Props) => {
   const format = formatMapping[fileOperation.format];
   const title =
     fileOperation.type === FileOperationType.Import ||
-    fileOperation.collectionId ||
-    fileOperation.documentId
+    fileOperation.collectionId
       ? fileOperation.name
       : t("All collections");
 

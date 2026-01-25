@@ -1,7 +1,7 @@
 import concat from "lodash/concat";
 import uniq from "lodash/uniq";
 import uniqBy from "lodash/uniqBy";
-import type { Server } from "socket.io";
+import { Server } from "socket.io";
 import {
   Comment,
   Document,
@@ -37,7 +37,7 @@ import {
   presentImport,
 } from "@server/presenters";
 import presentNotification from "@server/presenters/notification";
-import type { Event } from "../../types";
+import { Event } from "../../types";
 
 export default class WebsocketsProcessor {
   public async perform(event: Event, socketio: Server) {
@@ -423,7 +423,7 @@ export default class WebsocketsProcessor {
 
       case "collections.remove_group": {
         // let everyone with access to the collection know a group was removed
-        // this includes those in the group itself
+        // this includes those in the the group itself
         socketio
           .to(`collection-${event.collectionId}`)
           .emit("collections.remove_group", {

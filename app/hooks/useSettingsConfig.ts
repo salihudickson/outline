@@ -1,4 +1,3 @@
-import type { Icon } from "outline-icons";
 import {
   EmailIcon,
   ProfileIcon,
@@ -7,20 +6,18 @@ import {
   UserIcon,
   GroupIcon,
   GlobeIcon,
-  ShieldIcon,
   TeamIcon,
   BeakerIcon,
   SettingsIcon,
   ExportIcon,
   ImportIcon,
   ShapesIcon,
+  Icon,
   PlusIcon,
   InternetIcon,
   SmileyIcon,
-  BuildingBlocksIcon,
 } from "outline-icons";
-import type { ComponentProps } from "react";
-import { useEffect } from "react";
+import { ComponentProps, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { integrationSettingsPath } from "@shared/utils/routeHelpers";
 import { createLazyComponent as lazy } from "~/components/LazyLoad";
@@ -35,7 +32,6 @@ import useStores from "./useStores";
 const ApiKeys = lazy(() => import("~/scenes/Settings/ApiKeys"));
 const Applications = lazy(() => import("~/scenes/Settings/Applications"));
 const APIAndApps = lazy(() => import("~/scenes/Settings/APIAndApps"));
-const Authentication = lazy(() => import("~/scenes/Settings/Authentication"));
 const Details = lazy(() => import("~/scenes/Settings/Details"));
 const Export = lazy(() => import("~/scenes/Settings/Export"));
 const Features = lazy(() => import("~/scenes/Settings/Features"));
@@ -111,7 +107,7 @@ const useSettingsConfig = () => {
         preload: APIAndApps.preload,
         enabled: true,
         group: t("Account"),
-        icon: BuildingBlocksIcon,
+        icon: PadlockIcon,
       },
       // Workspace
       {
@@ -124,22 +120,13 @@ const useSettingsConfig = () => {
         icon: TeamIcon,
       },
       {
-        name: t("Authentication"),
-        path: settingsPath("authentication"),
-        component: Authentication.Component,
-        preload: Authentication.preload,
-        enabled: can.update,
-        group: t("Workspace"),
-        icon: PadlockIcon,
-      },
-      {
         name: t("Security"),
         path: settingsPath("security"),
         component: Security.Component,
         preload: Security.preload,
         enabled: can.update,
         group: t("Workspace"),
-        icon: ShieldIcon,
+        icon: PadlockIcon,
       },
       {
         name: t("Features"),

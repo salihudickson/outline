@@ -1,4 +1,4 @@
-import type { GroupMembership } from "@server/models";
+import { GroupMembership } from "@server/models";
 
 export default function presentGroupMembership(membership: GroupMembership) {
   return {

@@ -1,5 +1,5 @@
 import { Team, User } from "@server/models";
-import type { Event, TeamEvent, UserEvent } from "@server/types";
+import { Event, TeamEvent, UserEvent } from "@server/types";
 import UploadTeamAvatarTask from "../tasks/UploadTeamAvatarTask";
 import UploadUserAvatarTask from "../tasks/UploadUserAvatarTask";
 import BaseProcessor from "./BaseProcessor";

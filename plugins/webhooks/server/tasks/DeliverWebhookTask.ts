@@ -43,7 +43,7 @@ import {
   presentComment,
 } from "@server/presenters";
 import { BaseTask } from "@server/queues/tasks/base/BaseTask";
-import type {
+import {
   CollectionEvent,
   CollectionGroupEvent,
   CollectionUserEvent,
@@ -67,8 +67,7 @@ import type {
   WebhookSubscriptionEvent,
 } from "@server/types";
 import fetch from "@server/utils/fetch";
-import type { WebhookPayload } from "../presenters/webhook";
-import presentWebhook from "../presenters/webhook";
+import presentWebhook, { WebhookPayload } from "../presenters/webhook";
 import presentWebhookSubscription from "../presenters/webhookSubscription";
 
 function assertUnreachable(event: never) {
@@ -113,6 +112,7 @@ export default class DeliverWebhookTask extends BaseTask<Props> {
       case "authenticationProviders.update":
       case "notifications.create":
       case "notifications.update":
+      case "documents.request_access":
         // Ignored
         return;
       case "users.create":
@@ -244,11 +244,6 @@ export default class DeliverWebhookTask extends BaseTask<Props> {
       case "oauthClients.create":
       case "oauthClients.update":
       case "oauthClients.delete":
-        // Ignored
-        return;
-      case "passkeys.create":
-      case "passkeys.update":
-      case "passkeys.delete":
         // Ignored
         return;
       default:

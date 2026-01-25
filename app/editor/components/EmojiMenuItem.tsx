@@ -1,5 +1,6 @@
-import type { Props as SuggestionsMenuItemProps } from "./SuggestionsMenuItem";
-import SuggestionsMenuItem from "./SuggestionsMenuItem";
+import SuggestionsMenuItem, {
+  Props as SuggestionsMenuItemProps,
+} from "./SuggestionsMenuItem";
 import { Emoji } from "~/components/Emoji";
 import { CustomEmoji } from "@shared/components/CustomEmoji";
 import { isUUID } from "validator";

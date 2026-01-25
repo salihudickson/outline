@@ -2,7 +2,7 @@ import invariant from "invariant";
 import { action, runInAction } from "mobx";
 import Import from "~/models/Import";
 import { client } from "~/utils/ApiClient";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store from "./base/Store";
 
 export default class ImportsStore extends Store<Import> {

@@ -94,7 +94,6 @@ const StyledContent = styled(m.div)`
 
 const StyledInnerContent = styled.div`
   padding: 6px;
-  height: 100%;
 `;
 
 const TitleWrapper = styled(Flex)`

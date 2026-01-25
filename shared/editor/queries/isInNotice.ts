@@ -1,4 +1,4 @@
-import type { EditorState } from "prosemirror-state";
+import { EditorState } from "prosemirror-state";
 import { isNodeActive } from "./isNodeActive";
 
 /**

@@ -1,4 +1,4 @@
-import type MarkdownIt from "markdown-it";
+import MarkdownIt from "markdown-it";
 import { full as emojiPlugin } from "markdown-it-emoji";
 import { nameToEmoji } from "../lib/emoji";
 

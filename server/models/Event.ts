@@ -18,15 +18,14 @@ import {
   Length,
 } from "sequelize-typescript";
 import { globalEventQueue } from "../queues";
-import type { APIContext } from "../types";
-import { AuthenticationType } from "../types";
+import { APIContext, AuthenticationType } from "../types";
 import Collection from "./Collection";
 import Document from "./Document";
 import Team from "./Team";
 import User from "./User";
 import IdModel from "./base/IdModel";
 import Fix from "./decorators/Fix";
-import type { Context } from "koa";
+import { Context } from "koa";
 
 @Table({ tableName: "events", modelName: "event", updatedAt: false })
 @Fix
@@ -89,11 +88,11 @@ class Event extends IdModel<
       // We want to use the parent transaction, otherwise the 'afterCommit' hook will never fire in this case.
       // See: https://github.com/sequelize/sequelize/issues/17452
       (options.transaction.parent || options.transaction).afterCommit(
-        () => void globalEventQueue().add(model)
+        () => void globalEventQueue.add(model)
       );
       return;
     }
-    void globalEventQueue().add(model);
+    void globalEventQueue.add(model);
   }
 
   // associations
@@ -139,7 +138,7 @@ class Event extends IdModel<
    */
   static schedule(event: Partial<Event>) {
     const now = new Date();
-    return globalEventQueue().add(
+    return globalEventQueue.add(
       this.build({
         createdAt: now,
         ...event,
@@ -181,7 +180,7 @@ class Event extends IdModel<
         ...attributes,
         actorId: user?.id || defaultAttributes.actorId,
         teamId: user?.teamId || defaultAttributes.teamId,
-        ip: ctx.request?.ip || defaultAttributes.ip,
+        ip: ctx.request.ip || defaultAttributes.ip,
         authType,
       },
       {

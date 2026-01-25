@@ -6,13 +6,13 @@ import { computed, action, runInAction } from "mobx";
 import {
   CollectionPermission,
   CollectionStatusFilter,
-  type FileOperationFormat,
+  FileOperationFormat,
   SubscriptionType,
 } from "@shared/types";
 import Collection from "~/models/Collection";
-import type { PaginationParams, Properties } from "~/types";
+import { PaginationParams, Properties } from "~/types";
 import { client } from "~/utils/ApiClient";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store from "./base/Store";
 
 export default class CollectionsStore extends Store<Collection> {
@@ -146,6 +146,13 @@ export default class CollectionsStore extends Store<Collection> {
     }
 
     return result;
+  }
+
+  @action
+  async fetch(id: string, options?: { force: boolean }): Promise<Collection> {
+    const model = await super.fetch(id, options);
+    await model.fetchDocuments(options);
+    return model;
   }
 
   @action

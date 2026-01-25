@@ -1,5 +1,5 @@
-import type { WebhookDelivery } from "@server/models";
-import type { Event } from "@server/types";
+import { WebhookDelivery } from "@server/models";
+import { Event } from "@server/types";
 
 export interface WebhookPayload {
   model: Record<string, unknown> | null;

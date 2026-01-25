@@ -1,6 +1,6 @@
 import { setBlockType } from "prosemirror-commands";
-import type { NodeType } from "prosemirror-model";
-import type { Command } from "prosemirror-state";
+import { NodeType } from "prosemirror-model";
+import { Command } from "prosemirror-state";
 import { isNodeActive } from "../queries/isNodeActive";
 
 /**

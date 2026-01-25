@@ -1,4 +1,4 @@
-import type { Node } from "prosemirror-model";
+import { Node } from "prosemirror-model";
 import { parser } from "@server/editor";
 
 type ImageProps = { src: string; alt: string };

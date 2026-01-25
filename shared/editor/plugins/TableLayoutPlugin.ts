@@ -1,6 +1,5 @@
-import type { Node } from "prosemirror-model";
-import type { EditorState, Transaction } from "prosemirror-state";
-import { Plugin } from "prosemirror-state";
+import { Node } from "prosemirror-model";
+import { EditorState, Plugin, Transaction } from "prosemirror-state";
 import { TableMap } from "prosemirror-tables";
 import { changedDescendants } from "../lib/changedDescendants";
 

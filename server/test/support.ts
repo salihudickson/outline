@@ -1,14 +1,13 @@
 import { faker } from "@faker-js/faker";
-import type { Transaction } from "sequelize";
+import { Transaction } from "sequelize";
 import sharedEnv from "@shared/env";
 import { createContext } from "@server/context";
 import env from "@server/env";
-import type { User } from "@server/models";
+import { User } from "@server/models";
 import onerror from "@server/onerror";
 import webService from "@server/services/web";
 import { sequelize } from "@server/storage/database";
-import type { APIContext } from "@server/types";
-import { AuthenticationType } from "@server/types";
+import { APIContext, AuthenticationType } from "@server/types";
 import TestServer from "./TestServer";
 
 export function getTestServer() {

@@ -1,5 +1,5 @@
 import { GroupUser } from "@server/models";
-import type {
+import {
   CollectionGroupEvent,
   CollectionUserEvent,
   DocumentGroupEvent,

@@ -1,6 +1,6 @@
 import { Hook, PluginManager } from "@server/utils/PluginManager";
 import { requireDirectory } from "@server/utils/fs";
-import type BaseProcessor from "./BaseProcessor";
+import BaseProcessor from "./BaseProcessor";
 
 const processors: Record<string, typeof BaseProcessor> = {};
 

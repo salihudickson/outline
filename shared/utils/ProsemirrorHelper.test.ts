@@ -1,6 +1,5 @@
-import type { ProsemirrorData } from "../types";
-import type { CommentMark } from "./ProsemirrorHelper";
-import { ProsemirrorHelper } from "./ProsemirrorHelper";
+import { ProsemirrorData } from "../types";
+import { CommentMark, ProsemirrorHelper } from "./ProsemirrorHelper";
 
 describe("ProsemirrorHelper", () => {
   describe("getAnchorTextForComment", () => {

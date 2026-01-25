@@ -1,6 +1,5 @@
-import type { NodeType } from "prosemirror-model";
-import type { Command } from "prosemirror-state";
-import { TextSelection } from "prosemirror-state";
+import { NodeType } from "prosemirror-model";
+import { Command, TextSelection } from "prosemirror-state";
 import { findParentNode } from "../queries/findParentNode";
 
 /**

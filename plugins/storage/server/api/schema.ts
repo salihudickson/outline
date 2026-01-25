@@ -1,4 +1,4 @@
-import type formidable from "formidable";
+import formidable from "formidable";
 import isEmpty from "lodash/isEmpty";
 import { z } from "zod";
 import { ValidateKey } from "@server/validation";

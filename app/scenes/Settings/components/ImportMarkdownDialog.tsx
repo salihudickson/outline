@@ -1,24 +1,25 @@
-import { Trans } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { FileOperationFormat } from "@shared/types";
 import env from "~/env";
 import useStores from "~/hooks/useStores";
 import DropToImport from "./DropToImport";
-import Text from "@shared/components/Text";
+import HelpDisclosure from "./HelpDisclosure";
 
 function ImportMarkdownDialog() {
+  const { t } = useTranslation();
   const { dialogs } = useStores();
   const appName = env.APP_NAME;
 
   return (
     <>
-      <Text as="p">
+      <HelpDisclosure title={t("How does this work?")}>
         <Trans
           defaults="You can import a zip file that was previously exported from an Outline installation – collections, documents, and images will be imported. In Outline, open <em>Export</em> in the Settings sidebar and click on <em>Export Data</em>."
           components={{
             em: <strong />,
           }}
         />
-      </Text>
+      </HelpDisclosure>
       <DropToImport
         onSubmit={dialogs.closeAllModals}
         format={FileOperationFormat.MarkdownZip}

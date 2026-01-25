@@ -2,7 +2,7 @@ import passport from "@outlinewiki/koa-passport";
 import type { Context } from "koa";
 import Router from "koa-router";
 import capitalize from "lodash/capitalize";
-import type { Profile } from "passport";
+import { Profile } from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth2";
 import { languages } from "@shared/i18n";
 import { slugifyDomain } from "@shared/utils/domains";
@@ -13,12 +13,11 @@ import {
 } from "@server/errors";
 import passportMiddleware from "@server/middlewares/passport";
 import { User } from "@server/models";
-import type { AuthenticationResult } from "@server/types";
+import { AuthenticationResult } from "@server/types";
 import {
   StateStore,
   getTeamFromContext,
-  getClientFromOAuthState,
-  getUserFromOAuthState,
+  getClientFromContext,
 } from "@server/utils/passport";
 import config from "../../plugin.json";
 import env from "../env";
@@ -68,9 +67,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
           // "domain" is the Google Workspaces domain
           const domain = profile._json.hd;
           const team = await getTeamFromContext(context);
-          const client = getClientFromOAuthState(context);
-          const user =
-            context.state?.auth?.user ?? (await getUserFromOAuthState(context));
+          const client = getClientFromContext(context);
 
           // No profile domain means personal gmail account
           // No team implies the request came from the apex domain
@@ -112,11 +109,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
           // if a team can be inferred, we assume the user is only interested in signing into
           // that team in particular; otherwise, we will do a best effort at finding their account
           // or provisioning a new one (within AccountProvisioner)
-          const ctx = createContext({
-            ip: context.ip,
-            user,
-            authType: context.state?.auth?.type,
-          });
+          const ctx = createContext({ ip: context.ip });
           const result = await accountProvisioner(ctx, {
             team: {
               teamId: team?.id,

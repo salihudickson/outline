@@ -1,4 +1,4 @@
-import type { Queue } from "bull";
+import { Queue } from "bull";
 import { Second } from "@shared/utils/time";
 import Logger from "@server/logging/Logger";
 
@@ -11,26 +11,19 @@ export default class HealthMonitor {
    * @param queue The queue to monitor
    */
   public static start(queue: Queue) {
-    let lastActivityTime = Date.now();
+    let processedJobsSinceCheck = 0;
 
     queue.on("active", () => {
-      lastActivityTime = Date.now();
-    });
-    queue.on("completed", () => {
-      lastActivityTime = Date.now();
-    });
-    queue.on("failed", () => {
-      lastActivityTime = Date.now();
+      processedJobsSinceCheck += 1;
     });
 
     setInterval(async () => {
-      const timeSinceActivity = Date.now() - lastActivityTime;
-
-      // If there's been recent activity, the queue is healthy
-      if (timeSinceActivity < 30 * Second.ms) {
+      if (processedJobsSinceCheck > 0) {
+        processedJobsSinceCheck = 0;
         return;
       }
 
+      processedJobsSinceCheck = 0;
       const waiting = await queue.getWaitingCount();
       if (waiting > 50) {
         Logger.fatal(

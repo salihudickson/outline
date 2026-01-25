@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import styled, { css } from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import { s, hover, ellipsis } from "@shared/styles";
-import type Document from "~/models/Document";
+import Document from "~/models/Document";
 import Highlight, { Mark } from "~/components/Highlight";
 import { sharedModelPath } from "~/utils/routeHelpers";
 
@@ -53,7 +53,6 @@ function DocumentListItem(
         pathname: shareId
           ? sharedModelPath(shareId, document.url)
           : document.url,
-        search: highlight ? `?q=${encodeURIComponent(highlight)}` : undefined,
         state: {
           title: document.titleWithDefault,
         },

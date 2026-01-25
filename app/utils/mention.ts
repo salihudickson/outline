@@ -1,6 +1,10 @@
-import type { IntegrationSettings, IntegrationType } from "@shared/types";
-import { IntegrationService, MentionType } from "@shared/types";
-import type Integration from "~/models/Integration";
+import {
+  IntegrationService,
+  IntegrationSettings,
+  IntegrationType,
+  MentionType,
+} from "@shared/types";
+import Integration from "~/models/Integration";
 
 export const isURLMentionable = ({
   url,
@@ -10,14 +14,20 @@ export const isURLMentionable = ({
   integration: Integration;
 }): boolean => {
   const { hostname, pathname } = url;
+  const pathParts = pathname.split("/");
 
   switch (integration.service) {
     case IntegrationService.GitHub: {
-      return hostname === "github.com";
+      const settings =
+        integration.settings as IntegrationSettings<IntegrationType.Embed>;
+
+      return (
+        hostname === "github.com" &&
+        settings.github?.installation.account.name === pathParts[1] // ensure installed org/account name matches with the provided url.
+      );
     }
 
     case IntegrationService.Linear: {
-      const pathParts = pathname.split("/");
       const settings =
         integration.settings as IntegrationSettings<IntegrationType.Embed>;
 

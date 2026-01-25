@@ -1,6 +1,6 @@
-/* oxlint-disable no-restricted-imports, react/rules-of-hooks */
-import type http from "http";
-import type https from "https";
+/* oxlint-disable no-restricted-imports */
+import http from "http";
+import https from "https";
 import nodeFetch, { type RequestInit, type Response } from "node-fetch";
 import { getProxyForUrl } from "proxy-from-env";
 import tunnelAgent, { type TunnelAgent } from "tunnel-agent";
@@ -52,23 +52,11 @@ export default async function fetch(
   url: string,
   init?: RequestInit & {
     allowPrivateIPAddress?: boolean;
-    timeout?: number;
   }
 ): Promise<Response> {
   Logger.silly("http", `Network request to ${url}`, init);
 
-  const { allowPrivateIPAddress, timeout, ...rest } = init || {};
-
-  // Create AbortController for timeout if specified
-  let abortController: AbortController | undefined;
-  let timeoutId: NodeJS.Timeout | undefined;
-
-  if (timeout && !rest.signal) {
-    abortController = new AbortController();
-    timeoutId = setTimeout(() => {
-      abortController?.abort();
-    }, timeout);
-  }
+  const { allowPrivateIPAddress, ...rest } = init || {};
 
   try {
     const response = await nodeFetch(url, {
@@ -77,7 +65,6 @@ export default async function fetch(
         "User-Agent": outlineUserAgent,
         ...rest?.headers,
       },
-      signal: abortController?.signal || rest.signal,
       agent: buildAgent(url, init),
     });
 
@@ -92,19 +79,12 @@ export default async function fetch(
 
     return response;
   } catch (err) {
-    if (err.name === "AbortError") {
-      throw new Error(`Request timeout after ${timeout}ms`);
-    }
     if (!env.isCloudHosted && err.message?.startsWith("DNS lookup")) {
       throw InternalError(
-        `${err.message}\n\nTo allow this request, add the IP address or CIDR range to the ALLOWED_PRIVATE_IP_ADDRESSES environment variable.`
+        `${err.message}\n\nTo allow this request, add the IP address to the ALLOWED_PRIVATE_IP_ADDRESSES environment variable.`
       );
     }
     throw err;
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
   }
 }
 

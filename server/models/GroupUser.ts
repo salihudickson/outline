@@ -1,4 +1,4 @@
-import type { InferAttributes, InferCreationAttributes } from "sequelize";
+import { InferAttributes, InferCreationAttributes } from "sequelize";
 import {
   DefaultScope,
   BelongsTo,

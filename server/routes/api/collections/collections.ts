@@ -1,6 +1,5 @@
 import Router from "koa-router";
-import type { WhereOptions } from "sequelize";
-import { Sequelize, Op } from "sequelize";
+import { Sequelize, Op, WhereOptions } from "sequelize";
 import {
   CollectionPermission,
   CollectionStatusFilter,
@@ -37,7 +36,7 @@ import {
   presentGroupMembership,
   presentFileOperation,
 } from "@server/presenters";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import { CacheHelper } from "@server/utils/CacheHelper";
 import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import { collectionIndexing } from "@server/utils/indexing";
@@ -86,9 +85,7 @@ router.post(
     });
 
     if (data) {
-      collection.description = await DocumentHelper.toMarkdown(collection, {
-        includeTitle: false,
-      });
+      collection.description = DocumentHelper.toMarkdown(collection);
     }
 
     await collection.saveWithCtx(ctx);
@@ -214,28 +211,22 @@ router.post(
     authorize(user, "update", collection);
     authorize(user, "read", group);
 
-    let membership = await GroupMembership.findOne({
+    const [membership, created] = await GroupMembership.findOrCreate({
       where: {
         collectionId: id,
         groupId,
+      },
+      defaults: {
+        permission,
+        createdById: user.id,
       },
       lock: transaction.LOCK.UPDATE,
       ...ctx.context,
     });
 
-    if (membership) {
+    if (!created) {
       membership.permission = permission;
       await membership.save(ctx.context);
-    } else {
-      membership = await GroupMembership.create(
-        {
-          collectionId: id,
-          groupId,
-          permission,
-          createdById: user.id,
-        },
-        ctx.context
-      );
     }
 
     const groupMemberships = [presentGroupMembership(membership)];
@@ -374,28 +365,22 @@ router.post(
     authorize(actor, "update", collection);
     authorize(actor, "read", user);
 
-    let membership = await UserMembership.findOne({
+    const [membership, isNew] = await UserMembership.findOrCreate({
       where: {
         collectionId: id,
         userId,
+      },
+      defaults: {
+        permission: permission || user.defaultCollectionPermission,
+        createdById: actor.id,
       },
       lock: transaction.LOCK.UPDATE,
       ...ctx.context,
     });
 
-    if (membership) {
-      membership.permission = permission || user.defaultCollectionPermission;
+    if (!isNew && permission) {
+      membership.permission = permission;
       await membership.save(ctx.context);
-    } else {
-      membership = await UserMembership.create(
-        {
-          collectionId: id,
-          userId,
-          permission: permission || user.defaultCollectionPermission,
-          createdById: actor.id,
-        },
-        ctx.context
-      );
     }
 
     ctx.body = {
@@ -603,28 +588,18 @@ router.post(
       permission !== CollectionPermission.ReadWrite &&
       collection.permission === CollectionPermission.ReadWrite
     ) {
-      let membership = await UserMembership.findOne({
+      await UserMembership.findOrCreate({
         where: {
           collectionId: collection.id,
           userId: user.id,
         },
+        defaults: {
+          permission: CollectionPermission.Admin,
+          createdById: user.id,
+        },
         transaction,
+        hooks: false,
       });
-
-      if (!membership) {
-        await UserMembership.create(
-          {
-            collectionId: collection.id,
-            userId: user.id,
-            permission: CollectionPermission.Admin,
-            createdById: user.id,
-          },
-          {
-            transaction,
-            hooks: false,
-          }
-        );
-      }
     }
 
     let privacyChanged = false;
@@ -643,9 +618,7 @@ router.post(
 
     if (data !== undefined) {
       collection.content = data;
-      collection.description = await DocumentHelper.toMarkdown(collection, {
-        includeTitle: false,
-      });
+      collection.description = DocumentHelper.toMarkdown(collection);
     }
 
     if (icon !== undefined) {

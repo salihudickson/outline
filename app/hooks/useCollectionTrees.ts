@@ -1,8 +1,7 @@
 import { useMemo } from "react";
-import type { NavigationNode } from "@shared/types";
-import { NavigationNodeType } from "@shared/types";
+import { NavigationNode, NavigationNodeType } from "@shared/types";
 import { sortNavigationNodes } from "@shared/utils/collections";
-import type Collection from "~/models/Collection";
+import Collection from "~/models/Collection";
 import useStores from "~/hooks/useStores";
 
 /**

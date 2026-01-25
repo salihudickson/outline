@@ -1,5 +1,4 @@
-import type { Span } from "dd-trace";
-import tracer from "dd-trace";
+import tracer, { Span } from "dd-trace";
 import env from "@server/env";
 
 type PrivateDatadogContext = {

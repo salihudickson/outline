@@ -1,4 +1,4 @@
-import type {
+import {
   Extension,
   onDisconnectPayload,
   onChangePayload,
@@ -7,7 +7,7 @@ import { Minute } from "@shared/utils/time";
 import Logger from "@server/logging/Logger";
 import { trace } from "@server/logging/tracing";
 import { View } from "@server/models";
-import type { withContext } from "./types";
+import { withContext } from "./types";
 
 @trace()
 export class ViewsExtension implements Extension {

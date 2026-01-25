@@ -27,9 +27,8 @@ export interface PaginatedItem {
  * Props for the PaginatedList component
  * @template T Type of items in the list, must extend PaginatedItem
  */
-interface Props<
-  T extends PaginatedItem,
-> extends React.HTMLAttributes<HTMLDivElement> {
+interface Props<T extends PaginatedItem>
+  extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * Function to fetch paginated data. Should return a promise resolving to an array of items
    * @param options Pagination and other query options
@@ -81,12 +80,6 @@ interface Props<
   renderHeading?: (name: React.ReactElement<any> | string) => React.ReactNode;
 
   /**
-   * Function to determine if an item is a duplicate of the previous item.
-   * If it returns true, the item will not be rendered.
-   */
-  isDuplicate?: (item: T, previousItem: T) => boolean;
-
-  /**
    * Handler for escape key press
    * @param ev Keyboard event object
    */
@@ -113,7 +106,6 @@ const PaginatedList = <T extends PaginatedItem>({
   renderItem,
   renderError,
   renderHeading,
-  isDuplicate,
   onEscape,
   listRef,
   ...rest
@@ -229,19 +221,10 @@ const PaginatedList = <T extends PaginatedItem>({
   }, [fetch, options, reset, fetchResults, prevFetch, prevOptions]);
 
   // Computed property equivalent
-  const itemsToRender = React.useMemo(() => {
-    const sliced = items?.slice(0, renderCount) ?? [];
-    if (!isDuplicate) {
-      return sliced;
-    }
-
-    return sliced.filter((item, index) => {
-      if (index === 0) {
-        return true;
-      }
-      return !isDuplicate(item, sliced[index - 1]);
-    });
-  }, [items, renderCount, isDuplicate]);
+  const itemsToRender = React.useMemo(
+    () => items?.slice(0, renderCount) ?? [],
+    [items, renderCount]
+  );
 
   const showLoading =
     isFetching &&

@@ -1,16 +1,19 @@
 import debounce from "lodash/debounce";
 import isEmpty from "lodash/isEmpty";
 import { observer } from "mobx-react";
-import { CopyIcon, GlobeIcon, QuestionMarkIcon } from "outline-icons";
+import { CopyIcon, GlobeIcon, InfoIcon, QuestionMarkIcon } from "outline-icons";
 import * as React from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { useTheme } from "styled-components";
+import styled, { useTheme } from "styled-components";
 import Flex from "@shared/components/Flex";
 import Squircle from "@shared/components/Squircle";
+import { s } from "@shared/styles";
 import { UrlHelper } from "@shared/utils/UrlHelper";
-import type Document from "~/models/Document";
-import type Share from "~/models/Share";
+import Document from "~/models/Document";
+import Share from "~/models/Share";
+import Input, { NativeInput } from "~/components/Input";
 import Switch from "~/components/Switch";
 import env from "~/env";
 import usePolicy from "~/hooks/usePolicy";
@@ -21,12 +24,6 @@ import { ResizingHeightContainer } from "../../ResizingHeightContainer";
 import Text from "../../Text";
 import Tooltip from "../../Tooltip";
 import { ListItem } from "../components/ListItem";
-import {
-  DomainPrefix,
-  ShareLinkInput,
-  StyledInfoIcon,
-  UnderlinedLink,
-} from "../components";
 
 type Props = {
   /** The document to share. */
@@ -159,7 +156,7 @@ function PublicAccess(
   );
 
   return (
-    <div ref={ref}>
+    <Wrapper ref={ref}>
       <ListItem
         title={t("Web")}
         subtitle={
@@ -169,19 +166,17 @@ function PublicAccess(
                 <Trans>
                   Anyone with the link can access because the containing
                   collection,{" "}
-                  <UnderlinedLink
-                    to={`/collection/${sharedParent.collectionId}`}
-                  >
+                  <StyledLink to={`/collection/${sharedParent.collectionId}`}>
                     {sharedParent.sourceTitle}
-                  </UnderlinedLink>
+                  </StyledLink>
                   , is shared
                 </Trans>
               ) : (
                 <Trans>
                   Anyone with the link can access because the parent document,{" "}
-                  <UnderlinedLink to={`/doc/${sharedParent.documentId}`}>
+                  <StyledLink to={`/doc/${sharedParent.documentId}`}>
                     {sharedParent.sourceTitle}
-                  </UnderlinedLink>
+                  </StyledLink>
                   , is shared
                 </Trans>
               )
@@ -314,7 +309,7 @@ function PublicAccess(
 
         {share?.published && !share.includeChildDocuments ? (
           <Text as="p" type="tertiary" size="xsmall">
-            <StyledInfoIcon color={theme.textTertiary} />
+            <StyledInfoIcon size={18} />
             <span>
               {t(
                 "Nested documents are not shared on the web. Toggle sharing to enable access, this will be the default behavior in the future"
@@ -324,8 +319,41 @@ function PublicAccess(
           </Text>
         ) : null}
       </ResizingHeightContainer>
-    </div>
+    </Wrapper>
   );
 }
+
+const StyledInfoIcon = styled(InfoIcon)`
+  vertical-align: bottom;
+  margin-right: 2px;
+`;
+
+const Wrapper = styled.div`
+  padding-bottom: 8px;
+`;
+
+const DomainPrefix = styled.span`
+  padding: 0 2px 0 8px;
+  flex: 0 1 auto;
+  cursor: text;
+  color: ${s("placeholder")};
+  user-select: none;
+`;
+
+const ShareLinkInput = styled(Input)`
+  margin-top: 12px;
+  min-width: 100px;
+  flex: 1;
+
+  ${NativeInput}:not(:first-child) {
+    padding: 4px 8px 4px 0;
+    flex: 1;
+  }
+`;
+
+const StyledLink = styled(Link)`
+  color: ${s("textSecondary")};
+  text-decoration: underline;
+`;
 
 export default observer(React.forwardRef(PublicAccess));

@@ -77,11 +77,4 @@ export const baseStyles = `
     font-size: 16px;
     line-height: 1.5;
   }
-
-  @media (prefers-color-scheme: dark) {
-    .email-button {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-  }
 `;

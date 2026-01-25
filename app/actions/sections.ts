@@ -1,4 +1,4 @@
-import type { ActionContext } from "~/types";
+import { ActionContext } from "~/types";
 
 export const CollectionSection = ({ t }: ActionContext) => t("Collection");
 

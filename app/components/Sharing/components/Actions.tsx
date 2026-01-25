@@ -10,12 +10,7 @@ import { Theme } from "~/stores/UiStore";
 export const AppearanceAction = observer(() => {
   const { t } = useTranslation();
   const { ui } = useStores();
-  const { resolvedTheme, themeOverride } = ui;
-
-  // Hide when theme is locked via query parameter
-  if (themeOverride) {
-    return null;
-  }
+  const { resolvedTheme } = ui;
 
   return (
     <Action>
