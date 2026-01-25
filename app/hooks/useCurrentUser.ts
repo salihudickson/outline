@@ -1,5 +1,5 @@
 import invariant from "invariant";
-import type User from "~/models/User";
+import User from "~/models/User";
 import useStores from "./useStores";
 
 /**

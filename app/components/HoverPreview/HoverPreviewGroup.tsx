@@ -1,8 +1,8 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import type { UnfurlResourceType, UnfurlResponse } from "@shared/types";
+import { UnfurlResourceType, UnfurlResponse } from "@shared/types";
 import { MAX_AVATAR_DISPLAY } from "@shared/constants";
-import type User from "~/models/User";
+import User from "~/models/User";
 import Facepile from "~/components/Facepile";
 import Flex from "~/components/Flex";
 import {
@@ -17,7 +17,7 @@ import ErrorBoundary from "../ErrorBoundary";
 
 type Props = Omit<UnfurlResponse[UnfurlResourceType.Group], "type">;
 
-const HoverPreviewGroup = React.forwardRef(function HoverPreviewGroup_(
+const HoverPreviewGroup = React.forwardRef(function _HoverPreviewGroup(
   { name, description, memberCount, users }: Props,
   ref: React.Ref<HTMLDivElement>
 ) {

@@ -1,6 +1,5 @@
 import React from "react";
-import type { ListChildComponentProps } from "react-window";
-import { FixedSizeList } from "react-window";
+import { FixedSizeList, ListChildComponentProps } from "react-window";
 import styled from "styled-components";
 
 type Props = {

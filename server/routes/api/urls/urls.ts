@@ -1,6 +1,5 @@
 import dns from "dns";
 import Router from "koa-router";
-import { traceFunction } from "@server/logging/tracing";
 import { MentionType, UnfurlResourceType } from "@shared/types";
 import { getBaseDomain, parseDomain } from "@shared/utils/domains";
 import parseDocumentSlug from "@shared/utils/parseDocumentSlug";
@@ -13,8 +12,8 @@ import validate from "@server/middlewares/validate";
 import { Document, Share, Team, User, Group, GroupUser } from "@server/models";
 import { authorize, can } from "@server/policies";
 import presentUnfurl from "@server/presenters/unfurl";
-import type { APIContext, Unfurl } from "@server/types";
-import { CacheHelper, type CacheResult } from "@server/utils/CacheHelper";
+import { APIContext, Unfurl } from "@server/types";
+import { CacheHelper } from "@server/utils/CacheHelper";
 import { Hook, PluginManager } from "@server/utils/PluginManager";
 import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import * as T from "./schema";
@@ -122,53 +121,35 @@ router.post(
         });
         return;
       }
-      ctx.response.status = 204;
-      return;
+      return (ctx.response.status = 204);
     }
 
     // External resources
-    // Use getDataOrSet which handles distributed locking to prevent thundering herd
-    // when multiple clients request the same URL simultaneously
-    const cacheKey = CacheHelper.getUnfurlKey(actor.teamId, url);
-    const defaultCacheExpiry = 3600;
-
-    const unfurlResult = await CacheHelper.getDataOrSet<
-      Unfurl | { error: true }
-    >(
-      cacheKey,
-      async (): Promise<CacheResult<Unfurl | { error: true }> | undefined> => {
-        for (const plugin of plugins) {
-          const pluginName = plugin.name ?? "unknown";
-          const unfurl = await traceFunction({
-            spanName: "unfurl.plugin",
-            resourceName: pluginName,
-            tags: {
-              "unfurl.plugin": pluginName,
-              "unfurl.url_host": urlObj.hostname,
-            },
-          })(() => plugin.value.unfurl(url, actor))();
-          if (unfurl) {
-            if ("error" in unfurl) {
-              return { data: { error: true as const }, expiry: 60 };
-            }
-            return {
-              data: unfurl as Unfurl,
-              expiry: plugin.value.cacheExpiry,
-            };
-          }
-        }
-        return undefined;
-      },
-      defaultCacheExpiry
+    const cachedData = await CacheHelper.getData<Unfurl>(
+      CacheHelper.getUnfurlKey(actor.teamId, url)
     );
-
-    if (!unfurlResult || "error" in unfurlResult) {
-      ctx.response.status = 204;
-      return;
+    if (cachedData) {
+      return (ctx.body = await presentUnfurl(cachedData));
     }
 
-    ctx.body = await presentUnfurl(unfurlResult);
-    return;
+    for (const plugin of plugins) {
+      const unfurl = await plugin.value.unfurl(url, actor);
+      if (unfurl) {
+        if ("error" in unfurl) {
+          return (ctx.response.status = 204);
+        } else {
+          const data = unfurl as Unfurl;
+          await CacheHelper.setData(
+            CacheHelper.getUnfurlKey(actor.teamId, url),
+            data,
+            plugin.value.cacheExpiry
+          );
+          return (ctx.body = await presentUnfurl(data));
+        }
+      }
+    }
+
+    return (ctx.response.status = 204);
   }
 );
 

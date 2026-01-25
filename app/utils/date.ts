@@ -9,9 +9,8 @@ import {
   isSameWeek,
   isPast,
 } from "date-fns";
-import type { TFunction } from "i18next";
-import type { locales } from "@shared/utils/date";
-import { dateLocale } from "@shared/utils/date";
+import { TFunction } from "i18next";
+import { dateLocale, locales } from "@shared/utils/date";
 
 export function dateToHeading(
   dateTime: string,

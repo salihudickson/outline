@@ -1,4 +1,4 @@
-import type { Team } from "@server/models";
+import { Team } from "@server/models";
 
 export default function presentTeam(team: Team) {
   return {
@@ -12,7 +12,6 @@ export default function presentTeam(team: Team) {
     defaultCollectionId: team.defaultCollectionId,
     documentEmbeds: team.documentEmbeds,
     guestSignin: team.emailSigninEnabled,
-    passkeysEnabled: team.passkeysEnabled,
     subdomain: team.subdomain,
     domain: team.domain,
     url: team.url,

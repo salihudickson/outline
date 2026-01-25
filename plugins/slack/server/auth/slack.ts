@@ -1,7 +1,7 @@
 import passport from "@outlinewiki/koa-passport";
 import type { Context } from "koa";
 import Router from "koa-router";
-import type { Profile } from "passport";
+import { Profile } from "passport";
 import { Strategy as SlackStrategy } from "passport-slack-oauth2";
 import { IntegrationService, IntegrationType } from "@shared/types";
 import accountProvisioner from "@server/commands/accountProvisioner";
@@ -10,19 +10,18 @@ import apexAuthRedirect from "@server/middlewares/apexAuthRedirect";
 import auth from "@server/middlewares/authentication";
 import passportMiddleware from "@server/middlewares/passport";
 import validate from "@server/middlewares/validate";
-import type { User } from "@server/models";
 import {
   IntegrationAuthentication,
   Integration,
+  User,
   Collection,
 } from "@server/models";
 import { authorize } from "@server/policies";
 import { sequelize } from "@server/storage/database";
-import type { APIContext, AuthenticationResult } from "@server/types";
+import { APIContext, AuthenticationResult } from "@server/types";
 import {
-  getClientFromOAuthState,
+  getClientFromContext,
   getTeamFromContext,
-  getUserFromOAuthState,
   StateStore,
 } from "@server/utils/passport";
 import { parseEmail } from "@shared/utils/email";
@@ -83,17 +82,11 @@ if (env.SLACK_CLIENT_ID && env.SLACK_CLIENT_SECRET) {
     ) {
       try {
         const team = await getTeamFromContext(context);
-        const client = getClientFromOAuthState(context);
-        const user =
-          context.state?.auth?.user ?? (await getUserFromOAuthState(context));
+        const client = getClientFromContext(context);
 
         const { domain } = parseEmail(profile.user.email);
 
-        const ctx = createContext({
-          ip: context.ip,
-          user,
-          authType: context.state?.auth?.type,
-        });
+        const ctx = createContext({ ip: context.ip });
         const result = await accountProvisioner(ctx, {
           team: {
             teamId: team?.id,
@@ -188,7 +181,7 @@ if (env.SLACK_CLIENT_ID && env.SLACK_CLIENT_SECRET) {
               },
               { transaction }
             );
-            await Integration.create<Integration<IntegrationType.Post>>(
+            await Integration.create(
               {
                 service: IntegrationService.Slack,
                 type: IntegrationType.Post,
@@ -226,7 +219,7 @@ if (env.SLACK_CLIENT_ID && env.SLACK_CLIENT_SECRET) {
               },
               { transaction }
             );
-            await Integration.create<Integration<IntegrationType.Command>>(
+            await Integration.create(
               {
                 service: IntegrationService.Slack,
                 type: IntegrationType.Command,
@@ -246,7 +239,7 @@ if (env.SLACK_CLIENT_ID && env.SLACK_CLIENT_SECRET) {
         case IntegrationType.LinkedAccount: {
           // validation middleware ensures that code is non-null at this point
           const data = await Slack.oauthAccess(code!, SlackUtils.connectUrl());
-          await Integration.create<Integration<IntegrationType.LinkedAccount>>({
+          await Integration.create({
             service: IntegrationService.Slack,
             type: IntegrationType.LinkedAccount,
             userId: user.id,

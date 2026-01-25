@@ -1,7 +1,6 @@
 import Router from "koa-router";
 import difference from "lodash/difference";
-import type { FindOptions, WhereOptions } from "sequelize";
-import { Op } from "sequelize";
+import { FindOptions, Op, WhereOptions } from "sequelize";
 import {
   CommentStatusFilter,
   TeamPreference,
@@ -9,7 +8,7 @@ import {
   IconType,
 } from "@shared/types";
 import { determineIconType } from "@shared/utils/icon";
-import { commentParser } from "@server/editor";
+import { parser } from "@server/editor";
 import auth from "@server/middlewares/authentication";
 import { feature } from "@server/middlewares/feature";
 import { rateLimiter } from "@server/middlewares/rateLimiter";
@@ -20,7 +19,7 @@ import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
 import { TextHelper } from "@server/models/helpers/TextHelper";
 import { authorize } from "@server/policies";
 import { presentComment, presentPolicies } from "@server/presenters";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import pagination from "../middlewares/pagination";
 import * as T from "./schema";
@@ -52,9 +51,7 @@ router.post(
           user
         )
       : undefined;
-    const data = text
-      ? commentParser.parse(text).toJSON()
-      : ctx.input.body.data;
+    const data = text ? parser.parse(text).toJSON() : ctx.input.body.data;
 
     const comment = await Comment.createWithCtx(ctx, {
       id,

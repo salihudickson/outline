@@ -1,8 +1,8 @@
-import type { ParameterizedContext, DefaultContext } from "koa";
-import type { IRouterParamContext } from "koa-router";
-import type { InferAttributes, Model, Transaction } from "sequelize";
-import type { z } from "zod";
-import type {
+import { ParameterizedContext, DefaultContext } from "koa";
+import { IRouterParamContext } from "koa-router";
+import { InferAttributes, Model, Transaction } from "sequelize";
+import { z } from "zod";
+import {
   CollectionSort,
   NavigationNode,
   Client,
@@ -12,8 +12,8 @@ import type {
   ProsemirrorData,
   UnfurlResponse,
 } from "@shared/types";
-import type { BaseSchema } from "@server/routes/api/schema";
-import type { AccountProvisionerResult } from "./commands/accountProvisioner";
+import { BaseSchema } from "@server/routes/api/schema";
+import { AccountProvisionerResult } from "./commands/accountProvisioner";
 import type {
   ApiKey,
   Attachment,
@@ -23,7 +23,6 @@ import type {
   Team,
   User,
   UserMembership,
-  UserPasskey,
   WebhookSubscription,
   Pin,
   Star,
@@ -52,14 +51,9 @@ export type AuthenticationResult = AccountProvisionerResult & {
 };
 
 export type Authentication = {
-  /** The user associated with this session. */
   user: User;
-  /** The token used for authenticating API requests, WebSocket connections, etc. */
   token: string;
-  /** The type of authentication used to create this session (e.g., "api", "app", "oauth"). */
   type?: AuthenticationType;
-  /** The authentication service used to create this session (e.g., "email", "passkeys", "google"). */
-  service?: string;
 };
 
 export type Pagination = {
@@ -80,14 +74,12 @@ export type BaseReq = z.infer<typeof BaseSchema>;
 
 export type BaseRes = unknown;
 
-export interface APIContext<
-  ReqT = BaseReq,
-  ResT = BaseRes,
-> extends ParameterizedContext<
-  AppState,
-  DefaultContext & IRouterParamContext<AppState>,
-  ResT
-> {
+export interface APIContext<ReqT = BaseReq, ResT = BaseRes>
+  extends ParameterizedContext<
+    AppState,
+    DefaultContext & IRouterParamContext<AppState>,
+    ResT
+  > {
   /** Typed and validated version of request, consisting of validated body, query, etc. */
   input: ReqT;
 
@@ -243,6 +235,7 @@ export type DocumentEvent = BaseEvent<Document> &
         createdAt: string;
       }
     | DocumentMovedEvent
+    | DocumentAccessRequestEvent
   );
 
 export type EmptyTrashEvent = {
@@ -291,6 +284,11 @@ export type DocumentUserEvent = BaseEvent<UserMembership> & {
   data: {
     isNew?: boolean;
   };
+};
+
+export type DocumentAccessRequestEvent = BaseEvent<Document> & {
+  name: "documents.request_access";
+  documentId: string;
 };
 
 export type DocumentGroupEvent = BaseEvent<GroupMembership> & {
@@ -446,12 +444,6 @@ export type OAuthClientEvent = BaseEvent<OAuthClient> & {
   modelId: string;
 };
 
-export type UserPasskeyEvent = BaseEvent<UserPasskey> & {
-  name: "passkeys.create" | "passkeys.update" | "passkeys.delete";
-  modelId: string;
-  userId: string;
-};
-
 // oxlint-disable-next-line @typescript-eslint/no-explicit-any
 export type ImportEvent = BaseEvent<Import<any>> & {
   name:
@@ -468,6 +460,7 @@ export type Event =
   | AuthenticationProviderEvent
   | DocumentEvent
   | DocumentUserEvent
+  | DocumentAccessRequestEvent
   | DocumentMovedEvent
   | DocumentGroupEvent
   | PinEvent
@@ -489,7 +482,6 @@ export type Event =
   | WebhookSubscriptionEvent
   | NotificationEvent
   | OAuthClientEvent
-  | UserPasskeyEvent
   | EmptyTrashEvent
   | ImportEvent;
 
@@ -567,19 +559,12 @@ export type UnfurlIssueOrPR =
   | UnfurlResponse[UnfurlResourceType.Issue]
   | UnfurlResponse[UnfurlResourceType.PR];
 
-export type UnfurlURL = UnfurlResponse[UnfurlResourceType.URL] & {
-  transformedUnfurl: true;
-};
-
 export type Unfurl =
   | UnfurlIssueOrPR
-  | UnfurlURL
   | {
       type: Exclude<
         UnfurlResourceType,
-        | UnfurlResourceType.Issue
-        | UnfurlResourceType.PR
-        | UnfurlResourceType.URL
+        UnfurlResourceType.Issue | UnfurlResourceType.PR
       >;
       [x: string]: JSONValue;
     };

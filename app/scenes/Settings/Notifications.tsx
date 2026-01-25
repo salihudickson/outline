@@ -19,12 +19,12 @@ import * as React from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { toast } from "sonner";
 import { NotificationEventType } from "@shared/types";
+import Flex from "~/components/Flex";
 import Heading from "~/components/Heading";
 import Notice from "~/components/Notice";
 import Scene from "~/components/Scene";
 import Switch from "~/components/Switch";
 import Text from "~/components/Text";
-import { HStack } from "~/components/primitives/HStack";
 import env from "~/env";
 import useCurrentTeam from "~/hooks/useCurrentTeam";
 import useCurrentUser from "~/hooks/useCurrentUser";
@@ -136,6 +136,14 @@ function Notifications() {
       ),
     },
     {
+      event: NotificationEventType.RequestDocumentAccess,
+      icon: <CheckboxIcon checked />,
+      title: t("Document access requested"),
+      description: t(
+        "Receive a notification when a user requests access to a document you manage"
+      ),
+    },
+    {
       visible: isCloudHosted,
       icon: <AcademicCapIcon />,
       event: NotificationEventType.Onboarding,
@@ -200,9 +208,9 @@ function Notifications() {
             key={option.event}
             visible={option.visible}
             label={
-              <HStack spacing={4}>
+              <Flex align="center" gap={4}>
                 {option.icon} {option.title}
-              </HStack>
+              </Flex>
             }
             name={option.event}
             description={option.description}

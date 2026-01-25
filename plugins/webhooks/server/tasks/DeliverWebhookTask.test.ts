@@ -5,7 +5,7 @@ import {
   buildWebhookDelivery,
   buildWebhookSubscription,
 } from "@server/test/factories";
-import type { UserEvent } from "@server/types";
+import { UserEvent } from "@server/types";
 import DeliverWebhookTask from "./DeliverWebhookTask";
 
 beforeEach(async () => {

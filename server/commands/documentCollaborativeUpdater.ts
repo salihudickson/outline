@@ -2,7 +2,7 @@ import isEqual from "fast-deep-equal";
 import uniq from "lodash/uniq";
 import { yDocToProsemirrorJSON } from "y-prosemirror";
 import * as Y from "yjs";
-import type { ProsemirrorData } from "@shared/types";
+import { ProsemirrorData } from "@shared/types";
 import Logger from "@server/logging/Logger";
 import { Document, Event } from "@server/models";
 import { sequelize } from "@server/storage/database";
@@ -30,10 +30,6 @@ export default async function documentCollaborativeUpdater({
   clientVersion,
 }: Props) {
   return sequelize.transaction(async (transaction) => {
-    await sequelize.query(`SET LOCAL lock_timeout = '15s';`, {
-      transaction,
-    });
-
     const document = await Document.unscoped()
       .scope("withoutState")
       .findOne({
@@ -97,8 +93,6 @@ export default async function documentCollaborativeUpdater({
       },
       {
         transaction,
-        // Hooks MUST NOT be called or the AfterUpdate hook in Document model may
-        // result in infinite processing.
         hooks: false,
       }
     );

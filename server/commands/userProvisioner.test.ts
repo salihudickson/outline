@@ -1,8 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { randomUUID } from "crypto";
 import { UserRole } from "@shared/types";
-import { AuthenticationProvider, TeamDomain } from "@server/models";
-import { randomString } from "@shared/random";
+import { TeamDomain } from "@server/models";
 import {
   buildUser,
   buildTeam,
@@ -137,39 +136,29 @@ describe("userProvisioner", () => {
     expect(isNewUser).toEqual(true);
   });
 
-  it("should migrate user to new authentication provider when provider changes", async () => {
+  it("should handle duplicate providerId for different iDP", async () => {
     const existing = await buildUser();
     const authentications = await existing.$get("authentications");
     const existingAuth = authentications[0];
+    let error;
 
-    // Create a new authentication provider for the same team (simulates
-    // changing DISCORD_SERVER_ID or moving Google domains)
-    const newAuthProvider = await AuthenticationProvider.create({
-      name: "slack",
-      providerId: randomString(32),
-      teamId: existing.teamId,
-    });
+    try {
+      await userProvisioner(ctx, {
+        name: "Test Name",
+        email: "test@example.com",
+        teamId: existing.teamId,
+        authentication: {
+          authenticationProviderId: randomUUID(),
+          providerId: existingAuth.providerId,
+          accessToken: "123",
+          scopes: ["read"],
+        },
+      });
+    } catch (err) {
+      error = err;
+    }
 
-    const result = await userProvisioner(ctx, {
-      name: "Test Name",
-      email: "test@example.com",
-      teamId: existing.teamId,
-      authentication: {
-        authenticationProviderId: newAuthProvider.id,
-        providerId: existingAuth.providerId,
-        accessToken: "123",
-        scopes: ["read"],
-      },
-    });
-
-    const { user, authentication, isNewUser } = result;
-    expect(user.id).toEqual(existing.id);
-    expect(authentication).toBeDefined();
-    expect(authentication?.authenticationProviderId).toEqual(
-      newAuthProvider.id
-    );
-    expect(authentication?.accessToken).toEqual("123");
-    expect(isNewUser).toEqual(false);
+    expect(error && error.toString()).toContain("already exists for");
   });
 
   it("should create a new user", async () => {

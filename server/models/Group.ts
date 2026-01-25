@@ -1,5 +1,4 @@
-import type { InferAttributes, InferCreationAttributes } from "sequelize";
-import { Op } from "sequelize";
+import { InferAttributes, InferCreationAttributes, Op } from "sequelize";
 import {
   BelongsTo,
   Column,
@@ -62,7 +61,7 @@ class Group extends ParanoidModel<
   InferAttributes<Group>,
   Partial<InferCreationAttributes<Group>>
 > {
-  @Length({ min: 0, max: 255, msg: "name must be 255 characters or less" })
+  @Length({ min: 0, max: 255, msg: "name must be be 255 characters or less" })
   @NotContainsUrl
   @Column
   name: string;

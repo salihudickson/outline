@@ -1,9 +1,9 @@
 import invariant from "invariant";
 import { action, runInAction, computed } from "mobx";
 import UserMembership from "~/models/UserMembership";
-import type { PaginationParams } from "~/types";
+import { PaginationParams } from "~/types";
 import { client } from "~/utils/ApiClient";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store, { PAGINATION_SYMBOL, RPCAction } from "./base/Store";
 
 export default class UserMembershipsStore extends Store<UserMembership> {

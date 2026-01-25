@@ -1,16 +1,13 @@
 import invariant from "invariant";
 import { action, runInAction } from "mobx";
-import {
-  type CollectionPermission,
-  type DocumentPermission,
-} from "@shared/types";
+import { CollectionPermission, DocumentPermission } from "@shared/types";
 import GroupMembership from "~/models/GroupMembership";
-import type { PaginationParams } from "~/types";
+import { PaginationParams } from "~/types";
 import { client } from "~/utils/ApiClient";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store, {
   PAGINATION_SYMBOL,
-  type PaginatedResponse,
+  PaginatedResponse,
   RPCAction,
 } from "./base/Store";
 

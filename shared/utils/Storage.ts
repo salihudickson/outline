@@ -1,4 +1,4 @@
-import type { Primitive } from "utility-types";
+import { Primitive } from "utility-types";
 
 /**
  * Storage is a wrapper class for localStorage that allow safe usage when

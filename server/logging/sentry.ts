@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/node";
 import env from "@server/env";
-import type { AppContext } from "@server/types";
+import { AppContext } from "@server/types";
 
 if (env.SENTRY_DSN) {
   Sentry.init({

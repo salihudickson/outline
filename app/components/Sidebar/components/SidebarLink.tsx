@@ -1,4 +1,4 @@
-import type { LocationDescriptor } from "history";
+import { LocationDescriptor } from "history";
 import * as React from "react";
 import styled, { useTheme, css } from "styled-components";
 import breakpoint from "styled-components-breakpoint";
@@ -10,9 +10,8 @@ import { UnreadBadge } from "~/components/UnreadBadge";
 import useClickIntent from "~/hooks/useClickIntent";
 import { undraggableOnDesktop } from "~/styles";
 import Disclosure from "./Disclosure";
-import type { Props as NavLinkProps } from "./NavLink";
-import NavLink from "./NavLink";
-import type { ActionWithChildren } from "~/types";
+import NavLink, { Props as NavLinkProps } from "./NavLink";
+import { ActionWithChildren } from "~/types";
 import { ContextMenu } from "~/components/Menu/ContextMenu";
 import { useTranslation } from "react-i18next";
 
@@ -107,7 +106,7 @@ function SidebarLink(
 
   const unreadStyle = React.useMemo(
     () => ({
-      right: -20,
+      right: -12,
     }),
     []
   );
@@ -145,27 +144,27 @@ function SidebarLink(
   const DisclosureComponent = icon ? HiddenDisclosure : Disclosure;
 
   return (
-    <Link
-      $isActiveDrop={isActiveDrop}
-      $isDraft={isDraft}
-      $disabled={disabled}
-      style={style}
-      activeStyle={isActiveDrop ? activeDropStyle : activeStyle}
-      onClick={handleClick}
-      onActiveClick={handleDisclosureClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onDragEnter={handleMouseEnter}
-      // @ts-expect-error exact does not exist on div
-      exact={exact !== false}
-      to={to}
-      as={to ? undefined : href ? "a" : "div"}
-      href={href}
-      className={className}
-      ref={ref}
-      {...rest}
-    >
-      <ContextMenu action={contextAction} ariaLabel={t("Link options")}>
+    <ContextMenu action={contextAction} ariaLabel={t("Link options")}>
+      <Link
+        $isActiveDrop={isActiveDrop}
+        $isDraft={isDraft}
+        $disabled={disabled}
+        style={style}
+        activeStyle={isActiveDrop ? activeDropStyle : activeStyle}
+        onClick={handleClick}
+        onActiveClick={handleDisclosureClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onDragEnter={handleMouseEnter}
+        // @ts-expect-error exact does not exist on div
+        exact={exact !== false}
+        to={to}
+        as={to ? undefined : href ? "a" : "div"}
+        href={href}
+        className={className}
+        ref={ref}
+        {...rest}
+      >
         <Content>
           {hasDisclosure && (
             <DisclosureComponent
@@ -179,9 +178,9 @@ function SidebarLink(
           <Label $ellipsis={typeof label === "string"}>{label}</Label>
           {unreadBadge && <UnreadBadge style={unreadStyle} />}
         </Content>
-      </ContextMenu>
-      {menu && <Actions showActions={showActions}>{menu}</Actions>}
-    </Link>
+        {menu && <Actions showActions={showActions}>{menu}</Actions>}
+      </Link>
+    </ContextMenu>
   );
 }
 
@@ -242,8 +241,7 @@ const Link = styled(NavLink)<{
   $disabled?: boolean;
 }>`
   &:hover,
-  &:active,
-  &:has([data-state="open"]) {
+  &:active {
     --background: ${s("sidebarHoverBackground")};
   }
 

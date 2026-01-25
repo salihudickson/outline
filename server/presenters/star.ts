@@ -1,4 +1,4 @@
-import type { Star } from "@server/models";
+import { Star } from "@server/models";
 
 export default function presentStar(star: Star) {
   return {

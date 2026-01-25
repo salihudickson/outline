@@ -1,18 +1,17 @@
 import { APIResponseError, APIErrorCode } from "@notionhq/client";
-import type { ImportTaskInput, ImportTaskOutput } from "@shared/schema";
-import type { IntegrationService, ProsemirrorDoc } from "@shared/types";
+import { ImportTaskInput, ImportTaskOutput } from "@shared/schema";
+import { IntegrationService, ProsemirrorDoc } from "@shared/types";
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { CollectionValidation, DocumentValidation } from "@shared/validations";
 import Logger from "@server/logging/Logger";
 import { Integration } from "@server/models";
-import type ImportTask from "@server/models/ImportTask";
-import type { ProcessOutput } from "@server/queues/tasks/APIImportTask";
-import APIImportTask from "@server/queues/tasks/APIImportTask";
-import type { Block } from "../../shared/types";
-import { PageType } from "../../shared/types";
+import ImportTask from "@server/models/ImportTask";
+import APIImportTask, {
+  ProcessOutput,
+} from "@server/queues/tasks/APIImportTask";
+import { Block, PageType } from "../../shared/types";
 import { NotionClient } from "../notion";
-import type { NotionPage } from "../utils/NotionConverter";
-import { NotionConverter } from "../utils/NotionConverter";
+import { NotionConverter, NotionPage } from "../utils/NotionConverter";
 
 type ChildPage = { type: PageType; externalId: string };
 

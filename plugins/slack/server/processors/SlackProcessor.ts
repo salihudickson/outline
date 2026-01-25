@@ -4,7 +4,7 @@ import { IntegrationService, IntegrationType } from "@shared/types";
 import { Minute } from "@shared/utils/time";
 import { Document, Integration, Collection, Team } from "@server/models";
 import BaseProcessor from "@server/queues/processors/BaseProcessor";
-import type {
+import {
   DocumentEvent,
   IntegrationEvent,
   RevisionEvent,
@@ -72,7 +72,7 @@ export default class SlackProcessor extends BaseProcessor {
           {
             color: collection.color,
             title: collection.name,
-            title_link: `${env.URL}${collection.path}`,
+            title_link: `${env.URL}${collection.url}`,
             text: collection.description,
           },
         ],

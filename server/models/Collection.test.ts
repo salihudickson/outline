@@ -20,7 +20,7 @@ describe("#url", () => {
     const collection = new Collection({
       id: "1234",
     });
-    expect(collection.path).toBe(`/collection/untitled-${collection.urlId}`);
+    expect(collection.url).toBe(`/collection/untitled-${collection.urlId}`);
   });
 });
 
@@ -312,7 +312,7 @@ describe("#removeDocument", () => {
 
     jest.spyOn(collection, "save");
     await collection.deleteDocument(document);
-    expect(collection.save).toHaveBeenCalled();
+    expect(collection.save).toBeCalled();
   });
 
   it("should remove documents from root", async () => {

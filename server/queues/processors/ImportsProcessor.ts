@@ -3,33 +3,38 @@ import chunk from "lodash/chunk";
 import keyBy from "lodash/keyBy";
 import truncate from "lodash/truncate";
 import { Fragment, Node } from "prosemirror-model";
-import type { CreateOptions, CreationAttributes, Transaction } from "sequelize";
-import { UniqueConstraintError } from "sequelize";
+import {
+  CreateOptions,
+  CreationAttributes,
+  Transaction,
+  UniqueConstraintError,
+} from "sequelize";
 import { randomUUID } from "crypto";
 import { randomElement } from "@shared/random";
-import type { ImportInput, ImportTaskInput } from "@shared/schema";
-import type {
+import { ImportInput, ImportTaskInput } from "@shared/schema";
+import {
   ImportableIntegrationService,
+  ImportState,
+  ImportTaskState,
+  MentionType,
   ProsemirrorData,
   ProsemirrorDoc,
   SourceMetadata,
 } from "@shared/types";
-import { ImportState, ImportTaskState, MentionType } from "@shared/types";
 import { colorPalette } from "@shared/utils/collections";
 import { CollectionValidation } from "@shared/validations";
 import { createContext } from "@server/context";
 import { schema } from "@server/editor";
 import Logger from "@server/logging/Logger";
 import { Attachment, Collection, Document, Import, User } from "@server/models";
-import type {
+import ImportTask, {
   ImportTaskAttributes,
   ImportTaskCreationAttributes,
 } from "@server/models/ImportTask";
-import ImportTask from "@server/models/ImportTask";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
 import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
 import { sequelize } from "@server/storage/database";
-import type { Event, ImportEvent } from "@server/types";
+import { Event, ImportEvent } from "@server/types";
 import BaseProcessor from "./BaseProcessor";
 
 export const PagePerImportTask = 3;
@@ -346,7 +351,7 @@ export default abstract class ImportsProcessor<
               // imported collection will be placed in the beginning.
               collectionIdx = fractionalIndex(null, collectionIdx);
 
-              const description = await DocumentHelper.toMarkdown(
+              const description = DocumentHelper.toMarkdown(
                 transformedContent,
                 {
                   includeTitle: false,
@@ -407,7 +412,7 @@ export default abstract class ImportsProcessor<
               title: output.title,
               icon: output.emoji,
               content: transformedContent,
-              text: await DocumentHelper.toMarkdown(transformedContent, {
+              text: DocumentHelper.toMarkdown(transformedContent, {
                 includeTitle: false,
               }),
               collectionId: collectionInternalId,

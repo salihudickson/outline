@@ -2,8 +2,9 @@ import times from "lodash/times";
 import styled from "styled-components";
 import Fade from "~/components/Fade";
 import Flex from "~/components/Flex";
-import type { Props as PlaceholderTextProps } from "~/components/PlaceholderText";
-import PlaceholderText from "~/components/PlaceholderText";
+import PlaceholderText, {
+  Props as PlaceholderTextProps,
+} from "~/components/PlaceholderText";
 
 type Props = {
   count?: number;

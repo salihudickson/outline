@@ -1,5 +1,5 @@
 import stream from "stream";
-import type { Context, Next } from "koa";
+import { Context, Next } from "koa";
 import { Readable } from "readable-stream";
 
 export default function apiResponse() {

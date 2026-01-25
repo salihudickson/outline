@@ -1,7 +1,6 @@
 import { format as formatDate } from "date-fns";
 import { useState, useRef, useEffect } from "react";
-import type { locales } from "@shared/utils/date";
-import { dateLocale, dateToRelative } from "@shared/utils/date";
+import { dateLocale, dateToRelative, locales } from "@shared/utils/date";
 import useUserLocale from "~/hooks/useUserLocale";
 
 let callbacks: (() => void)[] = [];

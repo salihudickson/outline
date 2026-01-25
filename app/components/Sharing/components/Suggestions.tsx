@@ -7,13 +7,12 @@ import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 import { s, hover } from "@shared/styles";
 import { stringToColor } from "@shared/utils/color";
-import type Collection from "~/models/Collection";
-import type Document from "~/models/Document";
+import Collection from "~/models/Collection";
+import Document from "~/models/Document";
 import Group from "~/models/Group";
-import type User from "~/models/User";
+import User from "~/models/User";
 import ArrowKeyNavigation from "~/components/ArrowKeyNavigation";
-import type { IAvatar } from "~/components/Avatar";
-import { Avatar, GroupAvatar, AvatarSize } from "~/components/Avatar";
+import { Avatar, GroupAvatar, AvatarSize, IAvatar } from "~/components/Avatar";
 import Empty from "~/components/Empty";
 import Placeholder from "~/components/List/Placeholder";
 import Scrollable from "~/components/Scrollable";
@@ -45,7 +44,7 @@ type Props = {
 };
 
 export const Suggestions = observer(
-  React.forwardRef(function Suggestions_(
+  React.forwardRef(function _Suggestions(
     {
       document,
       collection,

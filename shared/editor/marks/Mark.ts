@@ -1,17 +1,16 @@
-import type { InputRule } from "prosemirror-inputrules";
-import type { ParseSpec } from "prosemirror-markdown";
-import type {
+import { InputRule } from "prosemirror-inputrules";
+import { ParseSpec } from "prosemirror-markdown";
+import {
   MarkSpec,
   MarkType,
   Node as ProsemirrorNode,
   Schema,
 } from "prosemirror-model";
-import type { Command } from "prosemirror-state";
+import { Command } from "prosemirror-state";
 import { toggleMark } from "../commands/toggleMark";
-import type { CommandFactory } from "../lib/Extension";
-import Extension from "../lib/Extension";
-import type { MarkdownSerializerState } from "../lib/markdown/serializer";
-import type { Primitive } from "utility-types";
+import Extension, { CommandFactory } from "../lib/Extension";
+import { MarkdownSerializerState } from "../lib/markdown/serializer";
+import { Primitive } from "utility-types";
 
 export default abstract class Mark extends Extension {
   get type() {

@@ -1,5 +1,5 @@
 import copy from "copy-to-clipboard";
-import type Share from "~/models/Share";
+import Share from "~/models/Share";
 import { createAction, createInternalLinkAction } from "..";
 import { ArrowIcon, CopyIcon, TrashIcon } from "outline-icons";
 import { ShareSection } from "../sections";

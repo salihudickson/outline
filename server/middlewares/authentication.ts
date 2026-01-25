@@ -1,14 +1,14 @@
-import type { Next } from "koa";
+import { Next } from "koa";
 import capitalize from "lodash/capitalize";
-import type { UserRole } from "@shared/types";
+import { UserRole } from "@shared/types";
 import { UserRoleHelper } from "@shared/utils/UserRoleHelper";
+import Logger from "@server/logging/Logger";
 import tracer, {
   addTags,
   getRootSpanFromRequestContext,
 } from "@server/logging/tracer";
 import { User, Team, ApiKey, OAuthAuthentication } from "@server/models";
-import type { AppContext } from "@server/types";
-import { AuthenticationType } from "@server/types";
+import { AppContext, AuthenticationType } from "@server/types";
 import { getUserForJWT } from "@server/utils/jwt";
 import {
   AuthenticationError,
@@ -37,21 +37,20 @@ type AuthInput = {
 export default function auth(options: AuthenticationOptions = {}) {
   return async function authMiddleware(ctx: AppContext, next: Next) {
     try {
-      const { type, token, user, service } = await validateAuthentication(
-        ctx,
-        options
-      );
+      const { type, token, user } = await validateAuthentication(ctx, options);
 
-      await Promise.all([
-        user.updateActiveAt(ctx),
-        user.team?.updateActiveAt(),
-      ]);
+      // We are not awaiting the promises here so that the request is not blocked
+      user.updateActiveAt(ctx).catch((err) => {
+        Logger.error("Failed to update user activeAt", err);
+      });
+      user.team?.updateActiveAt().catch((err) => {
+        Logger.error("Failed to update team activeAt", err);
+      });
 
       ctx.state.auth = {
         user,
         token,
         type,
-        service,
       };
 
       if (tracer) {
@@ -73,7 +72,6 @@ export default function auth(options: AuthenticationOptions = {}) {
     }
 
     Object.defineProperty(ctx, "context", {
-      configurable: true,
       get() {
         return {
           auth: ctx.state.auth,
@@ -147,12 +145,7 @@ export function parseAuthentication(ctx: AppContext): AuthInput {
 async function validateAuthentication(
   ctx: AppContext,
   options: AuthenticationOptions
-): Promise<{
-  user: User;
-  token: string;
-  type: AuthenticationType;
-  service?: string;
-}> {
+): Promise<{ user: User; token: string; type: AuthenticationType }> {
   const { token, transport } = parseAuthentication(ctx);
 
   if (!token) {
@@ -161,7 +154,6 @@ async function validateAuthentication(
 
   let user: User | null;
   let type: AuthenticationType;
-  let service: string | undefined;
 
   if (OAuthAuthentication.match(token)) {
     if (transport !== "header") {
@@ -251,9 +243,7 @@ async function validateAuthentication(
     await apiKey.updateActiveAt();
   } else {
     type = AuthenticationType.APP;
-    const result = await getUserForJWT(token);
-    user = result.user;
-    service = result.service;
+    user = await getUserForJWT(token);
   }
 
   if (user.isSuspended) {
@@ -282,6 +272,5 @@ async function validateAuthentication(
     user,
     type,
     token,
-    service,
   };
 }

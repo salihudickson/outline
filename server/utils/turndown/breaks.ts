@@ -1,4 +1,4 @@
-import type TurndownService from "turndown";
+import TurndownService from "turndown";
 
 /**
  * A turndown plugin for converting break tags to newlines.

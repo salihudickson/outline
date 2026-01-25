@@ -1,12 +1,12 @@
 import {
-  SortAlphabeticalReverseIcon,
-  SortAlphabeticalIcon,
+  AlphabeticalReverseSortIcon,
+  AlphabeticalSortIcon,
   ArchiveIcon,
   CollectionIcon,
   EditIcon,
   ExportIcon,
   ImportIcon,
-  SortManualIcon,
+  ManualSortIcon,
   NewDocumentIcon,
   PadlockIcon,
   PlusIcon,
@@ -20,7 +20,7 @@ import {
   UnsubscribeIcon,
 } from "outline-icons";
 import { toast } from "sonner";
-import type Collection from "~/models/Collection";
+import Collection from "~/models/Collection";
 import { CollectionEdit } from "~/components/Collection/CollectionEdit";
 import { CollectionNew } from "~/components/Collection/CollectionNew";
 import CollectionDeleteDialog from "~/components/CollectionDeleteDialog";
@@ -136,6 +136,7 @@ export const editCollectionPermissions = createAction({
 
     stores.dialogs.openModal({
       title: t("Share this collection"),
+      style: { marginBottom: -12 },
       content: (
         <SharePopover
           collection={collection}
@@ -201,12 +202,12 @@ export const sortCollection = createActionWithChildren({
 
     return sortAlphabetical ? (
       sortDir === "asc" ? (
-        <SortAlphabeticalIcon />
+        <AlphabeticalSortIcon />
       ) : (
-        <SortAlphabeticalReverseIcon />
+        <AlphabeticalReverseSortIcon />
       )
     ) : (
-      <SortManualIcon />
+      <ManualSortIcon />
     );
   },
   children: [

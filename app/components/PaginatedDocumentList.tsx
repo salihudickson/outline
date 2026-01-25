@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import type Document from "~/models/Document";
+import Document from "~/models/Document";
 import DocumentListItem from "~/components/DocumentListItem";
 import Error from "~/components/List/Error";
 import PaginatedList from "~/components/PaginatedList";

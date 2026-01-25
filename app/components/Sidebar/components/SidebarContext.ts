@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
-import type Document from "~/models/Document";
-import type User from "~/models/User";
+import Document from "~/models/Document";
+import User from "~/models/User";
 
 export type SidebarContextType =
   | "collections"

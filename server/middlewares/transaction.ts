@@ -1,7 +1,7 @@
-import type { Next } from "koa";
-import type { Transaction } from "sequelize";
+import { Next } from "koa";
+import { Transaction } from "sequelize";
 import { sequelize } from "@server/storage/database";
-import type { AppContext } from "@server/types";
+import { AppContext } from "@server/types";
 
 /**
  * Middleware that wraps a route in a database transaction, useful for mutations

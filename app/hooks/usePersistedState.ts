@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import type { Primitive } from "utility-types";
+import { Primitive } from "utility-types";
 import Storage from "@shared/utils/Storage";
 import { isBrowser } from "@shared/utils/browser";
 import Logger from "~/utils/Logger";

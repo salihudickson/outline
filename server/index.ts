@@ -6,12 +6,11 @@ import "./logging/tracer"; // must come before importing any instrumented module
 
 import http from "http";
 import https from "https";
-import type { Context } from "koa";
-import Koa from "koa";
+import Koa, { Context } from "koa";
 import helmet from "koa-helmet";
 import logger from "koa-logger";
 import Router from "koa-router";
-import type { AddressInfo } from "net";
+import { AddressInfo } from "net";
 import stoppable from "stoppable";
 import throng from "throng";
 import escape from "lodash/escape";

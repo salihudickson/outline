@@ -1,6 +1,6 @@
 import debounce from "lodash/debounce";
 import { observer } from "mobx-react";
-import { useMemo, useRef, useCallback, useEffect, Suspense } from "react";
+import { useMemo, useRef, useCallback, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import styled from "styled-components";
@@ -8,8 +8,8 @@ import { richExtensions } from "@shared/editor/nodes";
 import { s } from "@shared/styles";
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { CollectionValidation } from "@shared/validations";
-import type Collection from "~/models/Collection";
-import type Document from "~/models/Document";
+import Collection from "~/models/Collection";
+import Document from "~/models/Document";
 import Editor from "~/components/Editor";
 import LoadingIndicator from "~/components/LoadingIndicator";
 import Text from "~/components/Text";
@@ -18,16 +18,16 @@ import { withUIExtensions } from "~/editor/extensions";
 import useCurrentUser from "~/hooks/useCurrentUser";
 import usePolicy from "~/hooks/usePolicy";
 import useStores from "~/hooks/useStores";
-import type { Properties } from "~/types";
+import { Properties } from "~/types";
 
 const extensions = withUIExtensions(richExtensions);
 
 type Props = {
   collection: Collection;
-  readOnly?: boolean;
+  shareId?: string;
 };
 
-function Overview({ collection, readOnly }: Props) {
+function Overview({ collection, shareId }: Props) {
   const { documents, collections } = useStores();
   const { t } = useTranslation();
   const user = useCurrentUser({ rejectOnEmpty: false });
@@ -46,13 +46,6 @@ function Overview({ collection, readOnly }: Props) {
         }
       }, 1000),
     [collection, t]
-  );
-
-  useEffect(
-    () => () => {
-      handleSave.flush();
-    },
-    [handleSave]
   );
 
   const childRef = useRef<HTMLDivElement>(null);
@@ -98,7 +91,7 @@ function Overview({ collection, readOnly }: Props) {
               maxLength={CollectionValidation.maxDescriptionLength}
               onCreateLink={onCreateLink}
               canUpdate={can.update}
-              readOnly={!can.update || readOnly}
+              readOnly={!can.update || !!shareId}
               userId={user?.id}
               editorStyle={editorStyle}
             />

@@ -24,7 +24,6 @@ import {
 import useKeyDown from "~/hooks/useKeyDown";
 import Desktop from "~/utils/Desktop";
 import { useEditor } from "./EditorContext";
-import { HStack } from "~/components/primitives/HStack";
 
 type KeyboardShortcutsProps = {
   open: boolean;
@@ -439,7 +438,7 @@ export default function FindAndReplace({
           </Flex>
           <ResizingHeightContainer>
             {showReplace && !readOnly && (
-              <HStack>
+              <Flex gap={8}>
                 <StyledInput
                   maxLength={255}
                   value={replaceTerm}
@@ -471,7 +470,7 @@ export default function FindAndReplace({
                     {t("Replace all")}
                   </Button>
                 </Tooltip>
-              </HStack>
+              </Flex>
             )}
           </ResizingHeightContainer>
         </Content>

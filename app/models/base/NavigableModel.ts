@@ -1,5 +1,5 @@
 import { action, computed, observable, runInAction } from "mobx";
-import type { JSONObject, NavigationNode } from "@shared/types";
+import { JSONObject, type NavigationNode } from "@shared/types";
 import { client } from "~/utils/ApiClient";
 import Model from "./Model";
 import type Document from "../Document";

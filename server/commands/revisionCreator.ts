@@ -1,9 +1,8 @@
 import { createContext } from "@server/context";
-import type { User } from "@server/models";
-import { Document, Revision } from "@server/models";
+import { Document, User, Revision } from "@server/models";
 import { sequelize } from "@server/storage/database";
 import Redis from "@server/storage/redis";
-import type { DocumentEvent, RevisionEvent } from "@server/types";
+import { DocumentEvent, RevisionEvent } from "@server/types";
 
 export default async function revisionCreator({
   event,

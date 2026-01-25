@@ -1,5 +1,4 @@
-import type { IAvatar } from "./Avatar";
-import Avatar, { AvatarSize, AvatarVariant } from "./Avatar";
+import Avatar, { IAvatar, AvatarSize, AvatarVariant } from "./Avatar";
 import AvatarWithPresence from "./AvatarWithPresence";
 import { GroupAvatar } from "./GroupAvatar";
 

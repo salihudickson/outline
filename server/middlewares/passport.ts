@@ -1,11 +1,11 @@
 import passport from "@outlinewiki/koa-passport";
-import type { Context } from "koa";
+import { Context } from "koa";
 import { InternalOAuthError } from "passport-oauth2";
 import { Client } from "@shared/types";
 import env from "@server/env";
 import { AuthenticationError, OAuthStateMismatchError } from "@server/errors";
 import Logger from "@server/logging/Logger";
-import type { AuthenticationResult } from "@server/types";
+import { AuthenticationResult } from "@server/types";
 import { signIn } from "@server/utils/authentication";
 import { parseState } from "@server/utils/passport";
 

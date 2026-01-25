@@ -1,6 +1,6 @@
 import * as React from "react";
 import Frame from "../components/Frame";
-import type { EmbedProps as Props } from ".";
+import { EmbedProps as Props } from ".";
 
 function Gist(props: Props) {
   return (

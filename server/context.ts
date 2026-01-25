@@ -1,7 +1,6 @@
-import type { Transaction } from "sequelize";
-import type { User } from "@server/models";
-import type { APIContext } from "@server/types";
-import { AuthenticationType } from "@server/types";
+import { Transaction } from "sequelize";
+import { User } from "@server/models";
+import { APIContext, AuthenticationType } from "@server/types";
 
 export function createContext({
   user,

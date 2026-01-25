@@ -1,8 +1,7 @@
-import type { DocumentPermission } from "@shared/types";
-import { NotificationEventType } from "@shared/types";
+import { DocumentPermission, NotificationEventType } from "@shared/types";
 import Logger from "@server/logging/Logger";
 import { Notification, User } from "@server/models";
-import type { DocumentUserEvent } from "@server/types";
+import { DocumentUserEvent } from "@server/types";
 import { isElevatedPermission } from "@server/utils/permissions";
 import { BaseTask, TaskPriority } from "./base/BaseTask";
 

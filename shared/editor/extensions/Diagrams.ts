@@ -1,11 +1,9 @@
-import type { Command, EditorState } from "prosemirror-state";
-import { NodeSelection } from "prosemirror-state";
-import type { Node } from "prosemirror-model";
-import type { CommandFactory } from "../lib/Extension";
-import Extension from "../lib/Extension";
+import { Command, EditorState, NodeSelection } from "prosemirror-state";
+import { Node } from "prosemirror-model";
+import Extension, { CommandFactory } from "../lib/Extension";
 import FileHelper, { ImageSource } from "../lib/FileHelper";
 import { IntegrationService } from "../../types";
-import type { NodeWithPos } from "../types";
+import { NodeWithPos } from "../types";
 import {
   DiagramsNetClient,
   EMPTY_DIAGRAM_IMAGE,
@@ -16,7 +14,7 @@ import { sanitizeUrl } from "../../utils/urls";
  * An editor extension that adds commands to insert and edit diagrams using diagrams.net.
  *
  * This extension provides a command to open the diagrams.net editor for creating
- * and editing diagrams. Diagrams are stored as SVG or PNG images with embedded XML data
+ * and editing diagrams. Diagrams are stored as PNG images with embedded XML data
  * that allows them to be re-edited later.
  */
 export default class Diagrams extends Extension {
@@ -100,32 +98,31 @@ export default class Diagrams extends Extension {
   /**
    * Called when the diagram editor is ready to receive commands.
    *
-   * @param sourceUrl - the URL of the diagram to load, or the empty diagram constant.
+   * @param client - the diagrams.net client.
+   * @param sourceUrl - the URL of the diagram to load.
    */
   private async onDiagramReady(sourceUrl: string) {
-    let data: string;
+    let base64Data: string;
 
     if (sourceUrl === EMPTY_DIAGRAM_IMAGE) {
-      // For empty diagram, send full data URI
-      data = `data:image/svg+xml;base64,${EMPTY_DIAGRAM_IMAGE}`;
+      base64Data = EMPTY_DIAGRAM_IMAGE;
     } else {
-      // For existing diagrams, send the full data URI
-      data = await FileHelper.urlToBase64(sourceUrl);
+      base64Data = await FileHelper.urlToBase64(sourceUrl);
     }
 
-    this.client.loadDiagram(data);
+    this.client.loadDiagram(base64Data);
   }
 
   /**
    * Called when a diagram has been exported from the editor.
    *
-   * @param base64Data - the exported diagram as base64 encoded SVG.
+   * @param base64Data - the exported diagram as base64 encoded PNG.
    */
   private async onDiagramExported(base64Data: string) {
     const file = FileHelper.base64ToFile(
       base64Data,
-      "diagram.svg",
-      "image/svg+xml"
+      "diagram.png",
+      "image/png"
     );
     const dimensions = await FileHelper.getImageDimensions(file);
     const uploadedUrl = await this.uploadDiagramFile(file);
@@ -217,11 +214,10 @@ export default class Diagrams extends Extension {
     const integration = this.editor.props.embeds?.find(
       (integ) => integ.name === IntegrationService.Diagrams
     );
-    const uiTheme = this.editor.props.theme.isDark ? 'dark' : 'atlas';
     return (
       sanitizeUrl(
         integration?.settings?.diagrams?.url ?? "https://embed.diagrams.net/"
-      ) + `?embed=1&ui=${uiTheme}&spin=1&modified=unsavedChanges&proto=json`
+      ) + "?embed=1&ui=atlas&spin=1&modified=unsavedChanges&proto=json"
     );
   }
 

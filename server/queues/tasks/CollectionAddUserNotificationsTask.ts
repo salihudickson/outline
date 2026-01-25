@@ -1,6 +1,6 @@
 import { NotificationEventType } from "@shared/types";
 import { Notification, User } from "@server/models";
-import type { CollectionUserEvent } from "@server/types";
+import { CollectionUserEvent } from "@server/types";
 import { BaseTask, TaskPriority } from "./base/BaseTask";
 
 export default class CollectionAddUserNotificationsTask extends BaseTask<CollectionUserEvent> {

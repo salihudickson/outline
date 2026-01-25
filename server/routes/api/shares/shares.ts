@@ -1,7 +1,6 @@
 import Router from "koa-router";
 import isUndefined from "lodash/isUndefined";
-import type { FindOptions, WhereAttributeHash, WhereOptions } from "sequelize";
-import { Op } from "sequelize";
+import { FindOptions, Op, WhereAttributeHash, WhereOptions } from "sequelize";
 import { TeamPreference } from "@shared/types";
 import { AuthenticationError, NotFoundError } from "@server/errors";
 import auth from "@server/middlewares/authentication";
@@ -17,7 +16,7 @@ import {
   presentCollection,
   presentDocument,
 } from "@server/presenters";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import { getTeamFromContext } from "@server/utils/passport";
 import { navigationNodeToSitemap } from "@server/utils/sitemap";

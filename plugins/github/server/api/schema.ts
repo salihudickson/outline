@@ -20,9 +20,6 @@ export const GitHubCallbackSchema = BaseSchema.extend({
     .refine((req) => !(isEmpty(req.code) && isEmpty(req.error)), {
       message: "one of code or error is required",
     })
-    .refine((req) => isEmpty(req.code) || isEmpty(req.error), {
-      message: "code and error cannot both be present",
-    })
     .refine(
       (req) =>
         !(

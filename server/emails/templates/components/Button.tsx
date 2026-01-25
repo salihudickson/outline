@@ -9,7 +9,6 @@ const style: React.CSSProperties = {
   padding: "10px 20px",
   color: "#FFFFFF",
   background: "#000000",
-  border: "1px solid #000",
   borderRadius: "4px",
   fontWeight: 500,
   textDecoration: "none",
@@ -17,7 +16,7 @@ const style: React.CSSProperties = {
 };
 
 const Button: React.FC<Props> = (props) => (
-  <a {...props} style={style} className="email-button">
+  <a {...props} style={style}>
     {props.children}
   </a>
 );

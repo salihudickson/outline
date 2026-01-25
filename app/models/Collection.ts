@@ -1,8 +1,8 @@
 import invariant from "invariant";
 import { action, comparer, computed, observable, runInAction } from "mobx";
 import {
-  type CollectionPermission,
-  type FileOperationFormat,
+  CollectionPermission,
+  FileOperationFormat,
   type NavigationNode,
   NavigationNodeType,
   type ProsemirrorData,
@@ -10,10 +10,10 @@ import {
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { sortNavigationNodes } from "@shared/utils/collections";
 import type CollectionsStore from "~/stores/CollectionsStore";
-import type Document from "~/models/Document";
+import Document from "~/models/Document";
 import ParanoidModel from "~/models/base/ParanoidModel";
 import { client } from "~/utils/ApiClient";
-import type User from "./User";
+import User from "./User";
 import Field from "./decorators/Field";
 import { AfterChange } from "./decorators/Lifecycle";
 

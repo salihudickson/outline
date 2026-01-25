@@ -1,23 +1,21 @@
 import copy from "copy-to-clipboard";
 import { textblockTypeInputRule } from "prosemirror-inputrules";
-import type {
+import {
   Node as ProsemirrorNode,
   NodeSpec,
   NodeType,
   Schema,
 } from "prosemirror-model";
-import type { Command } from "prosemirror-state";
-import { Plugin, Selection } from "prosemirror-state";
+import { Command, Plugin, Selection } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import { toast } from "sonner";
-import type { Primitive } from "utility-types";
-import { isSafari } from "../../utils/browser";
+import { Primitive } from "utility-types";
 import Storage from "../../utils/Storage";
 import backspaceToParagraph from "../commands/backspaceToParagraph";
 import splitHeading from "../commands/splitHeading";
 import toggleBlockType from "../commands/toggleBlockType";
 import { headingToPersistenceKey } from "../lib/headingToSlug";
-import type { MarkdownSerializerState } from "../lib/markdown/serializer";
+import { MarkdownSerializerState } from "../lib/markdown/serializer";
 import { findCollapsedNodes } from "../queries/findCollapsedNodes";
 import Node from "./Node";
 import { EditorStyleHelper } from "../styles/EditorStyleHelper";
@@ -221,18 +219,12 @@ export default class Heading extends Node {
 
           decorations.push(
             // Contains the heading actions
-            Decoration.widget(
-              // Safari requires the widget to be placed at the end of the node rather than the beginning
-              // or caret selection is not correct, browser quirk – see issue #1234
-              isSafari ? pos + node.nodeSize - 1 : pos + 1,
-              container,
-              {
-                side: -1,
-                ignoreSelection: true,
-                relaxedSide: false,
-                key: pos.toString(),
-              }
-            )
+            Decoration.widget(pos + 1, container, {
+              side: -1,
+              ignoreSelection: true,
+              relaxedSide: true,
+              key: pos.toString(),
+            })
           );
 
           // Creates a "space" for the caret to move to before the widget.

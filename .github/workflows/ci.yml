@@ -18,61 +18,44 @@ env:
   SMTP_USERNAME: localhost
 
 jobs:
-  setup:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
     steps:
       - uses: actions/checkout@v5
-      - name: Enable Corepack
-        run: corepack enable
-      - name: Use Node.js 22.x
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v5
         with:
-          node-version: 22.x
+          node-version: ${{ matrix.node-version }}
           cache: "yarn"
-      - name: Cache node_modules
-        id: cache-node-modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
       - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: yarn install --immutable
+        run: yarn install --frozen-lockfile --prefer-offline
 
   lint:
-    needs: setup
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Enable Corepack
-        run: corepack enable
       - uses: actions/setup-node@v5
         with:
           node-version: 22.x
           cache: "yarn"
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+      - run: yarn install --frozen-lockfile --prefer-offline
       - run: yarn lint --quiet
 
   types:
-    needs: setup
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Enable Corepack
-        run: corepack enable
       - uses: actions/setup-node@v5
         with:
           node-version: 22.x
           cache: "yarn"
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+      - run: yarn install --frozen-lockfile --prefer-offline
       - run: yarn tsc
 
   changes:
@@ -102,7 +85,7 @@ jobs:
               - 'yarn.lock'
 
   test:
-    needs: [setup, changes]
+    needs: [build, changes]
     if: ${{ needs.changes.outputs.app == 'true' || needs.changes.outputs.config == 'true' }}
     runs-on: ubuntu-latest
     strategy:
@@ -110,21 +93,15 @@ jobs:
         test-group: [app, shared]
     steps:
       - uses: actions/checkout@v5
-      - name: Enable Corepack
-        run: corepack enable
       - uses: actions/setup-node@v5
         with:
           node-version: 22.x
           cache: "yarn"
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+      - run: yarn install --frozen-lockfile --prefer-offline
       - run: yarn test:${{ matrix.test-group }}
 
   test-server:
-    needs: [setup, changes]
+    needs: [build, changes]
     if: ${{ needs.changes.outputs.server == 'true' || needs.changes.outputs.config == 'true' }}
     runs-on: ubuntu-latest
     services:
@@ -148,40 +125,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - name: Enable Corepack
-        run: corepack enable
       - uses: actions/setup-node@v5
         with:
           node-version: 22.x
           cache: "yarn"
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+      - run: yarn install --frozen-lockfile --prefer-offline
       - run: yarn sequelize db:migrate
       - name: Run server tests
         run: |
-          TESTFILES=$(find . -name "*.test.ts" -path "*/server/*" | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
+          TESTFILES=$(find . -name "*.test.ts" -path "*/server/*" | sort | split -n -d -l $(($(find . -name "*.test.ts" -path "*/server/*" | wc -l)/${{ matrix.shard }})) - | sed -n "${{ matrix.shard }}p")
           yarn test --maxWorkers=2 $TESTFILES
 
   bundle-size:
-    needs: [setup, types, changes]
+    needs: [build, types, changes]
     if: ${{ needs.changes.outputs.app == 'true' && github.repository == 'outline/outline' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Enable Corepack
-        run: corepack enable
       - uses: actions/setup-node@v5
         with:
           node-version: 22.x
           cache: "yarn"
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+      - run: yarn install --frozen-lockfile --prefer-offline
       - name: Set environment to production
         run: echo "NODE_ENV=production" >> $GITHUB_ENV
       - run: yarn vite:build

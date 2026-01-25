@@ -7,15 +7,14 @@ import { toast } from "sonner";
 import styled, { useTheme } from "styled-components";
 import { s } from "@shared/styles";
 import { DocumentPermission } from "@shared/types";
-import type Document from "~/models/Document";
-import type UserMembership from "~/models/UserMembership";
+import Document from "~/models/Document";
+import UserMembership from "~/models/UserMembership";
 import { GroupAvatar } from "~/components/Avatar";
 import InputMemberPermissionSelect from "~/components/InputMemberPermissionSelect";
 import useCurrentUser from "~/hooks/useCurrentUser";
 import usePolicy from "~/hooks/usePolicy";
 import useStores from "~/hooks/useStores";
-import type { Permission } from "~/types";
-import { EmptySelectValue } from "~/types";
+import { EmptySelectValue, Permission } from "~/types";
 import { homePath } from "~/utils/routeHelpers";
 import { ListItem } from "../components/ListItem";
 import DocumentMemberListItem from "./DocumentMemberListItem";
@@ -29,7 +28,7 @@ type Props = {
   invitedInSession: string[];
 };
 
-function DocumentMemberList({ document, invitedInSession }: Props) {
+function DocumentMembersList({ document, invitedInSession }: Props) {
   const { userMemberships, groupMemberships } = useStores();
 
   const user = useCurrentUser();
@@ -211,4 +210,4 @@ const StyledLink = styled(Link)`
   text-decoration: underline;
 `;
 
-export default observer(DocumentMemberList);
+export default observer(DocumentMembersList);

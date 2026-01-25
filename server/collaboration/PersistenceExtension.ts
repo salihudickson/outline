@@ -1,4 +1,4 @@
-import type {
+import {
   onStoreDocumentPayload,
   onLoadDocumentPayload,
   onChangePayload,
@@ -12,7 +12,7 @@ import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
 import { sequelize } from "@server/storage/database";
 import Redis from "@server/storage/redis";
 import documentCollaborativeUpdater from "../commands/documentCollaborativeUpdater";
-import type { withContext } from "./types";
+import { withContext } from "./types";
 
 @trace()
 export default class PersistenceExtension implements Extension {

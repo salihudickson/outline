@@ -1,9 +1,8 @@
 import filter from "lodash/filter";
 import find from "lodash/find";
 import map from "lodash/map";
-import type { Node, ResolvedPos } from "prosemirror-model";
-import type { EditorState } from "prosemirror-state";
-import { Plugin } from "prosemirror-state";
+import { Node, ResolvedPos } from "prosemirror-model";
+import { EditorState, Plugin } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 
 type Config = Array<{

@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import type { Team } from "@server/models";
+import { Team } from "@server/models";
 import { opts } from "@server/utils/i18n";
 import env from "../env";
 

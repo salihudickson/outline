@@ -1,4 +1,4 @@
-import type { Node } from "prosemirror-model";
+import { Node } from "prosemirror-model";
 
 /**
  * Helper for iterating through the nodes in a document that changed

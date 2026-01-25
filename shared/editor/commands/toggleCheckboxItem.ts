@@ -1,4 +1,4 @@
-import type { Command } from "prosemirror-state";
+import { Command } from "prosemirror-state";
 import { findParentNode } from "../queries/findParentNode";
 
 /**

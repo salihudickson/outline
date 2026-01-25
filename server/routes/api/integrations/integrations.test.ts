@@ -1,5 +1,5 @@
 import { IntegrationService, IntegrationType } from "@shared/types";
-import type { User } from "@server/models";
+import { User } from "@server/models";
 import Integration from "@server/models/Integration";
 import {
   buildAdmin,

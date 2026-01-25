@@ -2,6 +2,7 @@ import { ReactionIcon } from "outline-icons";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import EventBoundary from "@shared/components/EventBoundary";
+import Flex from "~/components/Flex";
 import { createLazyComponent } from "~/components/LazyLoad";
 import NudeButton from "~/components/NudeButton";
 import PlaceholderText from "~/components/PlaceholderText";
@@ -13,8 +14,6 @@ import {
 import useMobile from "~/hooks/useMobile";
 import useWindowSize from "~/hooks/useWindowSize";
 import Tooltip from "../Tooltip";
-import { HStack } from "../primitives/HStack";
-import { VStack } from "../primitives/VStack";
 
 const EmojiPanel = createLazyComponent(
   () => import("~/components/IconPicker/components/EmojiPanel")
@@ -96,13 +95,13 @@ const ReactionPicker: React.FC<Props> = ({ onSelect, className, size }) => {
 
 const Placeholder = React.memo(
   () => (
-    <VStack spacing={6} style={{ height: "300px", padding: "6px 12px" }}>
-      <HStack>
+    <Flex column gap={6} style={{ height: "300px", padding: "6px 12px" }}>
+      <Flex gap={8}>
         <PlaceholderText height={32} minWidth={90} />
         <PlaceholderText height={32} width={32} />
-      </HStack>
+      </Flex>
       <PlaceholderText height={24} width={120} />
-    </VStack>
+    </Flex>
   ),
   () => true
 );

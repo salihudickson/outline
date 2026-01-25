@@ -1,10 +1,6 @@
-import type {
-  NotificationSettings,
-  UserPreferences,
-  UserRole,
-} from "@shared/types";
+import { NotificationSettings, UserPreferences, UserRole } from "@shared/types";
 import env from "@server/env";
-import type { User } from "@server/models";
+import { User } from "@server/models";
 
 type Options = {
   includeDetails?: boolean;

@@ -3,8 +3,7 @@ import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 import { s } from "@shared/styles";
 import { CollectionPermission } from "@shared/types";
-import type { Option } from "~/components/InputSelect";
-import { InputSelect } from "~/components/InputSelect";
+import { InputSelect, Option } from "~/components/InputSelect";
 import { EmptySelectValue } from "~/types";
 
 type Props = {

@@ -5,10 +5,10 @@ import differenceWith from "lodash/differenceWith";
 import filter from "lodash/filter";
 import orderBy from "lodash/orderBy";
 import { computed, action, runInAction } from "mobx";
-import type { UserRole } from "@shared/types";
+import { UserRole } from "@shared/types";
 import User from "~/models/User";
 import { client } from "~/utils/ApiClient";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store, { RPCAction } from "./base/Store";
 
 export default class UsersStore extends Store<User> {

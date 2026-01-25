@@ -1,8 +1,7 @@
-import type { ResolvedPos } from "prosemirror-model";
-import { type Node } from "prosemirror-model";
+import { ResolvedPos, type Node } from "prosemirror-model";
 import { Selection } from "prosemirror-state";
 import { CellSelection, inSameTable, TableMap } from "prosemirror-tables";
-import type { Mappable } from "prosemirror-transform";
+import { Mappable } from "prosemirror-transform";
 
 export class ColumnSelection extends CellSelection {
   getBookmark(): ColumnBookmark {

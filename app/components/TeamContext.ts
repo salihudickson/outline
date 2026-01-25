@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
-import type { PublicTeam } from "@shared/types";
-import type Team from "~/models/Team";
+import { PublicTeam } from "@shared/types";
+import Team from "~/models/Team";
 
 export const TeamContext = createContext<Team | PublicTeam | undefined>(
   undefined

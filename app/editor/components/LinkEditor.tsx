@@ -1,13 +1,8 @@
 import { observer } from "mobx-react";
-import {
-  ArrowIcon,
-  CloseIcon,
-  DocumentIcon,
-  OpenIcon,
-  ReturnIcon,
-} from "outline-icons";
-import type { Mark } from "prosemirror-model";
-import type { EditorView } from "prosemirror-view";
+import { ArrowIcon, CloseIcon, DocumentIcon, OpenIcon } from "outline-icons";
+import { Mark } from "prosemirror-model";
+import { Selection } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
@@ -18,7 +13,7 @@ import DocumentBreadcrumb from "~/components/DocumentBreadcrumb";
 import Flex from "~/components/Flex";
 import { ResizingHeightContainer } from "~/components/ResizingHeightContainer";
 import Scrollable from "~/components/Scrollable";
-import type { Dictionary } from "~/hooks/useDictionary";
+import { Dictionary } from "~/hooks/useDictionary";
 import useRequest from "~/hooks/useRequest";
 import useStores from "~/hooks/useStores";
 import { client } from "~/utils/ApiClient";
@@ -33,25 +28,9 @@ type Props = {
   mark?: Mark;
   dictionary: Dictionary;
   view: EditorView;
-  onLinkAdd: () => void;
-  onLinkUpdate: () => void;
-  onLinkRemove: () => void;
-  onEscape: () => void;
-  onClickOutside: (ev: MouseEvent | TouchEvent) => void;
-  onClickBack: () => void;
 };
 
-const LinkEditor: React.FC<Props> = ({
-  mark,
-  dictionary,
-  view,
-  onLinkAdd,
-  onLinkUpdate,
-  onLinkRemove,
-  onEscape,
-  onClickOutside,
-  onClickBack,
-}) => {
+const LinkEditor: React.FC<Props> = ({ mark, dictionary, view }) => {
   const getHref = () => sanitizeUrl(mark?.attrs.href) ?? "";
   const initialValue = getHref();
   const { commands } = useEditor();
@@ -70,7 +49,7 @@ const LinkEditor: React.FC<Props> = ({
     React.useCallback(async () => {
       const res = await client.post("/suggestions.mention", { query });
       res.data.documents.map(documents.add);
-    }, [documents, query])
+    }, [query])
   );
 
   useEffect(() => {
@@ -79,7 +58,7 @@ const LinkEditor: React.FC<Props> = ({
     }
   }, [trimmedQuery, request]);
 
-  useOnClickOutside(wrapperRef, (ev) => {
+  useOnClickOutside(wrapperRef, () => {
     // If the link is totally empty or only spaces then remove the mark
     if (!trimmedQuery) {
       return removeLink();
@@ -87,12 +66,7 @@ const LinkEditor: React.FC<Props> = ({
 
     // If the link in input is non-empty and same as it was when the editor opened, nothing to do
     if (trimmedQuery === initialValue) {
-      onClickOutside(ev);
       return;
-    }
-
-    if (!mark) {
-      return addLink(trimmedQuery);
     }
 
     updateLink(trimmedQuery);
@@ -104,23 +78,26 @@ const LinkEditor: React.FC<Props> = ({
 
   const removeLink = React.useCallback(() => {
     commands["removeLink"]();
-    onLinkRemove();
-  }, [commands, onLinkRemove]);
+  }, []);
 
   const updateLink = (link: string) => {
     if (!link) {
       return;
     }
     commands["updateLink"]({ href: sanitizeUrl(link) ?? "" });
-    onLinkUpdate();
   };
 
-  const addLink = (link: string) => {
-    if (!link) {
-      return;
+  const moveSelectionToEnd = () => {
+    const { state, dispatch } = view;
+    const nextSelection = Selection.findFrom(
+      state.tr.doc.resolve(state.selection.to),
+      1,
+      true
+    );
+    if (nextSelection) {
+      dispatch(state.tr.setSelection(nextSelection));
     }
-    commands["addLink"]({ href: sanitizeUrl(link) ?? "" });
-    onLinkAdd();
+    view.focus();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -142,11 +119,9 @@ const LinkEditor: React.FC<Props> = ({
 
         if (selectedIndex >= 0 && results[selectedIndex]) {
           const selectedDoc = results[selectedIndex];
-          !mark ? addLink(selectedDoc.url) : updateLink(selectedDoc.url);
+          updateLink(selectedDoc.url);
         } else if (!trimmedQuery) {
           removeLink();
-        } else if (!mark) {
-          addLink(trimmedQuery);
         } else {
           updateLink(trimmedQuery);
         }
@@ -160,7 +135,11 @@ const LinkEditor: React.FC<Props> = ({
           return removeLink();
         }
 
-        onEscape();
+        // Moving selection to end causes editor state to change,
+        // forcing a re-render of the top-level editor component. As
+        // a result, the new selection, being devoid of any link mark,
+        // prevents LinkEditor from re-rendering.
+        moveSelectionToEnd();
         return;
       }
     }
@@ -189,13 +168,6 @@ const LinkEditor: React.FC<Props> = ({
       visible: view.editable,
       disabled: false,
       handler: removeLink,
-    },
-    {
-      tooltip: dictionary.formattingControls,
-      icon: <ReturnIcon />,
-      visible: view.editable,
-      disabled: false,
-      handler: onClickBack,
     },
   ];
 
@@ -235,8 +207,8 @@ const LinkEditor: React.FC<Props> = ({
             <>
               {results.map((doc, index) => (
                 <SuggestionsMenuItem
-                  onClick={() => {
-                    !mark ? addLink(doc.path) : updateLink(doc.path);
+                  onPointerDown={() => {
+                    updateLink(doc.url);
                   }}
                   onPointerMove={() => setSelectedIndex(index)}
                   selected={index === selectedIndex}
@@ -274,8 +246,7 @@ const LinkEditor: React.FC<Props> = ({
 const InputWrapper = styled(Flex)`
   pointer-events: all;
   gap: 6px;
-  padding: 4px 6px;
-  align-items: center;
+  padding: 6px;
 `;
 
 const SearchResults = styled(Scrollable)<{ $hasResults: boolean }>`
@@ -298,7 +269,7 @@ const SearchResults = styled(Scrollable)<{ $hasResults: boolean }>`
   @media (hover: none) and (pointer: coarse) {
     position: fixed;
     top: auto;
-    bottom: 46px;
+    bottom: 40px;
     border-radius: 0;
     max-height: 50vh;
     padding: 8px 8px 4px;

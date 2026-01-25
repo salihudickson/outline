@@ -55,7 +55,7 @@ export default abstract class OAuthClient {
   ): Promise<{
     accessToken: string;
     refreshToken?: string;
-    expiresAt?: Date;
+    expiresAt: Date;
   }> {
     let data;
     let response;
@@ -89,9 +89,7 @@ export default abstract class OAuthClient {
     return {
       refreshToken: data.refresh_token,
       accessToken: data.access_token,
-      expiresAt: data.expires_in
-        ? new Date(Date.now() + data.expires_in * 1000)
-        : undefined,
+      expiresAt: new Date(Date.now() + data.expires_in * 1000),
     };
   }
 }

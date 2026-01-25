@@ -1,5 +1,8 @@
-import type { InferAttributes, InferCreationAttributes } from "sequelize";
-import { type SaveOptions } from "sequelize";
+import {
+  InferAttributes,
+  InferCreationAttributes,
+  type SaveOptions,
+} from "sequelize";
 import {
   ForeignKey,
   BelongsTo,
@@ -17,7 +20,7 @@ import {
 import { UrlHelper } from "@shared/utils/UrlHelper";
 import env from "@server/env";
 import { ValidationError } from "@server/errors";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import Collection from "./Collection";
 import Document from "./Document";
 import Team from "./Team";
