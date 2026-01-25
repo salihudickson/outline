@@ -1,16 +1,7 @@
 /**
- * Is true if we're running in the browser. Note that this will return true when rendering on the server
- * with a tool like JSDOM as we patch the global window object.
+ * Is true if we're running in the browser.
  */
 export const isBrowser = typeof window !== "undefined";
-
-/**
- * Is true when running on the server, always.
- */
-export const isNode =
-  typeof process !== "undefined" &&
-  process.versions !== null &&
-  process.versions.node !== null;
 
 /**
  * Is true if the browser is running as an installed PWA on mobile or desktop
@@ -21,7 +12,7 @@ export const isPWA =
 
 /**
  * Returns true if the client is a touch device. Note that laptops with touch screens are
- * considered touch devices, this does not neccessarily map to a small screen.
+ * considered touch devices.
  */
 export function isTouchDevice(): boolean {
   if (!isBrowser) {
@@ -31,7 +22,7 @@ export function isTouchDevice(): boolean {
 }
 
 /**
- * Returns true if the client is the size of a mobile device.
+ * Returns true if the client is a mobile device.
  */
 export function isMobile(): boolean {
   if (!isBrowser) {
@@ -69,29 +60,43 @@ export function getSafeAreaInsets(): {
 }
 
 /**
- * Is true if the client is running on a Mac.
+ * Returns true if the client is running on a Mac.
  */
-export const isMac = isBrowser && window.navigator.platform === "MacIntel";
+export function isMac(): boolean {
+  if (!isBrowser) {
+    return false;
+  }
+  return window.navigator.platform === "MacIntel";
+}
 
 /**
- * Is true if the client is running on Windows.
+ * Returns true if the client is running on Windows.
  */
-export const isWindows = isBrowser && window.navigator.platform === "Win32";
+export function isWindows(): boolean {
+  if (!isBrowser) {
+    return false;
+  }
+  return window.navigator.platform === "Win32";
+}
 
-/**
- * Is true if the client is running Safari.
- */
-export const isSafari =
-  isBrowser &&
-  window.navigator.userAgent.includes("Safari") &&
-  !window.navigator.userAgent.includes("Chrome") &&
-  !window.navigator.userAgent.includes("Chromium");
+export function isSafari(): boolean {
+  if (!isBrowser) {
+    return false;
+  }
+  const userAgent = window.navigator.userAgent;
+  return (
+    userAgent.includes("Safari") &&
+    !userAgent.includes("Chrome") &&
+    !userAgent.includes("Chromium")
+  );
+}
 
-/**
- * Is true if the client is running Firefox.
- */
-export const isFirefox =
-  isBrowser && window.navigator.userAgent.includes("Firefox");
+export function isFirefox(): boolean {
+  if (!isBrowser) {
+    return false;
+  }
+  return window.navigator.userAgent.includes("Firefox");
+}
 
 let supportsPassive = false;
 

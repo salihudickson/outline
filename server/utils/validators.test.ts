@@ -38,10 +38,7 @@ describe("isDatabaseUrl", () => {
 
     it("should accept URL without database name", () => {
       expect(
-        isDatabaseUrl(
-          "postgresql://user:password@localhost:5432",
-          defaultOptions
-        )
+        isDatabaseUrl("postgresql://user:password@localhost:5432", defaultOptions)
       ).toBe(true);
     });
 
@@ -144,10 +141,7 @@ describe("isDatabaseUrl", () => {
 
     it("should reject URL with invalid protocol", () => {
       expect(
-        isDatabaseUrl(
-          "mysql://user:password@localhost/database",
-          defaultOptions
-        )
+        isDatabaseUrl("mysql://user:password@localhost/database", defaultOptions)
       ).toBe(false);
     });
 
@@ -192,10 +186,10 @@ describe("isDatabaseUrl", () => {
 
     it("should reject URL with underscores when not allowed", () => {
       expect(
-        isDatabaseUrl("postgresql://user:password@my_host:5432/database", {
-          ...defaultOptions,
-          allow_underscores: false,
-        })
+        isDatabaseUrl(
+          "postgresql://user:password@my_host:5432/database",
+          { ...defaultOptions, allow_underscores: false }
+        )
       ).toBe(false);
     });
   });

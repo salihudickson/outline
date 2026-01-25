@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import type { ComponentProps } from "../types";
+import { ComponentProps } from "../types";
 import { s } from "../../styles";
 import { useTranslation } from "react-i18next";
 import { EditorStyleHelper } from "../styles/EditorStyleHelper";

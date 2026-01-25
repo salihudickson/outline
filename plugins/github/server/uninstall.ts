@@ -1,6 +1,5 @@
-import type { IntegrationType } from "@shared/types";
-import { IntegrationService } from "@shared/types";
-import type { Integration } from "@server/models";
+import { IntegrationService, IntegrationType } from "@shared/types";
+import { Integration } from "@server/models";
 import { GitHub } from "./github";
 
 export async function uninstall(

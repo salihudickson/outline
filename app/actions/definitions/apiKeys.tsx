@@ -1,6 +1,6 @@
 import { PlusIcon, TrashIcon } from "outline-icons";
 import stores from "~/stores";
-import type ApiKey from "~/models/ApiKey";
+import ApiKey from "~/models/ApiKey";
 import ApiKeyNew from "~/scenes/ApiKeyNew";
 import ApiKeyRevokeDialog from "~/scenes/Settings/components/ApiKeyRevokeDialog";
 import { createAction } from "..";

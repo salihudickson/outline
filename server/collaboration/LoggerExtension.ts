@@ -1,4 +1,4 @@
-import type {
+import {
   onDisconnectPayload,
   onLoadDocumentPayload,
   Extension,
@@ -6,7 +6,7 @@ import type {
   onConnectPayload,
 } from "@hocuspocus/server";
 import Logger from "@server/logging/Logger";
-import type { withContext } from "./types";
+import { withContext } from "./types";
 
 export default class LoggerExtension implements Extension {
   async onLoadDocument(data: withContext<onLoadDocumentPayload>) {

@@ -1,8 +1,7 @@
-import type { OAuthClient } from "@server/models";
+import { OAuthClient } from "@server/models";
 
 /**
- * Presents the OAuth client to the user, including the client secret.
- * This should ONLY be used for admin users who need to manage the OAuth client.
+ * Presents the OAuth client to the user.
  *
  * @param oauthClient The OAuth client to present
  */

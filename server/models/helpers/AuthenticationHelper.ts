@@ -1,7 +1,7 @@
 /* oxlint-disable @typescript-eslint/no-var-requires */
 import find from "lodash/find";
 import env from "@server/env";
-import type Team from "@server/models/Team";
+import Team from "@server/models/Team";
 import { Hook, PluginManager } from "@server/utils/PluginManager";
 
 export default class AuthenticationHelper {
@@ -26,9 +26,7 @@ export default class AuthenticationHelper {
     const isCloudHosted = env.isCloudHosted;
 
     return AuthenticationHelper.providers
-      .sort((hook) =>
-        hook.value.id === "email" || hook.value.id === "passkeys" ? 1 : -1
-      )
+      .sort((hook) => (hook.value.id === "email" ? 1 : -1))
       .filter((hook) => {
         // Email sign-in is an exception as it does not have an authentication
         // provider using passport, instead it exists as a boolean option.
@@ -36,13 +34,7 @@ export default class AuthenticationHelper {
           return team?.emailSigninEnabled;
         }
 
-        // Passkeys is an exception as it does not have an authentication
-        // provider using passport, instead it exists as a boolean option.
-        if (hook.value.id === "passkeys") {
-          return team?.passkeysEnabled;
-        }
-
-        // If no team return all possible authentication providers except email and passkeys.
+        // If no team return all possible authentication providers except email.
         if (!team) {
           return true;
         }

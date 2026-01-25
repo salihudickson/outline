@@ -1,9 +1,9 @@
-import type {
+import {
   InferAttributes,
   InferCreationAttributes,
+  Op,
   WhereOptions,
 } from "sequelize";
-import { Op } from "sequelize";
 import {
   ForeignKey,
   DefaultScope,
@@ -13,17 +13,18 @@ import {
   Table,
   DataType,
 } from "sequelize-typescript";
-import { v4 as uuidv4 } from "uuid";
-import type { CollectionPermission, FileOperationFormat } from "@shared/types";
-import { FileOperationState, FileOperationType } from "@shared/types";
+import {
+  CollectionPermission,
+  FileOperationFormat,
+  FileOperationState,
+  FileOperationType,
+} from "@shared/types";
 import FileStorage from "@server/storage/files";
 import Collection from "./Collection";
-import Document from "./Document";
 import Team from "./Team";
 import User from "./User";
 import ParanoidModel from "./base/ParanoidModel";
 import Fix from "./decorators/Fix";
-import { Buckets } from "./helpers/AttachmentHelper";
 
 export type FileOperationOptions = {
   includeAttachments?: boolean;
@@ -41,13 +42,6 @@ export type FileOperationOptions = {
     {
       model: Collection,
       as: "collection",
-      required: false,
-      paranoid: false,
-    },
-    {
-      model: Document.scope("withDrafts"),
-      as: "document",
-      required: false,
       paranoid: false,
     },
   ],
@@ -140,18 +134,11 @@ class FileOperation extends ParanoidModel<
   teamId: string;
 
   @BelongsTo(() => Collection, "collectionId")
-  collection: Collection | null;
+  collection: Collection;
 
   @ForeignKey(() => Collection)
   @Column(DataType.UUID)
   collectionId?: string | null;
-
-  @BelongsTo(() => Document, "documentId")
-  document: Document | null;
-
-  @ForeignKey(() => Document)
-  @Column(DataType.UUID)
-  documentId?: string | null;
 
   /**
    * Count the number of export file operations for a given team after a point
@@ -175,20 +162,6 @@ class FileOperation extends ParanoidModel<
         ...where,
       },
     });
-  }
-
-  static getExportKey({
-    name,
-    teamId,
-    format,
-  }: {
-    name: string;
-    teamId: string;
-    format: FileOperationFormat;
-  }) {
-    return `${
-      Buckets.uploads
-    }/${teamId}/${uuidv4()}/${name}-export.${format.replace(/outline-/, "")}.zip`;
   }
 }
 

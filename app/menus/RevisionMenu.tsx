@@ -1,12 +1,11 @@
 import { observer } from "mobx-react";
 import { useTranslation } from "react-i18next";
-import type Document from "~/models/Document";
+import Document from "~/models/Document";
 import { DropdownMenu } from "~/components/Menu/DropdownMenu";
 import { OverflowMenuButton } from "~/components/Menu/OverflowMenuButton";
 import { ActionSeparator } from "~/actions";
 import {
   copyLinkToRevision,
-  downloadRevision,
   restoreRevision,
 } from "~/actions/definitions/revisions";
 import { useMemo } from "react";
@@ -18,16 +17,11 @@ type Props = {
   revisionId: string;
 };
 
-function RevisionMenu({ document, revisionId }: Props) {
+function RevisionMenu({ document }: Props) {
   const { t } = useTranslation();
   const actions = useMemo(
-    () => [
-      restoreRevision,
-      ActionSeparator,
-      copyLinkToRevision(revisionId),
-      downloadRevision(revisionId),
-    ],
-    [revisionId]
+    () => [restoreRevision, ActionSeparator, copyLinkToRevision],
+    []
   );
 
   const rootAction = useMenuAction(actions);

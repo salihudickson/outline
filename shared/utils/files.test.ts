@@ -1,18 +1,21 @@
 import { bytesToHumanReadable, getFileNameFromUrl } from "./files";
+import * as browser from "./browser";
 
-// Mock the browser detection with a mutable value
-let mockIsMacValue = false;
-
+// Mock the browser detection
 jest.mock("./browser", () => ({
-  get isMac() {
-    return mockIsMacValue;
-  },
+  isMac: jest.fn(),
 }));
 
+const mockIsMac = browser.isMac as jest.MockedFunction<typeof browser.isMac>;
+
 describe("bytesToHumanReadable", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe("on macOS (decimal units)", () => {
     beforeEach(() => {
-      mockIsMacValue = true;
+      mockIsMac.mockReturnValue(true);
     });
 
     it("outputs readable string using decimal units", () => {
@@ -32,7 +35,7 @@ describe("bytesToHumanReadable", () => {
 
   describe("on Windows/other platforms (binary units)", () => {
     beforeEach(() => {
-      mockIsMacValue = false;
+      mockIsMac.mockReturnValue(false);
     });
 
     it("outputs readable string using binary units", () => {
@@ -56,12 +59,12 @@ describe("bytesToHumanReadable", () => {
     const fileSize = 91435827; // 87.2MB in binary, ~91.44MB in decimal
 
     it("displays correctly on macOS (decimal)", () => {
-      mockIsMacValue = true;
+      mockIsMac.mockReturnValue(true);
       expect(bytesToHumanReadable(fileSize)).toBe("91.44 MB");
     });
 
     it("displays correctly on Windows (binary)", () => {
-      mockIsMacValue = false;
+      mockIsMac.mockReturnValue(false);
       expect(bytesToHumanReadable(fileSize)).toBe("87.2 MB");
     });
   });

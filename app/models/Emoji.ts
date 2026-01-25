@@ -1,4 +1,4 @@
-import { computed, observable } from "mobx";
+import { observable } from "mobx";
 import User from "./User";
 import Model from "./base/Model";
 import Field from "./decorators/Field";
@@ -34,11 +34,6 @@ class Emoji extends Model {
 
   get searchContent(): string {
     return this.name;
-  }
-
-  @computed
-  get shortName(): string {
-    return `:${this.name}:`;
   }
 
   /**

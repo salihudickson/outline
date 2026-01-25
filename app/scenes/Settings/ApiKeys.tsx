@@ -1,7 +1,7 @@
 import { observer } from "mobx-react";
 import { CodeIcon } from "outline-icons";
 import { useTranslation, Trans } from "react-i18next";
-import type ApiKey from "~/models/ApiKey";
+import ApiKey from "~/models/ApiKey";
 import { Action } from "~/components/Actions";
 import Button from "~/components/Button";
 import Heading from "~/components/Heading";

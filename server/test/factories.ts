@@ -2,11 +2,10 @@ import { faker } from "@faker-js/faker";
 import isNil from "lodash/isNil";
 import isNull from "lodash/isNull";
 import { Node } from "prosemirror-model";
-import type { InferCreationAttributes } from "sequelize";
-import type { DeepPartial } from "utility-types";
+import { InferCreationAttributes } from "sequelize";
+import { DeepPartial } from "utility-types";
 import { randomUUID } from "crypto";
 import { randomString } from "@shared/random";
-import type { ProsemirrorData, ReactionSummary } from "@shared/types";
 import {
   CollectionPermission,
   FileOperationState,
@@ -15,11 +14,12 @@ import {
   IntegrationService,
   IntegrationType,
   NotificationEventType,
+  ProsemirrorData,
+  ReactionSummary,
   SubscriptionType,
   UserRole,
 } from "@shared/types";
 import { parser, schema } from "@server/editor";
-import type { AuthenticationProvider } from "@server/models";
 import {
   Share,
   Team,
@@ -46,6 +46,7 @@ import {
   Import,
   OAuthAuthorizationCode,
   OAuthClient,
+  AuthenticationProvider,
   OAuthAuthentication,
   Relationship,
 } from "@server/models";
@@ -153,7 +154,6 @@ export function buildTeam(
   return Team.create(
     {
       name: faker.company.name(),
-      passkeysEnabled: false,
       authenticationProviders: [
         {
           name: "slack",
@@ -565,7 +565,7 @@ export async function buildAttachment(
   const name = fileName || faker.system.fileName();
   return Attachment.create({
     id,
-    key: AttachmentHelper.getKey({ id, name, userId: overrides.userId }),
+    key: AttachmentHelper.getKey({ acl, id, name, userId: overrides.userId }),
     contentType: "image/png",
     size: 100,
     acl,
@@ -797,12 +797,10 @@ export async function buildOAuthAuthentication({
   oauthClientId,
   user,
   scope,
-  grantId,
 }: {
   oauthClientId?: string;
   user: User;
   scope: string[];
-  grantId?: string;
 }) {
   const oauthClient = oauthClientId
     ? await OAuthClient.findByPk(oauthClientId, { rejectOnEmpty: true })
@@ -838,7 +836,6 @@ export async function buildOAuthAuthentication({
     refreshTokenHash: hash(refreshToken),
     refreshTokenExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
     scope,
-    grantId,
   });
 }
 

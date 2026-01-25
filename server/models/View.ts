@@ -1,9 +1,9 @@
-import type {
+import {
   FindOrCreateOptions,
   InferAttributes,
   InferCreationAttributes,
+  Op,
 } from "sequelize";
-import { Op } from "sequelize";
 import {
   BelongsTo,
   Column,
@@ -13,9 +13,8 @@ import {
   DataType,
   Scopes,
 } from "sequelize-typescript";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import Document from "./Document";
-import Event from "./Event";
 import User from "./User";
 import IdModel from "./base/IdModel";
 import Fix from "./decorators/Fix";
@@ -70,32 +69,17 @@ class View extends IdModel<
     },
     options?: FindOrCreateOptions<InferAttributes<View>>
   ) {
-    // Try to increment existing record
-    const [[models]] = await this.increment("count", {
-      where,
+    const [model, created] = await this.findOrCreateWithCtx(ctx, {
       ...options,
+      where,
     });
 
-    // @ts-expect-error Return type of increment is incorrect
-    let model = models?.[0] as View | undefined;
-
-    if (model) {
-      // Manually create event to match createWithCtx behavior
-      await Event.createFromContext(ctx, {
-        name: "views.create",
-        modelId: model.id,
-        userId: model.userId,
-        documentId: model.documentId,
+    if (!created) {
+      model.count += 1;
+      await model.saveWithCtx(ctx, options, {
+        name: "create",
       });
-      return model;
     }
-
-    // If no record exists, create a new one
-    model = await this.createWithCtx(ctx, {
-      ...where,
-      count: 1,
-      ...options?.defaults,
-    });
 
     return model;
   }

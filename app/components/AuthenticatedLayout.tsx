@@ -32,7 +32,7 @@ import { PortalContext } from "./Portal";
 import CommandBar from "./CommandBar";
 
 const DocumentComments = lazyWithRetry(
-  () => import("~/scenes/Document/components/Comments/Comments")
+  () => import("~/scenes/Document/components/Comments")
 );
 const DocumentHistory = lazyWithRetry(
   () => import("~/scenes/Document/components/History")

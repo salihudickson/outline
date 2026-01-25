@@ -1,10 +1,10 @@
 import invariant from "invariant";
 import { action } from "mobx";
-import type { SubscriptionType } from "@shared/types";
+import { SubscriptionType } from "@shared/types";
 import Subscription from "~/models/Subscription";
 import { client } from "~/utils/ApiClient";
 import { AuthorizationError, NotFoundError } from "~/utils/errors";
-import type RootStore from "./RootStore";
+import RootStore from "./RootStore";
 import Store, { RPCAction } from "./base/Store";
 
 export default class SubscriptionsStore extends Store<Subscription> {

@@ -1,5 +1,4 @@
-import type { Token } from "markdown-it";
-import type MarkdownIt from "markdown-it";
+import MarkdownIt, { Token } from "markdown-it";
 
 const CHECKBOX_REGEX = /\[(X|\s|_|-)\]\s(.*)?/i;
 
@@ -16,10 +15,10 @@ function isParagraph(token: Token | void): boolean {
 }
 
 function isListItem(token: Token | void): boolean {
-  // Only match list_item_open, not checkbox_item_open - items that are already
-  // checkbox_item_open have been processed (e.g., by the tables rule for
-  // checkboxes in table cells) and should not be processed again.
-  return !!token && token.type === "list_item_open";
+  return (
+    !!token &&
+    (token.type === "list_item_open" || token.type === "checkbox_item_open")
+  );
 }
 
 function looksLikeChecklist(tokens: Token[], index: number) {
@@ -73,7 +72,7 @@ export default function markdownItCheckbox(md: MarkdownIt): void {
         // remove [ ] [x] from list item label – must use the content from the
         // child for escaped characters to be unescaped correctly.
         const tokenChildren = tokens[i].children;
-        if (tokenChildren && tokenChildren[0].type === "text") {
+        if (tokenChildren) {
           const contentMatches = tokenChildren[0].content.match(CHECKBOX_REGEX);
 
           if (contentMatches) {
@@ -93,16 +92,10 @@ export default function markdownItCheckbox(md: MarkdownIt): void {
 
         // close the list item
         let j = i;
-        while (
-          tokens[j] &&
-          tokens[j].type !== "list_item_close" &&
-          tokens[j].type !== "checkbox_item_close"
-        ) {
+        while (tokens[j].type !== "list_item_close") {
           j++;
         }
-        if (tokens[j]) {
-          tokens[j].type = "checkbox_item_close";
-        }
+        tokens[j].type = "checkbox_item_close";
       }
     }
 

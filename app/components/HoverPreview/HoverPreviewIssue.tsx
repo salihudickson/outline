@@ -3,8 +3,11 @@ import { Trans } from "react-i18next";
 import styled from "styled-components";
 import { Backticks } from "@shared/components/Backticks";
 import { IssueStatusIcon } from "@shared/components/IssueStatusIcon";
-import type { UnfurlResourceType, UnfurlResponse } from "@shared/types";
-import { IntegrationService } from "@shared/types";
+import {
+  IntegrationService,
+  UnfurlResourceType,
+  UnfurlResponse,
+} from "@shared/types";
 import { Avatar } from "~/components/Avatar";
 import Flex from "~/components/Flex";
 import Text from "../Text";
@@ -21,7 +24,7 @@ import {
 
 type Props = Omit<UnfurlResponse[UnfurlResourceType.Issue], "type">;
 
-const HoverPreviewIssue = React.forwardRef(function HoverPreviewIssue_(
+const HoverPreviewIssue = React.forwardRef(function _HoverPreviewIssue(
   { url, id, title, description, author, labels, state, createdAt }: Props,
   ref: React.Ref<HTMLDivElement>
 ) {

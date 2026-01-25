@@ -8,8 +8,7 @@ import validate from "@server/middlewares/validate";
 import { WebhookSubscription } from "@server/models";
 import { authorize } from "@server/policies";
 import pagination from "@server/routes/api/middlewares/pagination";
-import type { APIContext } from "@server/types";
-import { AuthenticationType } from "@server/types";
+import { APIContext, AuthenticationType } from "@server/types";
 import presentWebhookSubscription from "../presenters/webhookSubscription";
 import * as T from "./schema";
 

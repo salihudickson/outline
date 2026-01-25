@@ -1,5 +1,4 @@
-import type { RedisOptions } from "ioredis";
-import Redis from "ioredis";
+import Redis, { RedisOptions } from "ioredis";
 import defaults from "lodash/defaults";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
@@ -13,14 +12,9 @@ const defaultOptions: RedisOptions = {
   maxRetriesPerRequest: 20,
   enableReadyCheck: false,
   showFriendlyErrorStack: env.isDevelopment,
-  keepAlive: 10000,
 
   retryStrategy(times: number) {
-    if (times === 1) {
-      Logger.info("lifecycle", `Retrying redis connection: attempt ${times}`);
-    } else {
-      Logger.warn(`Retrying redis connection: attempt ${times}`);
-    }
+    Logger.warn(`Retrying redis connection: attempt ${times}`);
     return Math.min(times * 500, 3000);
   },
 

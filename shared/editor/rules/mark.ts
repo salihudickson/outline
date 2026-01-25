@@ -1,8 +1,7 @@
 // Adapted from:
 // https://github.com/markdown-it/markdown-it-mark/blob/master/index.js
 
-import type { StateInline } from "markdown-it";
-import type MarkdownIt from "markdown-it";
+import MarkdownIt, { StateInline } from "markdown-it";
 
 export default function (options: { delim: string; mark: string }) {
   const delimCharCode = options.delim.charCodeAt(0);

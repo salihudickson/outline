@@ -1,6 +1,6 @@
 import { observable, action } from "mobx";
-import type { AwarenessChangeEvent } from "~/types";
-import type RootStore from "./RootStore";
+import { AwarenessChangeEvent } from "~/types";
+import RootStore from "./RootStore";
 
 type DocumentPresence = Map<
   string,

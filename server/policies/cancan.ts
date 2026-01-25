@@ -1,5 +1,7 @@
+import flattenDeep from "lodash/flattenDeep";
 import isObject from "lodash/isPlainObject";
-import type { Model } from "sequelize-typescript";
+import uniq from "lodash/uniq";
+import { Model } from "sequelize-typescript";
 import { AuthorizationError } from "@server/errors";
 
 type Constructor = new (...args: any) => any;
@@ -24,6 +26,8 @@ type Ability = {
  * This is originally adapted from https://www.npmjs.com/package/cancan
  */
 export class CanCan {
+  public abilities: Ability[] = [];
+
   /**
    * Define an authorized ability for a model, action, and target.
    *
@@ -54,17 +58,7 @@ export class CanCan {
 
     (this.toArray(actions) as string[]).forEach((action) => {
       (this.toArray(targets) as T[]).forEach((target) => {
-        const ability = { model, action, target, condition } as Ability;
-
-        // Add to index
-        if (!this.abilities.has(model)) {
-          this.abilities.set(model, new Map());
-        }
-        const actionMap = this.abilities.get(model)!;
-        if (!actionMap.has(action)) {
-          actionMap.set(action, []);
-        }
-        actionMap.get(action)!.push(ability);
+        this.abilities.push({ model, action, target, condition } as Ability);
       });
     });
   };
@@ -91,31 +85,25 @@ export class CanCan {
     );
 
     // Check conditions only for matching abilities
-    const seenConditions = new Set<boolean | string>();
-    const membershipIds: string[] = [];
-    let hasNonMembershipMatch = false;
+    const conditions = uniq(
+      flattenDeep(
+        matchingAbilities.map((ability) => {
+          if (!ability.condition) {
+            return false;
+          }
+          return ability.condition(performer, target, options || {});
+        })
+      )
+    );
 
-    for (const ability of matchingAbilities) {
-      if (!ability.condition) {
-        continue;
-      }
+    const matchingConditions = conditions.filter(Boolean);
+    const matchingMembershipIds = matchingConditions.filter(
+      (m) => typeof m === "string"
+    ) as string[];
 
-      const result = ability.condition(performer, target, options);
-
-      if (!result || seenConditions.has(result)) {
-        continue;
-      }
-
-      seenConditions.add(result);
-
-      if (typeof result === "string") {
-        membershipIds.push(result);
-      } else {
-        hasNonMembershipMatch = true;
-      }
-    }
-
-    return membershipIds.length > 0 ? membershipIds : hasNonMembershipMatch;
+    return matchingMembershipIds.length > 0
+      ? matchingMembershipIds
+      : matchingConditions.length > 0;
   };
 
   /*
@@ -125,31 +113,22 @@ export class CanCan {
    */
   public serialize = (performer: Model, target: Model | null): Policy => {
     const output: Record<string, boolean | string[]> = {};
+    abilities.forEach((ability) => {
+      if (
+        performer instanceof ability.model &&
+        target instanceof (ability.target as any)
+      ) {
+        let response: boolean | string[] = true;
 
-    // Get all unique actions to check from the index
-    const actionsToCheck = new Set<string>();
-    for (const [model, actionMap] of this.abilities.entries()) {
-      if (performer instanceof model) {
-        for (const [action, abilities] of actionMap.entries()) {
-          for (const ability of abilities) {
-            if (target instanceof (ability.target as any)) {
-              actionsToCheck.add(action);
-              break;
-            }
-          }
+        try {
+          response = this.can(performer, ability.action, target);
+        } catch (_err) {
+          response = false;
         }
-      }
-    }
 
-    // Check each unique action once
-    actionsToCheck.forEach((action) => {
-      try {
-        output[action] = this.can(performer, action, target);
-      } catch (_err) {
-        output[action] = false;
+        output[ability.action] = response;
       }
     });
-
     return output;
   };
 
@@ -195,49 +174,15 @@ export class CanCan {
     performer: Model,
     action: string,
     target: Model | null | undefined
-  ) => {
-    const matchingAbilities: Ability[] = [];
-
-    // Use index to find abilities by model and action
-    for (const [model, actionMap] of this.abilities.entries()) {
-      if (!(performer instanceof model)) {
-        continue;
-      }
-
-      // Check for specific action
-      const specificAbilities = actionMap.get(action);
-      if (specificAbilities) {
-        for (const ability of specificAbilities) {
-          if (
-            ability.target === "all" ||
-            target === ability.target ||
-            target instanceof (ability.target as any)
-          ) {
-            matchingAbilities.push(ability);
-          }
-        }
-      }
-
-      // Check for "manage" action (applies to all actions)
-      const manageAbilities = actionMap.get("manage");
-      if (manageAbilities) {
-        for (const ability of manageAbilities) {
-          if (
-            ability.target === "all" ||
-            target === ability.target ||
-            target instanceof (ability.target as any)
-          ) {
-            matchingAbilities.push(ability);
-          }
-        }
-      }
-    }
-
-    return matchingAbilities;
-  };
-
-  // Index for fast lookups: Map<model, Map<action, Ability[]>>
-  private abilities: Map<Constructor, Map<string, Ability[]>> = new Map();
+  ) =>
+    this.abilities.filter(
+      (ability) =>
+        performer instanceof ability.model &&
+        (ability.target === "all" ||
+          target === ability.target ||
+          target instanceof (ability.target as any)) &&
+        (ability.action === "manage" || action === ability.action)
+    );
 
   private get = <T extends object>(obj: T, key: keyof T) =>
     "get" in obj && typeof obj.get === "function" ? obj.get(key) : obj[key];
@@ -274,7 +219,7 @@ export class CanCan {
 
 const cancan = new CanCan();
 
-export const { allow, can, cannot, serialize } = cancan;
+export const { allow, can, cannot, abilities, serialize } = cancan;
 
 // This is exported separately as a workaround for the following issue:
 // https://github.com/microsoft/TypeScript/issues/36931

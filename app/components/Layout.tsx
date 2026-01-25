@@ -1,8 +1,7 @@
 import { observer } from "mobx-react";
 import * as React from "react";
 import { Helmet } from "react-helmet-async";
-import type { DefaultTheme } from "styled-components";
-import styled from "styled-components";
+import styled, { DefaultTheme } from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import { s } from "@shared/styles";
 import Flex from "~/components/Flex";

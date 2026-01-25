@@ -1,7 +1,6 @@
 import * as React from "react";
 import styled from "styled-components";
-import type { Props as InputProps } from "./Input";
-import Input from "./Input";
+import Input, { Props as InputProps } from "./Input";
 import Relative from "./Sidebar/components/Relative";
 import { SwatchButton } from "./SwatchButton";
 

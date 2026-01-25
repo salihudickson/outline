@@ -1,7 +1,7 @@
-import type formidable from "formidable";
+import formidable from "formidable";
 import isEmpty from "lodash/isEmpty";
 import { z } from "zod";
-import { DocumentPermission, StatusFilter, TextEditMode } from "@shared/types";
+import { DocumentPermission, StatusFilter } from "@shared/types";
 import { BaseSchema } from "@server/routes/api/schema";
 import { zodIconType, zodIdType, zodShareIdType } from "@server/utils/zod";
 import { ValidateColor } from "@server/validation";
@@ -152,10 +152,7 @@ export const DocumentsInfoSchema = BaseSchema.extend({
 export type DocumentsInfoReq = z.infer<typeof DocumentsInfoSchema>;
 
 export const DocumentsExportSchema = BaseSchema.extend({
-  body: BaseIdSchema.extend({
-    signedUrls: z.number().optional(),
-    includeChildDocuments: z.boolean().default(false),
-  }),
+  body: BaseIdSchema,
 });
 
 export type DocumentsExportReq = z.infer<typeof DocumentsExportSchema>;
@@ -252,11 +249,8 @@ export const DocumentsUpdateSchema = BaseSchema.extend({
     /** Doc collection Id */
     collectionId: z.string().uuid().nullish(),
 
-    /** @deprecated Use editMode instead */
+    /** Boolean to denote if text should be appended */
     append: z.boolean().optional(),
-
-    /** The edit mode for text updates: "replace", "append", or "prepend" */
-    editMode: z.nativeEnum(TextEditMode).optional(),
 
     /** @deprecated Version of the API to be used, remove in a few releases */
     apiVersion: z.number().optional(),
@@ -264,27 +258,9 @@ export const DocumentsUpdateSchema = BaseSchema.extend({
     /** Whether the editing session is complete */
     done: z.boolean().optional(),
   }),
-})
-  .refine(
-    (req) =>
-      !(
-        (req.body.append ||
-          req.body.editMode === TextEditMode.Append ||
-          req.body.editMode === TextEditMode.Prepend) &&
-        !req.body.text
-      ),
-    {
-      message: "text is required when using append, prepend, or editMode",
-    }
-  )
-  .transform((req) => {
-    // Transform deprecated append to editMode for backwards compatibility
-    if (req.body.append && !req.body.editMode) {
-      req.body.editMode = TextEditMode.Append;
-    }
-    delete req.body.append;
-    return req;
-  });
+}).refine((req) => !(req.body.append && !req.body.text), {
+  message: "text is required while appending",
+});
 
 export type DocumentsUpdateReq = z.infer<typeof DocumentsUpdateSchema>;
 
@@ -486,6 +462,14 @@ export const DocumentsMembershipsSchema = BaseSchema.extend({
 
 export type DocumentsMembershipsReq = z.infer<
   typeof DocumentsMembershipsSchema
+>;
+
+export const DocumentsRequestAccessSchema = BaseSchema.extend({
+  body: BaseIdSchema,
+});
+
+export type DocumentsRequestAccessReq = z.infer<
+  typeof DocumentsRequestAccessSchema
 >;
 
 export const DocumentsSitemapSchema = BaseSchema.extend({

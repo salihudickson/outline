@@ -1,10 +1,12 @@
 import { GapCursor } from "prosemirror-gapcursor";
-import type { EditorState, Command, Transaction } from "prosemirror-state";
 import {
   Plugin,
   Selection,
   AllSelection,
   TextSelection,
+  EditorState,
+  Command,
+  Transaction,
 } from "prosemirror-state";
 import Extension from "@shared/editor/lib/Extension";
 import { getCurrentBlock } from "@shared/editor/queries/getCurrentBlock";

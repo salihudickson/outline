@@ -1,9 +1,8 @@
 import path from "path";
 import fs from "fs-extra";
-import type JSZip from "jszip";
+import JSZip from "jszip";
 import tmp from "tmp";
-import type { Entry } from "yauzl";
-import yauzl, { validateFileName } from "yauzl";
+import yauzl, { Entry, validateFileName } from "yauzl";
 import { bytesToHumanReadable } from "@shared/utils/files";
 import Logger from "@server/logging/Logger";
 import { trace } from "@server/logging/tracing";

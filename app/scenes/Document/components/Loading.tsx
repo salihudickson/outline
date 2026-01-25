@@ -1,4 +1,4 @@
-import type { Location } from "history";
+import { Location } from "history";
 import CenteredContent from "~/components/CenteredContent";
 import PageTitle from "~/components/PageTitle";
 import PlaceholderDocument from "~/components/PlaceholderDocument";

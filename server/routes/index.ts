@@ -155,16 +155,8 @@ router.get("*", async (ctx, next) => {
   const team = await getTeamFromContext(ctx);
 
   if (env.isCloudHosted) {
-    // Redirect to main domain if no team is found
-    if (!team || team.isSuspended) {
-      if (env.isProduction && ctx.hostname !== parseDomain(env.URL).host) {
-        ctx.redirect(env.URL);
-        return;
-      }
-    }
-
     // Redirect all requests to custom domain if one is set
-    else if (team?.domain) {
+    if (team?.domain) {
       if (team.domain !== ctx.hostname) {
         ctx.redirect(ctx.href.replace(ctx.hostname, team.domain));
         return;

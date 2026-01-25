@@ -1,4 +1,4 @@
-import type { Context, Next } from "koa";
+import { Context, Next } from "koa";
 import {
   ValidationError as SequelizeValidationError,
   EmptyResultError as SequelizeEmptyResultError,

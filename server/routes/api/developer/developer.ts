@@ -1,14 +1,13 @@
-import type { Context, Next } from "koa";
+import { Context, Next } from "koa";
 import Router from "koa-router";
 import { randomString } from "@shared/random";
-import type { Invite } from "@server/commands/userInviter";
-import userInviter from "@server/commands/userInviter";
+import userInviter, { Invite } from "@server/commands/userInviter";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
 import auth from "@server/middlewares/authentication";
 import validate from "@server/middlewares/validate";
 import { presentUser } from "@server/presenters";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import * as T from "./schema";
 
 const router = new Router();

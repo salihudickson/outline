@@ -1,7 +1,7 @@
 import { wrapIn, lift } from "prosemirror-commands";
-import type { NodeType } from "prosemirror-model";
-import type { Command } from "prosemirror-state";
-import type { Primitive } from "utility-types";
+import { NodeType } from "prosemirror-model";
+import { Command } from "prosemirror-state";
+import { Primitive } from "utility-types";
 import { isNodeActive } from "../queries/isNodeActive";
 
 export default function toggleWrap(

@@ -1,8 +1,11 @@
 import crypto from "crypto";
 import { URL } from "url";
 import { subMinutes } from "date-fns";
-import type { InferAttributes, InferCreationAttributes } from "sequelize";
-import { type SaveOptions } from "sequelize";
+import {
+  InferAttributes,
+  InferCreationAttributes,
+  type SaveOptions,
+} from "sequelize";
 import { Op } from "sequelize";
 import {
   Column,
@@ -26,8 +29,7 @@ import {
 } from "sequelize-typescript";
 import { isEmail } from "validator";
 import { TeamPreferenceDefaults } from "@shared/constants";
-import type { TeamPreferences } from "@shared/types";
-import { TeamPreference, UserRole } from "@shared/types";
+import { TeamPreference, TeamPreferences, UserRole } from "@shared/types";
 import { getBaseDomain, RESERVED_SUBDOMAINS } from "@shared/utils/domains";
 import { parseEmail } from "@shared/utils/email";
 import { TeamValidation } from "@shared/validations";
@@ -152,10 +154,6 @@ class Team extends ParanoidModel<
   @Default(true)
   @Column
   guestSignin: boolean;
-
-  @Default(true)
-  @Column
-  passkeysEnabled: boolean;
 
   @Default(true)
   @Column

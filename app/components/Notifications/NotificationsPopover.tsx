@@ -48,7 +48,6 @@ const NotificationsPopover: React.FC = ({ children }: Props) => {
         side="top"
         align="start"
         onOpenAutoFocus={handleAutoFocus}
-        scrollable={false}
         shrink
       >
         <Suspense fallback={null}>

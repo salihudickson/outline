@@ -12,20 +12,17 @@ import { Minute } from "@shared/utils/time";
 export async function checkPendingMigrations() {
   let lock;
   try {
-    lock = await MutexLock.acquire("migrations", 10 * Minute.ms, {
-      releaseOnShutdown: true,
-    });
-
+    lock = await MutexLock.acquire("migrations", 10 * Minute.ms);
     const pending = await migrations.pending();
     if (!isEmpty(pending)) {
       if (getArg("no-migrate")) {
-        Logger.fatal(
+        Logger.warn(
           styleText(
             "red",
             `Database migrations are pending and were not ran because --no-migrate flag was passed.\nRun the migrations with "yarn db:migrate".`
-          ),
-          new Error("Migrations pending")
+          )
         );
+        process.exit(1);
       } else {
         Logger.info("database", "Running migrations…");
         await migrations.up();
@@ -34,16 +31,16 @@ export async function checkPendingMigrations() {
     await checkDataMigrations();
   } catch (err) {
     if (err.message.includes("ECONNREFUSED")) {
-      Logger.fatal(
+      Logger.warn(
         styleText(
           "red",
           `Could not connect to the database. Please check your connection settings.`
-        ),
-        err
+        )
       );
     } else {
-      Logger.fatal(styleText("red", err.message), err);
+      Logger.warn(styleText("red", err.message));
     }
+    process.exit(1);
   } finally {
     if (lock) {
       await MutexLock.release(lock);
@@ -65,16 +62,14 @@ export async function checkDataMigrations() {
     team.createdAt < new Date("2024-01-01") &&
     !provider
   ) {
-    Logger.fatal(
-      `
+    Logger.warn(`
 This version of Outline cannot start until a data migration is complete.
 Backup your database, run the database migrations and the following script:
 (Note: script run needed only when upgrading to any version between 0.54.0 and 0.61.1, including both)
 
 $ node ./build/server/scripts/20210226232041-migrate-authentication.js
-`,
-      new Error("Data migration required")
-    );
+`);
+    process.exit(1);
   }
 }
 

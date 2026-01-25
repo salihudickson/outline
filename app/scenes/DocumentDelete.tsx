@@ -3,7 +3,7 @@ import * as React from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { useHistory } from "react-router-dom";
 import { toast } from "sonner";
-import type Document from "~/models/Document";
+import Document from "~/models/Document";
 import Button from "~/components/Button";
 import Flex from "~/components/Flex";
 import Text from "~/components/Text";
@@ -11,7 +11,6 @@ import useStores from "~/hooks/useStores";
 import {
   collectionPath,
   documentPath,
-  homePath,
   settingsPath,
 } from "~/utils/routeHelpers";
 
@@ -68,9 +67,7 @@ function DocumentDelete({ document, onSubmit }: Props) {
           // Otherwise redirect to the collection (or) home.
           const path = document.template
             ? settingsPath("templates")
-            : collection
-              ? collectionPath(collection)
-              : homePath();
+            : collectionPath(collection?.path || "/");
           history.push(path);
         }
 

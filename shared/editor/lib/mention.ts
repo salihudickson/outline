@@ -1,5 +1,5 @@
-import type { Node, Schema } from "prosemirror-model";
-import type { Primitive } from "utility-types";
+import { Node, Schema } from "prosemirror-model";
+import { Primitive } from "utility-types";
 import { v4 as uuidv4 } from "uuid";
 import { isList } from "../queries/isList";
 

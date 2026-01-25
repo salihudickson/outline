@@ -1,19 +1,18 @@
-import type { Token } from "markdown-it";
-import type {
+import { Token } from "markdown-it";
+import {
   NodeSpec,
   Node as ProsemirrorNode,
   NodeType,
   Schema,
 } from "prosemirror-model";
-import type { Command } from "prosemirror-state";
-import { Plugin, TextSelection } from "prosemirror-state";
-import type { Primitive } from "utility-types";
+import { Command, Plugin, TextSelection } from "prosemirror-state";
+import { Primitive } from "utility-types";
 import Extension from "../lib/Extension";
 import { getEmojiFromName } from "../lib/emoji";
-import type { MarkdownSerializerState } from "../lib/markdown/serializer";
+import { MarkdownSerializerState } from "../lib/markdown/serializer";
 import emojiRule from "../rules/emoji";
 import { isUUID } from "validator";
-import type { ComponentProps } from "../types";
+import { ComponentProps } from "../types";
 import { CustomEmoji } from "../../components/CustomEmoji";
 
 export default class Emoji extends Extension {

@@ -1,6 +1,5 @@
 import { exitCode } from "prosemirror-commands";
-import type { Command, EditorState } from "prosemirror-state";
-import { TextSelection } from "prosemirror-state";
+import { Command, EditorState, TextSelection } from "prosemirror-state";
 import { findNextNewline, findPreviousNewline } from "../queries/findNewlines";
 import { isInCode } from "../queries/isInCode";
 import { findParentNode } from "../queries/findParentNode";

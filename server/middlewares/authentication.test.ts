@@ -1,4 +1,4 @@
-import type { DefaultState } from "koa";
+import { DefaultState } from "koa";
 import { randomString } from "@shared/random";
 import { Scope } from "@shared/types";
 import {

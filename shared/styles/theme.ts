@@ -1,5 +1,5 @@
 import { darken, lighten, transparentize } from "polished";
-import type { DefaultTheme, Colors } from "styled-components";
+import { DefaultTheme, Colors } from "styled-components";
 import breakpoints from "./breakpoints";
 
 const defaultColors: Colors = {
@@ -126,7 +126,7 @@ export const buildLightTheme = (input: Partial<Colors>): DefaultTheme => {
     textDiffInserted: colors.almostBlack,
     textDiffInsertedBackground: "rgba(18, 138, 41, 0.16)",
     textDiffDeleted: colors.slateDark,
-    textDiffDeletedBackground: "rgba(255, 180, 173, 0.25)",
+    textDiffDeletedBackground: "#ffebe9",
     placeholder: "#a2b2c3",
     sidebarBackground: colors.warmGrey,
     sidebarHoverBackground: "hsl(212 31% 90% / 1)",
@@ -188,7 +188,7 @@ export const buildDarkTheme = (input: Partial<Colors>): DefaultTheme => {
     textSecondary: lighten(0.1, colors.slate),
     textTertiary: colors.slate,
     textDiffInserted: colors.almostWhite,
-    textDiffInsertedBackground: "rgba(63,185,80,0.25)",
+    textDiffInsertedBackground: "rgba(63,185,80,0.3)",
     textDiffDeleted: darken(0.1, colors.almostWhite),
     textDiffDeletedBackground: "rgba(248,81,73,0.15)",
     placeholder: "#596673",

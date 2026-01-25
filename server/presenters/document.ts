@@ -1,8 +1,8 @@
 import { Hour } from "@shared/utils/time";
 import { traceFunction } from "@server/logging/tracing";
-import type { Document } from "@server/models";
+import { Document } from "@server/models";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import presentUser from "./user";
 
 type Options = {
@@ -14,10 +14,8 @@ type Options = {
   includeText?: boolean;
   /** Always include the data of the document in the payload. */
   includeData?: boolean;
-  /** Include the updatedAt timestamp for public documents. */
+
   includeUpdatedAt?: boolean;
-  /** Array of backlink document IDs to include in the response. */
-  backlinkIds?: string[];
 };
 
 async function presentDocument(
@@ -46,10 +44,10 @@ async function presentDocument(
 
   const text =
     !asData || options?.includeText
-      ? await DocumentHelper.toMarkdown(data, { includeTitle: false })
+      ? DocumentHelper.toMarkdown(data, { includeTitle: false })
       : undefined;
 
-  const res: Record<string, unknown> = {
+  const res: Record<string, any> = {
     id: document.id,
     url: document.path,
     urlId: document.urlId,
@@ -58,10 +56,7 @@ async function presentDocument(
     text,
     icon: document.icon,
     color: document.color,
-    tasks: {
-      completed: 0,
-      total: 0,
-    },
+    tasks: document.tasks,
     language: document.language,
     createdAt: document.createdAt,
     createdBy: undefined,
@@ -77,7 +72,6 @@ async function presentDocument(
     parentDocumentId: undefined,
     lastViewedAt: undefined,
     isCollectionDeleted: undefined,
-    backlinkIds: options?.backlinkIds,
   };
 
   if (!!document.views && document.views.length > 0) {
@@ -91,7 +85,6 @@ async function presentDocument(
   if (!options.isPublic) {
     const source = await document.$get("import");
 
-    res.tasks = document.tasks;
     res.isCollectionDeleted = await document.isCollectionDeleted();
     res.collectionId = document.collectionId;
     res.parentDocumentId = document.parentDocumentId;

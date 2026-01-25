@@ -1,4 +1,4 @@
-import type { Node } from "prosemirror-model";
+import { Node } from "prosemirror-model";
 import { Transform } from "prosemirror-transform";
 
 export function removeMarks(doc: Node) {

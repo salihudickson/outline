@@ -263,6 +263,10 @@ const FloatingToolbar = React.forwardRef(function FloatingToolbar_(
   const { height } = useWindowSize();
 
   if (isMobile) {
+    if (!props.children) {
+      return null;
+    }
+
     if (props.active && position.visible) {
       const rect = document.body.getBoundingClientRect();
       const safeAreaInsets = getSafeAreaInsets();
@@ -277,9 +281,7 @@ const FloatingToolbar = React.forwardRef(function FloatingToolbar_(
               }px)`,
             }}
           >
-            {props.children && (
-              <MobileBackground>{props.children}</MobileBackground>
-            )}
+            {props.children}
           </MobileWrapper>
         </ReactPortal>
       );
@@ -292,7 +294,7 @@ const FloatingToolbar = React.forwardRef(function FloatingToolbar_(
     <Portal>
       <Wrapper
         active={props.active && position.visible}
-        arrow={!!props.children && !position.blockSelection}
+        arrow={!position.blockSelection}
         ref={menuRef}
         $offset={position.offset}
         style={{
@@ -302,9 +304,7 @@ const FloatingToolbar = React.forwardRef(function FloatingToolbar_(
           left: `${position.left}px`,
         }}
       >
-        {props.children && (
-          <Background align={props.align}>{props.children}</Background>
-        )}
+        <Background align={props.align}>{props.children}</Background>
       </Wrapper>
     </Portal>
   );
@@ -343,20 +343,13 @@ const MobileWrapper = styled.div`
   position: absolute;
   left: 0;
   right: 0;
+
   width: 100vw;
-  box-sizing: border-box;
-  z-index: ${depths.editorToolbar};
-
-  @media print {
-    display: none;
-  }
-`;
-
-const MobileBackground = styled.div`
   padding: 10px 6px;
-  height: 60px;
   background-color: ${s("menuBackground")};
   border-top: 1px solid ${s("divider")};
+  box-sizing: border-box;
+  z-index: ${depths.editorToolbar};
 
   &:after {
     content: "";
@@ -365,6 +358,10 @@ const MobileBackground = styled.div`
     right: 0;
     height: 100px;
     background-color: ${s("menuBackground")};
+  }
+
+  @media print {
+    display: none;
   }
 `;
 

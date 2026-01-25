@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type Collection from "~/models/Collection";
+import Collection from "~/models/Collection";
 import useStores from "~/hooks/useStores";
 import CollectionLink from "./CollectionLink";
 

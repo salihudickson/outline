@@ -4,8 +4,7 @@ import { init, Data } from "emoji-mart";
 import FuzzySearch from "fuzzy-search";
 import capitalize from "lodash/capitalize";
 import sortBy from "lodash/sortBy";
-import type { Emoji, EmojiVariants } from "../types";
-import { EmojiCategory, EmojiSkinTone } from "../types";
+import { Emoji, EmojiCategory, EmojiSkinTone, EmojiVariants } from "../types";
 
 init({ data: RawData });
 

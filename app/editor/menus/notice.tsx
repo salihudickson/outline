@@ -5,10 +5,10 @@ import {
   StarredIcon,
   WarningIcon,
 } from "outline-icons";
-import type { EditorState } from "prosemirror-state";
+import { EditorState } from "prosemirror-state";
 import { NoticeTypes } from "@shared/editor/nodes/Notice";
-import type { MenuItem } from "@shared/editor/types";
-import type { Dictionary } from "~/hooks/useDictionary";
+import { MenuItem } from "@shared/editor/types";
+import { Dictionary } from "~/hooks/useDictionary";
 
 export default function noticeMenuItems(
   state: EditorState,

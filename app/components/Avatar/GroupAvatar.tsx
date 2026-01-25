@@ -1,7 +1,7 @@
 import { GroupIcon } from "outline-icons";
 import { useTheme } from "styled-components";
 import Squircle from "@shared/components/Squircle";
-import type Group from "~/models/Group";
+import Group from "~/models/Group";
 import { AvatarSize } from "../Avatar/Avatar";
 
 type Props = {

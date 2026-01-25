@@ -3,14 +3,14 @@ import { CopyIcon } from "outline-icons";
 import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type ApiKey from "~/models/ApiKey";
+import ApiKey from "~/models/ApiKey";
 import Button from "~/components/Button";
 import CopyToClipboard from "~/components/CopyToClipboard";
+import Flex from "~/components/Flex";
 import ListItem from "~/components/List/Item";
 import Text from "~/components/Text";
 import Time from "~/components/Time";
 import Tooltip from "~/components/Tooltip";
-import { HStack } from "~/components/primitives/HStack";
 import useCurrentUser from "~/hooks/useCurrentUser";
 import useUserLocale from "~/hooks/useUserLocale";
 import ApiKeyMenu from "~/menus/ApiKeyMenu";
@@ -26,42 +26,27 @@ const ApiKeyListItem = ({ apiKey }: Props) => {
   const userLocale = useUserLocale();
   const user = useCurrentUser();
 
-  const creatorText =
-    apiKey.userId === user.id
-      ? ""
-      : t(`by {{ name }}`, { name: apiKey.user.name });
-
   const subtitle = (
     <>
-      {apiKey.isExpired ? (
-        <>
-          <Text type="danger">
-            {t(`Expired`)} <Time dateTime={apiKey.expiresAt!} addSuffix />
-          </Text>
-          <Text type="tertiary"> {creatorText}</Text>
-        </>
-      ) : (
-        <Text type="tertiary">
-          {t(`Created`)} <Time dateTime={apiKey.createdAt} addSuffix />{" "}
-          {creatorText}
-        </Text>
-      )}
+      <Text type="tertiary">
+        {t(`Created`)} <Time dateTime={apiKey.createdAt} addSuffix />{" "}
+        {apiKey.userId === user.id
+          ? ""
+          : t(`by {{ name }}`, { name: apiKey.user.name })}{" "}
+        &middot;{" "}
+      </Text>
       {apiKey.lastActiveAt && (
         <Text type="tertiary">
-          {" "}
-          &middot; {t("Last used")}{" "}
-          <Time dateTime={apiKey.lastActiveAt} addSuffix />
-        </Text>
-      )}
-      {!apiKey.isExpired && (
-        <Text type="tertiary">
-          {" "}
+          {t("Last used")} <Time dateTime={apiKey.lastActiveAt} addSuffix />{" "}
           &middot;{" "}
-          {apiKey.expiresAt
-            ? dateToExpiry(apiKey.expiresAt, t, userLocale)
-            : t("No expiry")}
         </Text>
       )}
+      <Text type={apiKey.isExpired ? "danger" : "tertiary"}>
+        {apiKey.expiresAt
+          ? dateToExpiry(apiKey.expiresAt, t, userLocale)
+          : t("No expiry")}
+        {apiKey.scope && <> &middot; </>}
+      </Text>
       {apiKey.scope && (
         <Tooltip
           content={apiKey.scope.map((s) => (
@@ -71,7 +56,7 @@ const ApiKeyListItem = ({ apiKey }: Props) => {
             </>
           ))}
         >
-          <Text type="tertiary"> &middot; {t("Restricted scope")}</Text>
+          <Text type="tertiary">{t("Restricted scope")}</Text>
         </Tooltip>
       )}
     </>
@@ -97,7 +82,7 @@ const ApiKeyListItem = ({ apiKey }: Props) => {
       title={apiKey.name}
       subtitle={subtitle}
       actions={
-        <HStack>
+        <Flex align="center" gap={8}>
           {apiKey.value && handleCopy && (
             <CopyToClipboard text={apiKey.value} onCopy={handleCopy}>
               <Button type="button" icon={<CopyIcon />} neutral borderOnHover>
@@ -114,7 +99,7 @@ const ApiKeyListItem = ({ apiKey }: Props) => {
             {apiKey.obfuscatedValue}
           </Text>
           <ApiKeyMenu apiKey={apiKey} />
-        </HStack>
+        </Flex>
       }
     />
   );

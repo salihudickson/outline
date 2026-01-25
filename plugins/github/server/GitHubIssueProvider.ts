@@ -1,12 +1,11 @@
-import type { Endpoints } from "@octokit/types";
-import type {
+import { Endpoints } from "@octokit/types";
+import {
   InstallationNewPermissionsAcceptedEvent,
   InstallationRepositoriesEvent,
   RepositoryRenamedEvent,
 } from "@octokit/webhooks-types";
-import type { IssueSource } from "@shared/schema";
-import type { IntegrationType } from "@shared/types";
-import { IntegrationService } from "@shared/types";
+import { IssueSource } from "@shared/schema";
+import { IntegrationService, IntegrationType } from "@shared/types";
 import Logger from "@server/logging/Logger";
 import { Integration, IntegrationAuthentication } from "@server/models";
 import { sequelize } from "@server/storage/database";

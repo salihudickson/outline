@@ -10,7 +10,7 @@ import {
   presentGroupMembership,
   presentPolicies,
 } from "@server/presenters";
-import type { APIContext } from "@server/types";
+import { APIContext } from "@server/types";
 import pagination from "../middlewares/pagination";
 import * as T from "./schema";
 

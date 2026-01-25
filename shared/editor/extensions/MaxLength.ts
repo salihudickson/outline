@@ -1,5 +1,4 @@
-import type { Transaction } from "prosemirror-state";
-import { Plugin } from "prosemirror-state";
+import { Plugin, Transaction } from "prosemirror-state";
 import Extension from "../lib/Extension";
 
 export default class MaxLength extends Extension {
