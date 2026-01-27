@@ -428,40 +428,42 @@ export function sortTable({
         const rowCells: Node[] = [];
         const sortedRow = sortedTable[i];
         
+        // Create a map from column to cell for O(n) lookup
+        const columnToCell = new Map<number, { cell: Node; column: number }>();
+        for (const item of sortedRow) {
+          columnToCell.set(item.column, item);
+        }
+        
         // Create a full row with all columns, filling gaps with empty cells
-        for (let c = 0; c < rect.map.width; c++) {
-          // Find if we have a cell for this column
-          let found = false;
-          for (const item of sortedRow) {
-            if (item.column === c) {
-              // Reset rowspan to 1 to avoid issues after reordering (colspan is safe to keep)
-              const cell = item.cell;
-              if (cell.attrs.rowspan > 1) {
-                rowCells.push(
-                  cell.type.create(
-                    { ...cell.attrs, rowspan: 1 },
-                    cell.content,
-                    cell.marks
-                  )
-                );
-              } else {
-                rowCells.push(cell);
-              }
-              found = true;
-              // Skip additional columns if this cell has colspan
-              const colspan = cell.attrs.colspan || 1;
-              if (colspan > 1) {
-                c += colspan - 1;
-              }
-              break;
-            }
-          }
+        let c = 0;
+        while (c < rect.map.width) {
+          const item = columnToCell.get(c);
           
-          // If no cell found for this column, create an empty one
-          if (!found) {
-            const cellType = i === 0 && hasHeaderRow ? state.schema.nodes.th : state.schema.nodes.td;
+          if (item) {
+            // Reset rowspan to 1 to avoid issues after reordering (colspan is safe to keep)
+            const cell = item.cell;
+            if (cell.attrs.rowspan > 1) {
+              rowCells.push(
+                cell.type.create(
+                  { ...cell.attrs, rowspan: 1 },
+                  cell.content,
+                  cell.marks
+                )
+              );
+            } else {
+              rowCells.push(cell);
+            }
+            // Skip additional columns if this cell has colspan
+            const colspan = cell.attrs.colspan || 1;
+            c += colspan;
+          } else {
+            // No cell found for this column, create an empty one
+            // Check if this is the header row (first row after adding header back)
+            const isHeaderRow = i === 0 && header !== undefined;
+            const cellType = isHeaderRow ? state.schema.nodes.th : state.schema.nodes.td;
             const emptyParagraph = state.schema.nodes.paragraph.create();
             rowCells.push(cellType.create(null, emptyParagraph));
+            c++;
           }
         }
         
