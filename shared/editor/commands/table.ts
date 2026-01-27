@@ -129,16 +129,26 @@ export function exportTable({
       const rect = selectedRect(state);
       const table: Node[][] = [];
 
+      // Track cells that span multiple rows to avoid duplicating them
+      const seenCellPositions = new Set<number>();
+
       for (let r = 0; r < rect.map.height; r++) {
         const cells = [];
-        const seenPositions = new Set<number>();
+        const seenInRow = new Set<number>();
         for (let c = 0; c < rect.map.width; c++) {
           const cellPos = rect.map.map[r * rect.map.width + c];
-          // Skip if we've already processed this cell (handles merged cells)
-          if (seenPositions.has(cellPos)) {
+          // Skip if we've already processed this cell in this row (handles colspan)
+          if (seenInRow.has(cellPos)) {
             continue;
           }
-          seenPositions.add(cellPos);
+          seenInRow.add(cellPos);
+          
+          // Skip if this cell was already seen in a previous row (handles rowspan)
+          if (seenCellPositions.has(cellPos)) {
+            continue;
+          }
+          seenCellPositions.add(cellPos);
+          
           const cell = state.doc.nodeAt(rect.tableStart + cellPos);
           if (cell) {
             cells.push(cell);
@@ -288,58 +298,70 @@ export function sortTable({
 
     if (dispatch) {
       const rect = selectedRect(state);
-      const table: Node[][] = [];
+      
+      // Helper function to get the cell at a specific row and column from the table map
+      const getCellAtPosition = (row: number, col: number): Node | null => {
+        if (row >= rect.map.height || col >= rect.map.width) {
+          return null;
+        }
+        const cellPos = rect.map.map[row * rect.map.width + col];
+        return state.doc.nodeAt(rect.tableStart + cellPos);
+      };
+
+      // For each row, collect cells with their visual column positions
+      type CellWithColumn = { cell: Node; column: number };
+      const table: CellWithColumn[][] = [];
+      const seenCellPositions = new Set<number>();
 
       for (let r = 0; r < rect.map.height; r++) {
-        const cells = [];
-        const seenPositions = new Set<number>();
+        const rowCells: CellWithColumn[] = [];
+        const seenInRow = new Set<number>();
+        
         for (let c = 0; c < rect.map.width; c++) {
           const cellPos = rect.map.map[r * rect.map.width + c];
-          // Skip if we've already processed this cell (handles merged cells)
-          if (seenPositions.has(cellPos)) {
+          
+          // Skip if we've already seen this cell in this row (handles colspan)
+          if (seenInRow.has(cellPos)) {
             continue;
           }
-          seenPositions.add(cellPos);
+          seenInRow.add(cellPos);
+          
+          // Skip if we've already seen this cell in a previous row (handles rowspan)
+          if (seenCellPositions.has(cellPos)) {
+            continue;
+          }
+          seenCellPositions.add(cellPos);
+          
           const cell = state.doc.nodeAt(rect.tableStart + cellPos);
           if (cell) {
-            cells.push(cell);
+            rowCells.push({ cell, column: c });
           }
         }
-        table.push(cells);
+        table.push(rowCells);
       }
 
       const hasHeaderRow = table[0].every(
-        (cell) => cell.type === state.schema.nodes.th
+        (item) => item.cell.type === state.schema.nodes.th
       );
 
       // remove the header row
       const header = hasHeaderRow ? table.shift() : undefined;
 
-      // Helper function to find the cell at a given visual column index
-      // considering colspan/rowspan
-      const getCellAtColumn = (row: Node[], columnIndex: number): Node | null => {
-        let currentColumn = 0;
-        for (const cell of row) {
-          const colspan = cell.attrs.colspan || 1;
-          if (columnIndex >= currentColumn && columnIndex < currentColumn + colspan) {
-            return cell;
-          }
-          currentColumn += colspan;
-        }
-        return null;
+      // For sorting, get the cell value at the sort column
+      const getValueForSort = (rowIndex: number): string => {
+        const cell = getCellAtPosition(hasHeaderRow ? rowIndex + 1 : rowIndex, index);
+        return cell?.textContent ?? "";
       };
 
-      // column data before sort
-      const columnData = table.map(
-        (row) => getCellAtColumn(row, index)?.textContent ?? ""
-      );
+      // column data before sort (for comparison to see if anything changed)
+      const columnData = table.map((_, i) => getValueForSort(i));
 
       // determine sorting type: date, number, or text
       let compareAsDate = false;
       let compareAsNumber = false;
 
-      const nonEmptyCells = table
-        .map((row) => getCellAtColumn(row, index)?.textContent?.trim())
+      const nonEmptyCells = columnData
+        .map((text) => text?.trim())
         .filter((cell): cell is string => !!cell && cell.length > 0);
       if (nonEmptyCells.length > 0) {
         // check if all non-empty cells are valid dates
@@ -352,10 +374,13 @@ export function sortTable({
         }
       }
 
-      // sort table data based on column at index
-      table.sort((a, b) => {
-        const aContent = getCellAtColumn(a, index)?.textContent ?? "";
-        const bContent = getCellAtColumn(b, index)?.textContent ?? "";
+      // Create array of row indices to sort
+      const rowIndices = table.map((_, i) => i);
+      
+      // sort row indices based on column at index
+      rowIndices.sort((a, b) => {
+        const aContent = getValueForSort(a);
+        const bContent = getValueForSort(b);
 
         // empty cells always go to the end
         if (!aContent) {
@@ -380,26 +405,67 @@ export function sortTable({
       });
 
       if (direction === "desc") {
-        table.reverse();
+        rowIndices.reverse();
       }
 
       // check if column data changed, if not then do not replace table
-      if (
-        columnData.join() ===
-        table.map((row) => getCellAtColumn(row, index)?.textContent).join()
-      ) {
+      const newColumnData = rowIndices.map((i) => getValueForSort(i));
+      if (columnData.join() === newColumnData.join()) {
         return true;
       }
 
+      // Reorder the table rows based on sorted indices
+      const sortedTable = rowIndices.map((i) => table[i]);
+
       // add the header row back
       if (header) {
-        table.unshift(header);
+        sortedTable.unshift(header);
       }
 
-      // create the new table
+      // create the new table, filling in missing cells and resetting rowspan
       const rows = [];
-      for (let i = 0; i < table.length; i += 1) {
-        rows.push(state.schema.nodes.tr.createChecked(null, table[i]));
+      for (let i = 0; i < sortedTable.length; i += 1) {
+        const rowCells: Node[] = [];
+        const sortedRow = sortedTable[i];
+        
+        // Create a full row with all columns, filling gaps with empty cells
+        for (let c = 0; c < rect.map.width; c++) {
+          // Find if we have a cell for this column
+          let found = false;
+          for (const item of sortedRow) {
+            if (item.column === c) {
+              // Reset rowspan to 1 to avoid issues after reordering (colspan is safe to keep)
+              const cell = item.cell;
+              if (cell.attrs.rowspan > 1) {
+                rowCells.push(
+                  cell.type.create(
+                    { ...cell.attrs, rowspan: 1 },
+                    cell.content,
+                    cell.marks
+                  )
+                );
+              } else {
+                rowCells.push(cell);
+              }
+              found = true;
+              // Skip additional columns if this cell has colspan
+              const colspan = cell.attrs.colspan || 1;
+              if (colspan > 1) {
+                c += colspan - 1;
+              }
+              break;
+            }
+          }
+          
+          // If no cell found for this column, create an empty one
+          if (!found) {
+            const cellType = i === 0 && hasHeaderRow ? state.schema.nodes.th : state.schema.nodes.td;
+            const emptyParagraph = state.schema.nodes.paragraph.create();
+            rowCells.push(cellType.create(null, emptyParagraph));
+          }
+        }
+        
+        rows.push(state.schema.nodes.tr.createChecked(null, rowCells));
       }
 
       // replace the original table with this sorted one

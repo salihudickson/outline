@@ -10,6 +10,57 @@ import { sortTable } from "./table";
 
 describe("sortTable", () => {
   describe("with merged cells", () => {
+    it("should handle sorting when entire column is merged (rowspan)", () => {
+      // Reproduce the user's scenario:
+      // | Header 1      | Header 2 |
+      // | Merged        | C        |
+      // | (all cells    | A        |
+      // | in column 1)  | B        |
+      // 
+      // When sorting by column 2, should sort A, B, C
+      const testTable = table([
+        tr([th("Header 1"), th("Header 2")]),
+        tr([td("Merged", { rowspan: 3 }), td("C")]),
+        tr([td("A")]),  // Only 1 cell because column 0 is spanned
+        tr([td("B")]),  // Only 1 cell because column 0 is spanned
+      ]);
+
+      const testDoc = doc(testTable);
+      const state = createEditorState(testDoc);
+
+      // Sort by second column (index 1) ascending
+      const command = sortTable({ index: 1, direction: "asc" });
+      let newState = state;
+      command(state, (tr) => {
+        newState = state.apply(tr);
+      });
+
+      const newTable = newState.doc.firstChild!;
+
+      // After sorting by column 1: A, B, C order
+      expect(newTable.childCount).toBe(4); // 1 header + 3 data rows
+
+      // The merged cell's rowspan is reset and rows are reordered
+      // Row 1: empty cell, A
+      // Row 2: empty cell, B
+      // Row 3: Merged (unmerged), C
+      const row1 = newTable.child(1);
+      expect(row1.childCount).toBe(2);
+      expect(row1.child(0).textContent).toBe(""); // Empty cell where merged cell was
+      expect(row1.child(1).textContent).toBe("A");
+
+      const row2 = newTable.child(2);
+      expect(row2.childCount).toBe(2);
+      expect(row2.child(0).textContent).toBe("");
+      expect(row2.child(1).textContent).toBe("B");
+
+      const row3 = newTable.child(3);
+      expect(row3.childCount).toBe(2);
+      expect(row3.child(0).textContent).toBe("Merged");
+      expect(row3.child(0).attrs.rowspan).toBe(1); // Rowspan reset to 1
+      expect(row3.child(1).textContent).toBe("C");
+    });
+
     it("should sort by column index considering colspan", () => {
       // Create a table where we sort by the 3rd column (index 2)
       // | Header 1 | Header 2 | Header 3 |
