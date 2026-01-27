@@ -134,12 +134,27 @@ export function exportTable({
       const rect = selectedRect(state);
       const table: Node[][] = [];
 
+      // Track cells that span multiple rows to avoid duplicating them
+      const seenCellPositions = new Set<number>();
+
       for (let r = 0; r < rect.map.height; r++) {
         const cells = [];
+        const seenInRow = new Set<number>();
         for (let c = 0; c < rect.map.width; c++) {
-          const cell = state.doc.nodeAt(
-            rect.tableStart + rect.map.map[r * rect.map.width + c]
-          );
+          const cellPos = rect.map.map[r * rect.map.width + c];
+          // Skip if we've already processed this cell in this row (handles colspan)
+          if (seenInRow.has(cellPos)) {
+            continue;
+          }
+          seenInRow.add(cellPos);
+          
+          // Skip if this cell was already seen in a previous row (handles rowspan)
+          if (seenCellPositions.has(cellPos)) {
+            continue;
+          }
+          seenCellPositions.add(cellPos);
+          
+          const cell = state.doc.nodeAt(rect.tableStart + cellPos);
           if (cell) {
             cells.push(cell);
           }
@@ -288,37 +303,70 @@ export function sortTable({
 
     if (dispatch) {
       const rect = selectedRect(state);
-      const table: Node[][] = [];
+      
+      // Helper function to get the cell at a specific row and column from the table map
+      const getCellAtPosition = (row: number, col: number): Node | null => {
+        if (row >= rect.map.height || col >= rect.map.width) {
+          return null;
+        }
+        const cellPos = rect.map.map[row * rect.map.width + col];
+        return state.doc.nodeAt(rect.tableStart + cellPos);
+      };
+
+      // For each row, collect cells with their visual column positions
+      type CellWithColumn = { cell: Node; column: number };
+      const table: CellWithColumn[][] = [];
+      const seenCellPositions = new Set<number>();
 
       for (let r = 0; r < rect.map.height; r++) {
-        const cells = [];
+        const rowCells: CellWithColumn[] = [];
+        const seenInRow = new Set<number>();
+        
         for (let c = 0; c < rect.map.width; c++) {
-          const cell = state.doc.nodeAt(
-            rect.tableStart + rect.map.map[r * rect.map.width + c]
-          );
+          const cellPos = rect.map.map[r * rect.map.width + c];
+          
+          // Skip if we've already seen this cell in this row (handles colspan)
+          if (seenInRow.has(cellPos)) {
+            continue;
+          }
+          seenInRow.add(cellPos);
+          
+          // Skip if we've already seen this cell in a previous row (handles rowspan)
+          if (seenCellPositions.has(cellPos)) {
+            continue;
+          }
+          seenCellPositions.add(cellPos);
+          
+          const cell = state.doc.nodeAt(rect.tableStart + cellPos);
           if (cell) {
-            cells.push(cell);
+            rowCells.push({ cell, column: c });
           }
         }
-        table.push(cells);
+        table.push(rowCells);
       }
 
       const hasHeaderRow = table[0].every(
-        (cell) => cell.type === state.schema.nodes.th
+        (item) => item.cell.type === state.schema.nodes.th
       );
 
       // remove the header row
       const header = hasHeaderRow ? table.shift() : undefined;
 
-      // column data before sort
-      const columnData = table.map((row) => row[index]?.textContent ?? "");
+      // For sorting, get the cell value at the sort column
+      const getValueForSort = (rowIndex: number): string => {
+        const cell = getCellAtPosition(hasHeaderRow ? rowIndex + 1 : rowIndex, index);
+        return cell?.textContent ?? "";
+      };
+
+      // column data before sort (for comparison to see if anything changed)
+      const columnData = table.map((_, i) => getValueForSort(i));
 
       // determine sorting type: date, number, or text
       let compareAsDate = false;
       let compareAsNumber = false;
 
-      const nonEmptyCells = table
-        .map((row) => row[index]?.textContent?.trim())
+      const nonEmptyCells = columnData
+        .map((text) => text?.trim())
         .filter((cell): cell is string => !!cell && cell.length > 0);
       if (nonEmptyCells.length > 0) {
         // check if all non-empty cells are valid dates
@@ -331,10 +379,13 @@ export function sortTable({
         }
       }
 
-      // sort table data based on column at index
-      table.sort((a, b) => {
-        const aContent = a[index]?.textContent ?? "";
-        const bContent = b[index]?.textContent ?? "";
+      // Create array of row indices to sort
+      const rowIndices = table.map((_, i) => i);
+      
+      // sort row indices based on column at index
+      rowIndices.sort((a, b) => {
+        const aContent = getValueForSort(a);
+        const bContent = getValueForSort(b);
 
         // empty cells always go to the end
         if (!aContent) {
@@ -359,25 +410,69 @@ export function sortTable({
       });
 
       if (direction === "desc") {
-        table.reverse();
+        rowIndices.reverse();
       }
 
       // check if column data changed, if not then do not replace table
-      if (
-        columnData.join() === table.map((row) => row[index]?.textContent).join()
-      ) {
+      const newColumnData = rowIndices.map((i) => getValueForSort(i));
+      if (columnData.join() === newColumnData.join()) {
         return true;
       }
 
+      // Reorder the table rows based on sorted indices
+      const sortedTable = rowIndices.map((i) => table[i]);
+
       // add the header row back
       if (header) {
-        table.unshift(header);
+        sortedTable.unshift(header);
       }
 
-      // create the new table
+      // create the new table, filling in missing cells and resetting rowspan
       const rows = [];
-      for (let i = 0; i < table.length; i += 1) {
-        rows.push(state.schema.nodes.tr.createChecked(null, table[i]));
+      for (let i = 0; i < sortedTable.length; i += 1) {
+        const rowCells: Node[] = [];
+        const sortedRow = sortedTable[i];
+        
+        // Create a map from column to cell for O(n) lookup
+        const columnToCell = new Map<number, { cell: Node; column: number }>();
+        for (const item of sortedRow) {
+          columnToCell.set(item.column, item);
+        }
+        
+        // Create a full row with all columns, filling gaps with empty cells
+        let c = 0;
+        while (c < rect.map.width) {
+          const item = columnToCell.get(c);
+          
+          if (item) {
+            // Reset rowspan to 1 to avoid issues after reordering (colspan is safe to keep)
+            const cell = item.cell;
+            if (cell.attrs.rowspan > 1) {
+              rowCells.push(
+                cell.type.create(
+                  { ...cell.attrs, rowspan: 1 },
+                  cell.content,
+                  cell.marks
+                )
+              );
+            } else {
+              rowCells.push(cell);
+            }
+            // Skip additional columns if this cell has colspan
+            const colspan = cell.attrs.colspan || 1;
+            c += colspan;
+          } else {
+            // No cell found for this column, create an empty one
+            // Check if this is the header row (first row after adding header back)
+            const isHeaderRow = i === 0 && header !== undefined;
+            const cellType = isHeaderRow ? state.schema.nodes.th : state.schema.nodes.td;
+            const emptyParagraph = state.schema.nodes.paragraph.create();
+            rowCells.push(cellType.create(null, emptyParagraph));
+            c++;
+          }
+        }
+        
+        rows.push(state.schema.nodes.tr.createChecked(null, rowCells));
       }
 
       // replace the original table with this sorted one
