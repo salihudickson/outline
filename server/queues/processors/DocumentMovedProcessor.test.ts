@@ -217,7 +217,7 @@ describe("DocumentMovedProcessor", () => {
     expect(doc2GroupMemberships.length).toBe(1);
   });
 
-  it.only("should propagate sourced permissions to direct child documents of the moved document", async () => {
+  it("should propagate sourced permissions to direct child documents of the moved document", async () => {
     const team = await buildTeam();
     const user = await buildAdmin({ teamId: team.id });
     const user2 = await buildUser({ teamId: team.id });
