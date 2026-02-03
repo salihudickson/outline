@@ -309,15 +309,6 @@ class UserMembership extends IdModel<
     }
     const { transaction, documentId } = options;
 
-    await this.destroy({
-      where: {
-        userId: model.userId,
-        sourceId: model.id,
-        ...(documentId ? { documentId } : {}),
-      },
-      transaction,
-    });
-
     const document = await Document.unscoped()
       .scope("withoutState")
       .findOne({
@@ -346,16 +337,20 @@ class UserMembership extends IdModel<
       )),
     ];
 
-    for (const childDocumentId of childDocumentIds) {
+    if (childDocumentIds.length) {
       await this.destroy({
         where: {
           userId: model.userId,
           sourceId: model.id,
-          documentId: childDocumentId,
+          documentId: {
+            [Op.in]: childDocumentIds,
+          },
         },
         transaction,
       });
+    }
 
+    for (const childDocumentId of childDocumentIds) {
       await this.create(
         {
           documentId: childDocumentId,

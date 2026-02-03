@@ -283,7 +283,7 @@ describe("DocumentMovedProcessor", () => {
     expect(childGroupMemberships[0].sourceId).toBe(sourceGroupMembership.id);
   });
 
-  it.only("should propagate sourced permissions to all deep child documents of the moved document", async () => {
+  it("should propagate sourced permissions to all deep child documents of the moved document", async () => {
     const team = await buildTeam();
     const user = await buildAdmin({ teamId: team.id });
     const user2 = await buildUser({ teamId: team.id });
@@ -359,9 +359,7 @@ describe("DocumentMovedProcessor", () => {
     });
     expect(grandChildUserMemberships.length).toBe(1);
     expect(grandChildGroupMemberships.length).toBe(1);
-    expect(grandChildUserMemberships[0].sourceId).toBe(
-      sourceUserMembership.id
-    );
+    expect(grandChildUserMemberships[0].sourceId).toBe(sourceUserMembership.id);
     expect(grandChildGroupMemberships[0].sourceId).toBe(
       sourceGroupMembership.id
     );

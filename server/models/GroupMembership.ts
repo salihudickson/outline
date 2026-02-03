@@ -360,16 +360,20 @@ class GroupMembership extends ParanoidModel<
       )),
     ];
 
-    for (const childDocumentId of childDocumentIds) {
+    if (childDocumentIds.length) {
       await this.destroy({
         where: {
           groupId: model.groupId,
           sourceId: model.id,
-          documentId: childDocumentId,
+          documentId: {
+            [Op.in]: childDocumentIds,
+          },
         },
         transaction,
       });
+    }
 
+    for (const childDocumentId of childDocumentIds) {
       await this.create(
         {
           documentId: childDocumentId,
