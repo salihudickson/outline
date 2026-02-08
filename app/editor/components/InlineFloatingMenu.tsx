@@ -38,17 +38,18 @@ export function InlineFloatingMenu(props: Props) {
         return;
       }
 
+      const currentState = view.state;
       if (commands[menuItem.name]) {
         commands[menuItem.name](
           typeof menuItem.attrs === "function"
-            ? menuItem.attrs(view.state)
+            ? menuItem.attrs(currentState)
             : menuItem.attrs
         );
       } else if (menuItem.onClick) {
         menuItem.onClick();
       }
     },
-    [commands, view.state]
+    [commands, view]
   );
 
   const menuItems: TMenuItem[] = useMemo(() => {
