@@ -32,6 +32,7 @@ import getTableRowMenuItems from "../menus/tableRow";
 import { useEditor } from "./EditorContext";
 import { MediaLinkEditor } from "./MediaLinkEditor";
 import FloatingToolbar from "./FloatingToolbar";
+import { InlineFloatingMenu } from "./InlineFloatingMenu";
 import LinkEditor from "./LinkEditor";
 import ToolbarMenu from "./ToolbarMenu";
 import { isModKey } from "@shared/utils/keyboard";
@@ -263,9 +264,13 @@ export function SelectionToolbar(props: Props) {
     setActiveToolbar(null);
   };
 
+  // Render inline floating menu separately for table row selections
+  if (rowIndex !== undefined && activeToolbar === Toolbar.Menu && items.length) {
+    return <InlineFloatingMenu items={items} active={isActive} />;
+  }
+
   return (
     <FloatingToolbar
-      inline={rowIndex !== undefined}
       align={align}
       active={isActive}
       ref={menuRef}
@@ -302,12 +307,7 @@ export function SelectionToolbar(props: Props) {
           onClickOutside={handleClickOutsideLinkEditor}
         />
       ) : activeToolbar === Toolbar.Menu && items.length ? (
-        <ToolbarMenu
-          items={items}
-          inline={rowIndex !== undefined}
-          containerRef={menuRef}
-          {...rest}
-        />
+        <ToolbarMenu items={items} {...rest} />
       ) : null}
     </FloatingToolbar>
   );
