@@ -32,8 +32,8 @@ export function InlineFloatingMenu(props: Props) {
     active: active ?? true,
   });
 
-  const menuItems: TMenuItem[] = useMemo(() => {
-    const handleClick = (menuItem: MenuItem) => () => {
+  const handleClick = useCallback(
+    (menuItem: MenuItem) => () => {
       if (!menuItem.name) {
         return;
       }
@@ -47,8 +47,11 @@ export function InlineFloatingMenu(props: Props) {
       } else if (menuItem.onClick) {
         menuItem.onClick();
       }
-    };
+    },
+    [commands, view.state]
+  );
 
+  const menuItems: TMenuItem[] = useMemo(() => {
     return items.flatMap((item) => {
       if (!item.children) {
         return [];
@@ -72,7 +75,7 @@ export function InlineFloatingMenu(props: Props) {
         };
       });
     });
-  }, [items, commands, view.state]);
+  }, [items, handleClick, view.state]);
 
   const handleCloseAutoFocus = useCallback((ev: Event) => {
     ev.stopImmediatePropagation();
