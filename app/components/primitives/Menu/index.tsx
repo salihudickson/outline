@@ -144,6 +144,7 @@ const MenuContent = React.forwardRef<
           hiddenScrollbars
           style={{
             top: pos ? pos.top - window.scrollY + 55 : undefined, // adding a 55px offset for better placement
+            left: pos ? pos.left : undefined,
           }}
         >
           {children}

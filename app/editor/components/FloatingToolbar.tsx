@@ -20,7 +20,6 @@ import { RowSelection } from "@shared/editor/selection/RowSelection";
 import { isTableSelected } from "@shared/editor/queries/table";
 
 type Props = {
-  inline?: boolean;
   align?: "start" | "end" | "center";
   active?: boolean;
   children: React.ReactNode;
@@ -304,11 +303,7 @@ const FloatingToolbar = React.forwardRef(function FloatingToolbar_(
         }}
       >
         {props.children && (
-          <Background
-            align={props.align}
-            inline={props.inline}
-            className="background"
-          >
+          <Background align={props.align} className="background">
             {props.children}
           </Background>
         )}
@@ -377,19 +372,12 @@ const MobileBackground = styled.div`
 
 const Background = styled.div<{
   align: Props["align"];
-  inline: Props["inline"];
 }>`
   position: relative;
   background-color: ${s("menuBackground")};
   box-shadow: ${s("menuShadow")};
   border-radius: 4px;
   height: 36px;
-
-  ${(props) =>
-    props.inline &&
-    `
-    display: none;
-    `}
 
   ${(props) =>
     props.align === "start" &&
