@@ -35,6 +35,9 @@ import FloatingToolbar from "./FloatingToolbar";
 import LinkEditor from "./LinkEditor";
 import ToolbarMenu from "./ToolbarMenu";
 import { isModKey } from "@shared/utils/keyboard";
+import InlineMenu from "./InlineMenu";
+import styled from "styled-components";
+import { depths } from "@shared/styles";
 
 type Props = {
   /** Whether the text direction is right-to-left */
@@ -263,9 +266,20 @@ export function SelectionToolbar(props: Props) {
     setActiveToolbar(null);
   };
 
+  if (
+    rowIndex !== undefined &&
+    activeToolbar === Toolbar.Menu &&
+    items.length
+  ) {
+    return (
+      <InlineMenuWrapper ref={menuRef}>
+        <InlineMenu items={items} containerRef={menuRef} />
+      </InlineMenuWrapper>
+    );
+  }
+
   return (
     <FloatingToolbar
-      inline={rowIndex !== undefined}
       align={align}
       active={isActive}
       ref={menuRef}
@@ -302,13 +316,25 @@ export function SelectionToolbar(props: Props) {
           onClickOutside={handleClickOutsideLinkEditor}
         />
       ) : activeToolbar === Toolbar.Menu && items.length ? (
-        <ToolbarMenu
-          items={items}
-          inline={rowIndex !== undefined}
-          containerRef={menuRef}
-          {...rest}
-        />
+        <ToolbarMenu items={items} {...rest} />
       ) : null}
     </FloatingToolbar>
   );
 }
+
+const InlineMenuWrapper = styled.div`
+  position: absolute;
+  z-index: ${depths.editorToolbar};
+  line-height: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  white-space: nowrap;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  @media print {
+    display: none;
+  }
+`;
