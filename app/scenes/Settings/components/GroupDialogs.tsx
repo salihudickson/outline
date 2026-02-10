@@ -16,6 +16,7 @@ import DelayedMount from "~/components/DelayedMount";
 import Empty from "~/components/Empty";
 import Flex from "~/components/Flex";
 import Input from "~/components/Input";
+import InputSelect from "~/components/InputSelect";
 import PlaceholderList from "~/components/List/Placeholder";
 import PaginatedList from "~/components/PaginatedList";
 import { ListItem } from "~/components/Sharing/components/ListItem";
@@ -229,6 +230,10 @@ export const ViewGroupMembersDialog = observer(function ({
   const { dialogs, users, groupUsers } = useStores();
   const { t } = useTranslation();
   const can = usePolicy(group);
+  const [query, setQuery] = React.useState("");
+  const [permissionFilter, setPermissionFilter] = React.useState<
+    GroupPermission | "all"
+  >("all");
 
   const handleAddPeople = React.useCallback(() => {
     dialogs.openModal({
@@ -261,6 +266,60 @@ export const ViewGroupMembersDialog = observer(function ({
     },
     [t, groupUsers, group.id]
   );
+
+  const handleFilter = React.useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      setQuery(ev.target.value);
+    },
+    []
+  );
+
+  const handlePermissionFilterChange = React.useCallback((value: string) => {
+    setPermissionFilter(value as GroupPermission | "all");
+  }, []);
+
+  const permissionOptions = React.useMemo(
+    () => [
+      {
+        type: "item" as const,
+        label: t("All permissions"),
+        value: "all",
+      },
+      {
+        type: "item" as const,
+        label: t("Group admin"),
+        value: GroupPermission.Admin,
+      },
+      {
+        type: "item" as const,
+        label: t("Member"),
+        value: GroupPermission.Member,
+      },
+    ],
+    [t]
+  );
+
+  const filteredUsers = React.useMemo(() => {
+    let result = users.inGroup(group.id, query);
+
+    if (permissionFilter !== "all") {
+      // Create a Map for O(1) lookup instead of O(n) find() for each user
+      const groupUserMap = new Map(
+        groupUsers.orderedData
+          .filter((gu) => gu.groupId === group.id)
+          .map((gu) => [gu.userId, gu])
+      );
+
+      result = result.filter((user) => {
+        const groupUser = groupUserMap.get(user.id);
+        return groupUser?.permission === permissionFilter;
+      });
+    }
+
+    return result;
+  }, [users, group.id, query, permissionFilter, groupUsers.orderedData]);
+
+  const hasActiveFilters = query || permissionFilter !== "all";
 
   return (
     <Flex column>
@@ -304,13 +363,38 @@ export const ViewGroupMembersDialog = observer(function ({
           />
         </Text>
       )}
+      <Flex gap={8}>
+        <Input
+          type="search"
+          placeholder={`${t("Search by name")}…`}
+          value={query}
+          onChange={handleFilter}
+          label={t("Search members")}
+          labelHidden
+          flex
+        />
+        <InputSelect
+          options={permissionOptions}
+          value={permissionFilter}
+          onChange={handlePermissionFilterChange}
+          label={t("Permission")}
+          hideLabel
+          short
+        />
+      </Flex>
       <PaginatedList<User>
-        items={users.inGroup(group.id)}
+        items={filteredUsers}
         fetch={groupUsers.fetchPage}
         options={{
           id: group.id,
         }}
-        empty={<Empty>{t("This group has no members.")}</Empty>}
+        empty={
+          hasActiveFilters ? (
+            <Empty>{t("No members matching your filters")}</Empty>
+          ) : (
+            <Empty>{t("This group has no members.")}</Empty>
+          )
+        }
         renderItem={(user) => (
           <GroupMemberListItem
             key={user.id}
