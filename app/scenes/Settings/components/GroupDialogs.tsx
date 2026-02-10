@@ -303,10 +303,15 @@ export const ViewGroupMembersDialog = observer(function ({
     let result = users.inGroup(group.id, query);
 
     if (permissionFilter !== "all") {
+      // Create a Map for O(1) lookup instead of O(n) find() for each user
+      const groupUserMap = new Map(
+        groupUsers.orderedData
+          .filter((gu) => gu.groupId === group.id)
+          .map((gu) => [gu.userId, gu])
+      );
+
       result = result.filter((user) => {
-        const groupUser = groupUsers.orderedData.find(
-          (gu) => gu.userId === user.id && gu.groupId === group.id
-        );
+        const groupUser = groupUserMap.get(user.id);
         return groupUser?.permission === permissionFilter;
       });
     }
