@@ -229,6 +229,7 @@ export const ViewGroupMembersDialog = observer(function ({
   const { dialogs, users, groupUsers } = useStores();
   const { t } = useTranslation();
   const can = usePolicy(group);
+  const [query, setQuery] = React.useState("");
 
   const handleAddPeople = React.useCallback(() => {
     dialogs.openModal({
@@ -260,6 +261,13 @@ export const ViewGroupMembersDialog = observer(function ({
       }
     },
     [t, groupUsers, group.id]
+  );
+
+  const handleFilter = React.useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      setQuery(ev.target.value);
+    },
+    []
   );
 
   return (
@@ -304,13 +312,28 @@ export const ViewGroupMembersDialog = observer(function ({
           />
         </Text>
       )}
+      <Input
+        type="search"
+        placeholder={`${t("Search by name")}…`}
+        value={query}
+        onChange={handleFilter}
+        label={t("Search members")}
+        labelHidden
+        flex
+      />
       <PaginatedList<User>
-        items={users.inGroup(group.id)}
+        items={users.inGroup(group.id, query)}
         fetch={groupUsers.fetchPage}
         options={{
           id: group.id,
         }}
-        empty={<Empty>{t("This group has no members.")}</Empty>}
+        empty={
+          query ? (
+            <Empty>{t("No members matching your search")}</Empty>
+          ) : (
+            <Empty>{t("This group has no members.")}</Empty>
+          )
+        }
         renderItem={(user) => (
           <GroupMemberListItem
             key={user.id}
