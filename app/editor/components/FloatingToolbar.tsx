@@ -40,10 +40,12 @@ export function usePosition({
   menuRef,
   active,
   align = "center",
+  inline = false,
 }: {
   menuRef: React.RefObject<HTMLDivElement>;
   active?: boolean;
   align?: Props["align"];
+  inline?: boolean;
 }) {
   const { view } = useEditor();
   const { selection } = view.state;
@@ -148,8 +150,8 @@ export function usePosition({
     );
     if (element instanceof HTMLElement) {
       const bounds = element.getBoundingClientRect();
-      selectionBounds.top = bounds.top;
-      selectionBounds.left = bounds.left - 10;
+      selectionBounds.top = bounds.top + (inline ? 55 : 0);
+      selectionBounds.left = bounds.left - (inline ? 410 : 10);
       selectionBounds.right = bounds.left - 10;
     }
   }

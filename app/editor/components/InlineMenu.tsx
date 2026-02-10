@@ -30,6 +30,7 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
   const pos = usePosition({
     menuRef,
     active: true,
+    inline: true,
   });
 
   const handleCloseAutoFocus = useCallback((ev: Event) => {
