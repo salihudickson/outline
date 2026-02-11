@@ -41,6 +41,7 @@ import type {
 import {
   CollectionPermission,
   NotificationEventDefaults,
+  NotificationChannelType,
   UserRole,
   DocumentPermission,
 } from "@shared/types";
@@ -331,28 +332,89 @@ class User extends ParanoidModel<
   /**
    * Sets a preference for the users notification settings.
    *
-   * @param type The type of notification event
-   * @param value Set the preference to true/false
+   * @param type The type of notification event.
+   * @param value Set the preference to true/false or channel-specific settings.
+   * @param channel Optional channel type for channel-specific settings.
    */
   public setNotificationEventType = (
     type: NotificationEventType,
-    value = true
+    value: boolean | Record<NotificationChannelType, boolean> = true,
+    channel?: NotificationChannelType
   ) => {
-    this.notificationSettings = {
-      ...this.notificationSettings,
-      [type]: value,
-    };
+    if (channel !== undefined) {
+      // Setting a specific channel preference
+      const currentSetting = this.notificationSettings[type];
+      const channelSettings =
+        typeof currentSetting === "object" ? currentSetting : {};
+      
+      this.notificationSettings = {
+        ...this.notificationSettings,
+        [type]: {
+          ...channelSettings,
+          [channel]: value as boolean,
+        },
+      };
+    } else {
+      // Setting all channels or simple boolean
+      this.notificationSettings = {
+        ...this.notificationSettings,
+        [type]: value,
+      };
+    }
   };
 
   /**
    * Returns the current preference for the given notification event type taking
    * into account the default system value.
    *
-   * @param type The type of notification event
-   * @returns The current preference
+   * @param type The type of notification event.
+   * @param channel Optional channel type for channel-specific check.
+   * @returns The current preference.
    */
-  public subscribedToEventType = (type: NotificationEventType) =>
-    this.notificationSettings[type] ?? NotificationEventDefaults[type] ?? false;
+  public subscribedToEventType = (
+    type: NotificationEventType,
+    channel?: NotificationChannelType
+  ): boolean => {
+    const setting = this.notificationSettings[type];
+    const defaultValue = NotificationEventDefaults[type] ?? false;
+    
+    if (setting === undefined) {
+      return defaultValue;
+    }
+    
+    if (typeof setting === "boolean") {
+      return setting;
+    }
+    
+    if (channel && typeof setting === "object") {
+      return setting[channel] ?? defaultValue;
+    }
+    
+    // If no channel specified and setting is object, check if any channel is enabled
+    if (typeof setting === "object") {
+      return Object.values(setting).some((v) => v === true);
+    }
+    
+    return defaultValue;
+  };
+
+  /**
+   * Returns the user's Slack user ID if they have linked their Slack account.
+   *
+   * @returns The Slack user ID or null.
+   */
+  public getSlackUserId = async (): Promise<string | null> => {
+    const { Integration } = await import("./index");
+    const integration = await Integration.findOne({
+      where: {
+        userId: this.id,
+        service: "slack",
+        type: "linked_account",
+      },
+    });
+    
+    return integration?.settings?.slack?.serviceUserId ?? null;
+  };
 
   /**
    * User flags are for storing information on a user record that is not visible

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NotificationEventType, UserPreference, UserRole } from "@shared/types";
+import { NotificationEventType, NotificationChannelType, UserPreference, UserRole } from "@shared/types";
 import { locales } from "@shared/utils/date";
 import User from "@server/models/User";
 import { zodEnumFromObjectKeys, zodTimezone } from "@server/utils/zod";
@@ -67,6 +67,7 @@ export type UsersListReq = z.infer<typeof UsersListSchema>;
 export const UsersNotificationsSubscribeSchema = z.object({
   body: z.object({
     eventType: z.nativeEnum(NotificationEventType),
+    channel: z.nativeEnum(NotificationChannelType).optional(),
   }),
 });
 
@@ -77,6 +78,7 @@ export type UsersNotificationsSubscribeReq = z.infer<
 export const UsersNotificationsUnsubscribeSchema = z.object({
   body: z.object({
     eventType: z.nativeEnum(NotificationEventType),
+    channel: z.nativeEnum(NotificationChannelType).optional(),
   }),
 });
 
