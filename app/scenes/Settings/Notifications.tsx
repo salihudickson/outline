@@ -17,8 +17,9 @@ import {
 } from "outline-icons";
 import * as React from "react";
 import { useTranslation, Trans } from "react-i18next";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { NotificationEventType, NotificationChannelType } from "@shared/types";
+import { NotificationEventType, NotificationChannelType, IntegrationService, IntegrationType } from "@shared/types";
 import Heading from "~/components/Heading";
 import Notice from "~/components/Notice";
 import Scene from "~/components/Scene";
@@ -29,7 +30,9 @@ import env from "~/env";
 import useCurrentTeam from "~/hooks/useCurrentTeam";
 import useCurrentUser from "~/hooks/useCurrentUser";
 import usePolicy from "~/hooks/usePolicy";
+import useStores from "~/hooks/useStores";
 import isCloudHosted from "~/utils/isCloudHosted";
+import { settingsPath } from "~/utils/routeHelpers";
 import SettingRow from "./components/SettingRow";
 
 function Notifications() {
@@ -37,6 +40,12 @@ function Notifications() {
   const team = useCurrentTeam();
   const { t } = useTranslation();
   const can = usePolicy(team.id);
+  const { integrations } = useStores();
+
+  const hasSlackLinked = !!integrations.find({
+    type: IntegrationType.LinkedAccount,
+    service: IntegrationService.Slack,
+  });
 
   const options = [
     {
@@ -191,6 +200,17 @@ function Notifications() {
             associated environment variables and restart the server to enable
             notifications.
           </Trans>
+        </Notice>
+      )}
+
+      {!hasSlackLinked && (
+        <Notice>
+          <Trans
+            defaults="To receive Slack notifications, <link>link your Slack account</link> in the integrations settings."
+            components={{
+              link: <Link to={settingsPath("slack")} />,
+            }}
+          />
         </Notice>
       )}
 
