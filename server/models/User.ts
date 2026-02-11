@@ -40,8 +40,8 @@ import type {
 } from "@shared/types";
 import {
   CollectionPermission,
-  NotificationEventDefaults,
   NotificationChannelType,
+  NotificationEventDefaults,
   UserRole,
   DocumentPermission,
 } from "@shared/types";
@@ -405,15 +405,33 @@ class User extends ParanoidModel<
    */
   public getSlackUserId = async (): Promise<string | null> => {
     const { Integration } = await import("./index");
+    const { IntegrationType } = await import("@shared/types");
     const integration = await Integration.findOne({
       where: {
         userId: this.id,
         service: "slack",
-        type: "linked_account",
+        type: IntegrationType.LinkedAccount,
       },
     });
     
-    return integration?.settings?.slack?.serviceUserId ?? null;
+    if (!integration || typeof integration.settings !== "object") {
+      return null;
+    }
+    
+    // Type guard to check if settings has slack property
+    const settings = integration.settings as unknown;
+    if (
+      settings &&
+      typeof settings === "object" &&
+      "slack" in settings &&
+      settings.slack &&
+      typeof settings.slack === "object" &&
+      "serviceUserId" in settings.slack
+    ) {
+      return settings.slack.serviceUserId as string;
+    }
+    
+    return null;
   };
 
   /**

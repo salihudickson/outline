@@ -18,7 +18,7 @@ import {
 import * as React from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { toast } from "sonner";
-import { NotificationEventType } from "@shared/types";
+import { NotificationEventType, NotificationChannelType } from "@shared/types";
 import Heading from "~/components/Heading";
 import Notice from "~/components/Notice";
 import Scene from "~/components/Scene";
@@ -156,10 +156,11 @@ function Notifications() {
   }, 500);
 
   const handleChange = React.useCallback(
-    (eventType: NotificationEventType) => async (checked: boolean) => {
-      await user.setNotificationEventType(eventType, checked);
-      showSuccessMessage();
-    },
+    (eventType: NotificationEventType, channel?: NotificationChannelType) =>
+      async (checked: boolean) => {
+        await user.setNotificationEventType(eventType, checked, channel);
+        showSuccessMessage();
+      },
     [user, showSuccessMessage]
   );
 
@@ -177,7 +178,10 @@ function Notifications() {
         </Notice>
       )}
       <Text as="p" type="secondary">
-        <Trans>Manage when and where you receive email notifications.</Trans>
+        <Trans>
+          Manage when and where you receive notifications. Choose to receive
+          notifications via email, Slack, or both.
+        </Trans>
       </Text>
 
       {env.EMAIL_ENABLED && can.manage && (
@@ -190,10 +194,17 @@ function Notifications() {
         </Notice>
       )}
 
-      <h2>{t("Notifications")}</h2>
+      <h2>{t("Notification Channels")}</h2>
 
       {options.map((option) => {
-        const setting = user.subscribedToEventType(option.event);
+        const emailSetting = user.subscribedToEventType(
+          option.event,
+          NotificationChannelType.Email
+        );
+        const slackSetting = user.subscribedToEventType(
+          option.event,
+          NotificationChannelType.Chat
+        );
 
         return (
           <SettingRow
@@ -207,13 +218,36 @@ function Notifications() {
             name={option.event}
             description={option.description}
           >
-            <Switch
-              key={option.event}
-              id={option.event}
-              name={option.event}
-              checked={!!setting}
-              onChange={handleChange(option.event)}
-            />
+            <HStack spacing={8}>
+              <label>
+                <HStack spacing={4}>
+                  <Switch
+                    id={`${option.event}-email`}
+                    name={`${option.event}-email`}
+                    checked={!!emailSetting}
+                    onChange={handleChange(
+                      option.event,
+                      NotificationChannelType.Email
+                    )}
+                  />
+                  <span>{t("Email")}</span>
+                </HStack>
+              </label>
+              <label>
+                <HStack spacing={4}>
+                  <Switch
+                    id={`${option.event}-slack`}
+                    name={`${option.event}-slack`}
+                    checked={!!slackSetting}
+                    onChange={handleChange(
+                      option.event,
+                      NotificationChannelType.Chat
+                    )}
+                  />
+                  <span>{t("Slack")}</span>
+                </HStack>
+              </label>
+            </HStack>
           </SettingRow>
         );
       })}

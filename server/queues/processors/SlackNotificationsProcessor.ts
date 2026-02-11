@@ -1,5 +1,4 @@
 import { NotificationChannelType, NotificationEventType } from "@shared/types";
-import { Minute } from "@shared/utils/time";
 import { Notification, Integration } from "@server/models";
 import type { Event, NotificationEvent } from "@server/types";
 import * as Slack from "../../../plugins/slack/server/slack";
@@ -75,7 +74,7 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
 
       Logger.info("processor", `Slack DM sent for notification ${notification.id}`);
     } catch (error) {
-      Logger.error("processor", `Failed to send Slack DM for notification ${notification.id}`, error);
+      Logger.error(`Failed to send Slack DM for notification ${notification.id}`, error);
     }
   }
 
@@ -87,7 +86,7 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
    */
   private formatSlackMessage(notification: Notification): {
     text: string;
-    blocks: any[];
+    blocks: unknown[];
   } {
     const actorName = notification.actor.name;
     const teamUrl = notification.team.url;
