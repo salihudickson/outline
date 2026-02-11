@@ -198,6 +198,9 @@ async function accountProvisioner(
       role: user.role,
       teamUrl: team.url,
     }).schedule();
+    
+    // Create personal notes collection for the new user
+    await provisionPersonalCollection(ctx, team, user);
   }
 
   if (isNewUser || isNewTeam) {
@@ -282,6 +285,30 @@ async function provisionFirstCollection(
         silent: true,
       });
     }
+  });
+}
+
+async function provisionPersonalCollection(
+  ctx: APIContext,
+  team: Team,
+  user: User
+) {
+  await sequelize.transaction(async (transaction) => {
+    const context = createContext({
+      ...ctx,
+      transaction,
+      user,
+    });
+
+    await Collection.createWithCtx(context, {
+      name: "Personal Notes",
+      description: "Your personal notes area. This collection is private to you.",
+      teamId: team.id,
+      createdById: user.id,
+      ownerId: user.id,
+      sort: Collection.DEFAULT_SORT,
+      permission: null, // Private
+    });
   });
 }
 

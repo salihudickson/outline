@@ -540,6 +540,14 @@ class Collection extends ParanoidModel<
   @Column(DataType.UUID)
   createdById: string;
 
+  @BelongsTo(() => User, "ownerId")
+  owner: User | null;
+
+  @AllowNull
+  @ForeignKey(() => User)
+  @Column(DataType.UUID)
+  ownerId: string | null;
+
   @BelongsTo(() => Team, "teamId")
   team: Team;
 
@@ -697,6 +705,16 @@ class Collection extends ParanoidModel<
    */
   get isPrivate() {
     return !this.permission;
+  }
+
+  /**
+   * Convenience method to return if a collection is a personal collection.
+   * Personal collections are private by default and owned by a specific user.
+   *
+   * @returns boolean
+   */
+  get isPersonal() {
+    return !!this.ownerId;
   }
 
   getDocumentTree = (documentId: string): NavigationNode | null => {

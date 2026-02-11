@@ -39,6 +39,11 @@ allow(User, "read", Collection, (user, collection) => {
     return true;
   }
 
+  // Personal collections are only accessible by the owner
+  if (collection.isPersonal) {
+    return collection.ownerId === user.id;
+  }
+
   if (collection.isPrivate || user.isGuest) {
     return includesMembership(collection, Object.values(CollectionPermission));
   }
@@ -53,6 +58,11 @@ allow(
   (user, collection) => {
     if (!collection || user.teamId !== collection.teamId) {
       return false;
+    }
+
+    // Personal collections are only accessible by the owner
+    if (collection.isPersonal) {
+      return collection.ownerId === user.id;
     }
 
     if (collection.isPrivate || user.isGuest) {
@@ -100,6 +110,11 @@ allow(User, "updateDocument", Collection, (user, collection) => {
     return false;
   }
 
+  // Personal collections allow owner to update documents
+  if (collection.isPersonal) {
+    return collection.ownerId === user.id;
+  }
+
   if (
     collection.permission !== CollectionPermission.ReadWrite ||
     user.isViewer ||
@@ -128,6 +143,11 @@ allow(
       return false;
     }
 
+    // Personal collections allow owner to create/delete documents
+    if (collection.isPersonal) {
+      return collection.ownerId === user.id;
+    }
+
     if (
       collection.permission !== CollectionPermission.ReadWrite ||
       user.isViewer ||
@@ -148,6 +168,8 @@ allow(User, ["update", "export", "archive"], Collection, (user, collection) =>
     !!collection,
     !!collection?.isActive,
     or(
+      // Personal collections allow owner to manage
+      collection.isPersonal && collection.ownerId === user.id,
       isTeamAdmin(user, collection),
       includesMembership(collection, [CollectionPermission.Admin])
     )
@@ -159,6 +181,8 @@ allow(User, "delete", Collection, (user, collection) =>
     !!collection,
     !collection?.deletedAt,
     or(
+      // Personal collections allow owner to delete
+      collection.isPersonal && collection.ownerId === user.id,
       isTeamAdmin(user, collection),
       includesMembership(collection, [CollectionPermission.Admin])
     )
@@ -170,6 +194,8 @@ allow(User, "restore", Collection, (user, collection) =>
     !!collection,
     !collection?.isActive,
     or(
+      // Personal collections allow owner to restore
+      collection.isPersonal && collection.ownerId === user.id,
       isTeamAdmin(user, collection),
       includesMembership(collection, [CollectionPermission.Admin])
     )
