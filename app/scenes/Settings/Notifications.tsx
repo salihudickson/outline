@@ -23,7 +23,6 @@ import { NotificationEventType, NotificationChannelType, IntegrationService, Int
 import Heading from "~/components/Heading";
 import Notice from "~/components/Notice";
 import Scene from "~/components/Scene";
-import Switch from "~/components/Switch";
 import Text from "~/components/Text";
 import { HStack } from "~/components/primitives/HStack";
 import env from "~/env";
@@ -33,6 +32,7 @@ import usePolicy from "~/hooks/usePolicy";
 import useStores from "~/hooks/useStores";
 import isCloudHosted from "~/utils/isCloudHosted";
 import { settingsPath } from "~/utils/routeHelpers";
+import NotificationChannels from "./components/NotificationChannels";
 import SettingRow from "./components/SettingRow";
 
 function Notifications() {
@@ -238,36 +238,20 @@ function Notifications() {
             name={option.event}
             description={option.description}
           >
-            <HStack spacing={8}>
-              <label>
-                <HStack spacing={4}>
-                  <Switch
-                    id={`${option.event}-email`}
-                    name={`${option.event}-email`}
-                    checked={!!emailSetting}
-                    onChange={handleChange(
-                      option.event,
-                      NotificationChannelType.Email
-                    )}
-                  />
-                  <span>{t("Email")}</span>
-                </HStack>
-              </label>
-              <label>
-                <HStack spacing={4}>
-                  <Switch
-                    id={`${option.event}-slack`}
-                    name={`${option.event}-slack`}
-                    checked={!!slackSetting}
-                    onChange={handleChange(
-                      option.event,
-                      NotificationChannelType.Chat
-                    )}
-                  />
-                  <span>{t("Slack")}</span>
-                </HStack>
-              </label>
-            </HStack>
+            <NotificationChannels
+              eventId={option.event}
+              emailChecked={!!emailSetting}
+              slackChecked={!!slackSetting}
+              onEmailChange={handleChange(
+                option.event,
+                NotificationChannelType.Email
+              )}
+              onSlackChange={handleChange(
+                option.event,
+                NotificationChannelType.Chat
+              )}
+              slackDisabled={!hasSlackLinked}
+            />
           </SettingRow>
         );
       })}
