@@ -1,10 +1,9 @@
-import { buildTeam, buildUser, buildDocument, buildCollection } from "@server/test/factories";
-import { getTestServer } from "@server/test/support";
-import mcpService from "@server/services/mcp";
+import { buildTeam } from "@server/test/factories";
 import webService from "@server/services/web";
 import onerror from "@server/onerror";
 import TestServer from "@server/test/TestServer";
 import { sequelize } from "@server/storage/database";
+import mcpService from "./mcp";
 
 // Create a test server with both web and MCP services
 function getMCPTestServer() {
@@ -102,6 +101,7 @@ describe("MCP Service", () => {
       expect(body.jsonrpc).toEqual("2.0");
       expect(body.result.teamId).toEqual(team.id);
       expect(body.result.subdomain).toEqual(team.subdomain);
+      expect(body.result.capabilities).toBeDefined();
     });
 
     it("should return 400 for missing subdomain", async () => {

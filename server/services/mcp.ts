@@ -20,13 +20,33 @@ interface MCPRequestContext {
   userId?: string;
 }
 
+// Store MCP server instances per team
+const mcpServers = new Map<string, Server>();
+
+/**
+ * Get or create an MCP server instance for a specific team.
+ * 
+ * @param teamId The ID of the team this MCP server is for.
+ * @returns A configured MCP server instance.
+ */
+function getMCPServerForTeam(teamId: string): Server {
+  let server = mcpServers.get(teamId);
+  
+  if (!server) {
+    server = createMCPServerForTeam(teamId);
+    mcpServers.set(teamId, server);
+  }
+  
+  return server;
+}
+
 /**
  * Creates an MCP server instance for a specific team.
  * 
  * @param teamId The ID of the team this MCP server is for.
  * @returns A configured MCP server instance.
  */
-function createMCPServerForTeam(teamId: string) {
+function createMCPServerForTeam(teamId: string): Server {
   const server = new Server(
     {
       name: `outline-mcp-${teamId}`,
@@ -108,7 +128,7 @@ function createMCPServerForTeam(teamId: string) {
     try {
       switch (name) {
         case "search_documents": {
-          const { query: searchQuery, collectionId } = args as {
+          const { query, collectionId } = args as {
             query: string;
             collectionId?: string;
           };
@@ -134,7 +154,8 @@ function createMCPServerForTeam(teamId: string) {
             searchOptions.where.collectionId = collectionId;
           }
 
-          // Basic search - in production you'd use full-text search
+          // TODO: Implement full-text search using the query parameter
+          // Currently returns all documents matching the filters without text search
           const documents = await Document.findAll(searchOptions);
 
           return {
@@ -409,22 +430,31 @@ export default function init(app: Koa) {
         return;
       }
 
-      // Create MCP server for this team - note: currently not connected to transport
-      // In production, this would need proper transport layer setup
-      void createMCPServerForTeam(team.id);
+      // Get or create MCP server for this team
+      const mcpServer = getMCPServerForTeam(team.id);
 
       // Handle the MCP request
-      const requestBody = ctx.request.body;
+      const requestBody = ctx.request.body as {
+        jsonrpc: string;
+        id?: number | string;
+        method?: string;
+        params?: Record<string, unknown>;
+      };
       
       // Note: In a production environment, you would handle authentication here
       // and validate the user has access to this team's MCP server
 
+      // TODO: Implement full MCP protocol message handling
+      // Currently returns server info for any request method
+      // Future: Process requestBody.method and params through MCP server handlers
       ctx.body = {
         jsonrpc: "2.0",
         result: {
-          message: "MCP server initialized",
+          message: "MCP server initialized and ready",
           teamId: team.id,
           subdomain: team.subdomain,
+          capabilities: mcpServer.getServerInfo().capabilities,
+          note: "Full protocol implementation requires stdio/SSE transport integration",
         },
         id: requestBody.id || 1,
       };
