@@ -483,6 +483,23 @@ describe("personal collections", () => {
     expect(abilities.delete).toBeTruthy();
   });
 
+  it("should allow owner to restore their archived personal collection", async () => {
+    const team = await buildTeam();
+    const user = await buildUser({ teamId: team.id });
+    const collection = await buildCollection({
+      teamId: team.id,
+      permission: null,
+      ownerId: user.id,
+      archivedAt: new Date(),
+    });
+    // reload to get membership
+    const reloaded = await Collection.findByPk(collection.id, {
+      userId: user.id,
+    });
+    const abilities = serialize(user, reloaded);
+    expect(abilities.restore).toBeTruthy();
+  });
+
   it("should deny other users access to personal collection", async () => {
     const team = await buildTeam();
     const owner = await buildUser({ teamId: team.id });

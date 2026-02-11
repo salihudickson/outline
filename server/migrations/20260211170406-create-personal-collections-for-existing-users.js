@@ -23,17 +23,14 @@ module.exports = {
       );
 
       if (existingPersonalCollection.length === 0) {
-        // Generate a unique urlId (10 characters) - pad to ensure exactly 10 characters
-        const urlId = (Math.random().toString(36) + '00000000000').substring(2, 12);
-        
+        // Use PostgreSQL to generate a unique urlId using substring of UUID
         await queryInterface.sequelize.query(
           `INSERT INTO collections 
            (id, "urlId", name, description, "teamId", "createdById", "ownerId", permission, sharing, sort, "createdAt", "updatedAt")
            VALUES 
-           (uuid_generate_v4(), :urlId, :name, :description, :teamId, :createdById, :ownerId, NULL, true, :sort, NOW(), NOW())`,
+           (uuid_generate_v4(), substring(replace(uuid_generate_v4()::text, '-', '') from 1 for 10), :name, :description, :teamId, :createdById, :ownerId, NULL, true, :sort, NOW(), NOW())`,
           {
             replacements: {
-              urlId,
               name: 'Personal Notes',
               description: 'Your personal notes area. This collection is private to you.',
               teamId: user.teamId,
