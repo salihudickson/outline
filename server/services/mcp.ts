@@ -1,5 +1,4 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -13,10 +12,10 @@ import Router from "koa-router";
 import bodyParser from "koa-body";
 import env from "../env";
 import Logger from "../logging/Logger";
-import { Team, User, Document, Collection } from "../models";
+import { Team, Document, Collection } from "../models";
 import { parseDomain } from "../../shared/utils/domains";
 
-interface MCPContext {
+interface MCPRequestContext {
   teamId?: string;
   userId?: string;
 }
@@ -109,16 +108,26 @@ function createMCPServerForTeam(teamId: string) {
     try {
       switch (name) {
         case "search_documents": {
-          const { query, collectionId } = args as {
+          const { query: searchQuery, collectionId } = args as {
             query: string;
             collectionId?: string;
           };
 
-          const searchOptions: any = {
+          interface SearchOptions {
+            where: {
+              teamId: string;
+              collectionId?: string;
+            };
+            limit: number;
+            attributes: string[];
+          }
+
+          const searchOptions: SearchOptions = {
             where: {
               teamId,
             },
             limit: 20,
+            attributes: ["id", "title", "text", "createdAt", "updatedAt"],
           };
 
           if (collectionId) {
@@ -126,10 +135,7 @@ function createMCPServerForTeam(teamId: string) {
           }
 
           // Basic search - in production you'd use full-text search
-          const documents = await Document.findAll({
-            ...searchOptions,
-            attributes: ["id", "title", "text", "createdAt", "updatedAt"],
-          });
+          const documents = await Document.findAll(searchOptions);
 
           return {
             content: [
@@ -403,8 +409,9 @@ export default function init(app: Koa) {
         return;
       }
 
-      // Create MCP server for this team
-      const mcpServer = createMCPServerForTeam(team.id);
+      // Create MCP server for this team - note: currently not connected to transport
+      // In production, this would need proper transport layer setup
+      void createMCPServerForTeam(team.id);
 
       // Handle the MCP request
       const requestBody = ctx.request.body;
