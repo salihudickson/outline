@@ -32,7 +32,7 @@ import usePolicy from "~/hooks/usePolicy";
 import useStores from "~/hooks/useStores";
 import isCloudHosted from "~/utils/isCloudHosted";
 import { settingsPath } from "~/utils/routeHelpers";
-import NotificationChannels from "./components/NotificationChannels";
+import ChannelSelector from "./components/ChannelSelector";
 import SettingRow from "./components/SettingRow";
 
 function Notifications() {
@@ -164,12 +164,19 @@ function Notifications() {
     toast.success(t("Notifications saved"));
   }, 500);
 
-  const handleChange = React.useCallback(
-    (eventType: NotificationEventType, channel?: NotificationChannelType) =>
-      async (checked: boolean) => {
-        await user.setNotificationEventType(eventType, checked, channel);
-        showSuccessMessage();
-      },
+  const handleChannelsChange = React.useCallback(
+    (eventType: NotificationEventType) => async (channels: NotificationChannelType[]) => {
+      // Update each channel setting
+      for (const channel of [NotificationChannelType.Email, NotificationChannelType.Chat]) {
+        const shouldEnable = channels.includes(channel);
+        const currentlyEnabled = user.subscribedToEventType(eventType, channel);
+        
+        if (shouldEnable !== currentlyEnabled) {
+          await user.setNotificationEventType(eventType, shouldEnable, channel);
+        }
+      }
+      showSuccessMessage();
+    },
     [user, showSuccessMessage]
   );
 
@@ -226,6 +233,14 @@ function Notifications() {
           NotificationChannelType.Chat
         );
 
+        const enabledChannels: NotificationChannelType[] = [];
+        if (emailSetting) {
+          enabledChannels.push(NotificationChannelType.Email);
+        }
+        if (slackSetting) {
+          enabledChannels.push(NotificationChannelType.Chat);
+        }
+
         return (
           <SettingRow
             key={option.event}
@@ -238,18 +253,10 @@ function Notifications() {
             name={option.event}
             description={option.description}
           >
-            <NotificationChannels
+            <ChannelSelector
               eventId={option.event}
-              emailChecked={!!emailSetting}
-              slackChecked={!!slackSetting}
-              onEmailChange={handleChange(
-                option.event,
-                NotificationChannelType.Email
-              )}
-              onSlackChange={handleChange(
-                option.event,
-                NotificationChannelType.Chat
-              )}
+              value={enabledChannels}
+              onChange={handleChannelsChange(option.event)}
               slackDisabled={!hasSlackLinked}
             />
           </SettingRow>
