@@ -471,6 +471,10 @@ class User extends ParanoidModel<
       where: {
         teamId: this.teamId,
         [Op.or]: [
+          // Personal collections owned by this user
+          {
+            ownerId: this.id,
+          },
           ...(this.isGuest
             ? []
             : [
