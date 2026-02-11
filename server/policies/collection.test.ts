@@ -459,3 +459,72 @@ describe("guest", () => {
     expect(abilities.archive).toEqual(false);
   });
 });
+
+describe("personal collections", () => {
+  it("should allow owner full access to their personal collection", async () => {
+    const team = await buildTeam();
+    const user = await buildUser({ teamId: team.id });
+    const collection = await buildCollection({
+      teamId: team.id,
+      permission: null,
+      ownerId: user.id,
+    });
+    // reload to get membership
+    const reloaded = await Collection.findByPk(collection.id, {
+      userId: user.id,
+    });
+    const abilities = serialize(user, reloaded);
+    expect(abilities.read).toBeTruthy();
+    expect(abilities.readDocument).toBeTruthy();
+    expect(abilities.updateDocument).toBeTruthy();
+    expect(abilities.createDocument).toBeTruthy();
+    expect(abilities.update).toBeTruthy();
+    expect(abilities.archive).toBeTruthy();
+    expect(abilities.delete).toBeTruthy();
+  });
+
+  it("should deny other users access to personal collection", async () => {
+    const team = await buildTeam();
+    const owner = await buildUser({ teamId: team.id });
+    const otherUser = await buildUser({ teamId: team.id });
+    const collection = await buildCollection({
+      teamId: team.id,
+      permission: null,
+      ownerId: owner.id,
+    });
+    // reload to get membership
+    const reloaded = await Collection.findByPk(collection.id, {
+      userId: otherUser.id,
+    });
+    const abilities = serialize(otherUser, reloaded);
+    expect(abilities.read).toEqual(false);
+    expect(abilities.readDocument).toEqual(false);
+    expect(abilities.updateDocument).toEqual(false);
+    expect(abilities.createDocument).toEqual(false);
+    expect(abilities.update).toEqual(false);
+    expect(abilities.archive).toEqual(false);
+  });
+
+  it("should allow admins to see but not modify personal collections", async () => {
+    const team = await buildTeam();
+    const owner = await buildUser({ teamId: team.id });
+    const admin = await buildAdmin({ teamId: team.id });
+    const collection = await buildCollection({
+      teamId: team.id,
+      permission: null,
+      ownerId: owner.id,
+    });
+    // reload to get membership
+    const reloaded = await Collection.findByPk(collection.id, {
+      userId: admin.id,
+    });
+    const abilities = serialize(admin, reloaded);
+    // Admins can't access personal collections
+    expect(abilities.read).toEqual(false);
+    expect(abilities.readDocument).toEqual(false);
+    expect(abilities.updateDocument).toEqual(false);
+    expect(abilities.createDocument).toEqual(false);
+    expect(abilities.update).toEqual(false);
+    expect(abilities.archive).toEqual(false);
+  });
+});

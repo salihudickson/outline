@@ -169,7 +169,7 @@ allow(User, ["update", "export", "archive"], Collection, (user, collection) =>
     !!collection?.isActive,
     or(
       // Personal collections allow owner to manage
-      collection.isPersonal && collection.ownerId === user.id,
+      (!!collection && collection.isPersonal && collection.ownerId === user.id),
       isTeamAdmin(user, collection),
       includesMembership(collection, [CollectionPermission.Admin])
     )
@@ -182,7 +182,7 @@ allow(User, "delete", Collection, (user, collection) =>
     !collection?.deletedAt,
     or(
       // Personal collections allow owner to delete
-      collection.isPersonal && collection.ownerId === user.id,
+      (!!collection && collection.isPersonal && collection.ownerId === user.id),
       isTeamAdmin(user, collection),
       includesMembership(collection, [CollectionPermission.Admin])
     )
@@ -195,7 +195,7 @@ allow(User, "restore", Collection, (user, collection) =>
     !collection?.isActive,
     or(
       // Personal collections allow owner to restore
-      collection.isPersonal && collection.ownerId === user.id,
+      (!!collection && collection.isPersonal && collection.ownerId === user.id),
       isTeamAdmin(user, collection),
       includesMembership(collection, [CollectionPermission.Admin])
     )
