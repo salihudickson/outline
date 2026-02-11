@@ -505,7 +505,7 @@ describe("personal collections", () => {
     expect(abilities.archive).toEqual(false);
   });
 
-  it("should allow admins to see but not modify personal collections", async () => {
+  it("should deny admins access to personal collections", async () => {
     const team = await buildTeam();
     const owner = await buildUser({ teamId: team.id });
     const admin = await buildAdmin({ teamId: team.id });

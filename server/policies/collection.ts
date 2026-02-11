@@ -35,13 +35,14 @@ allow(User, "read", Collection, (user, collection) => {
   if (!collection || user.teamId !== collection.teamId) {
     return false;
   }
-  if (user.isAdmin) {
-    return true;
-  }
 
   // Personal collections are only accessible by the owner
   if (collection.isPersonal) {
     return collection.ownerId === user.id;
+  }
+
+  if (user.isAdmin) {
+    return true;
   }
 
   if (collection.isPrivate || user.isGuest) {

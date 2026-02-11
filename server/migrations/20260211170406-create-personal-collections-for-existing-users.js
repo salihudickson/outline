@@ -23,8 +23,8 @@ module.exports = {
       );
 
       if (existingPersonalCollection.length === 0) {
-        // Generate a unique urlId (10 characters)
-        const urlId = Math.random().toString(36).substring(2, 12);
+        // Generate a unique urlId (10 characters) - pad to ensure exactly 10 characters
+        const urlId = (Math.random().toString(36) + '00000000000').substring(2, 12);
         
         await queryInterface.sequelize.query(
           `INSERT INTO collections 
@@ -48,9 +48,10 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Remove all personal collections
+    // Remove personal collections that match the pattern created by this migration
+    // This is safer than removing all collections with ownerId
     await queryInterface.sequelize.query(
-      `DELETE FROM collections WHERE "ownerId" IS NOT NULL`
+      `DELETE FROM collections WHERE "ownerId" IS NOT NULL AND name = 'Personal Notes'`
     );
   }
 };
