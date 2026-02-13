@@ -127,8 +127,8 @@ export function usePosition({
     const rect = selectedRect(view.state);
     const table = view.domAtPos(rect.tableStart);
     const bounds = (table.node as HTMLElement).getBoundingClientRect();
-    selectionBounds.top = bounds.top - 16;
-    selectionBounds.left = bounds.left - 10;
+    selectionBounds.top = bounds.top - (inline ? 160 : 16);
+    selectionBounds.left = bounds.left;
     selectionBounds.right = bounds.left - 10;
   } else if (isColSelection) {
     const rect = selectedRect(view.state);

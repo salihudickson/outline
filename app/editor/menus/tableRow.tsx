@@ -12,7 +12,7 @@ import {
   isMergedCellSelection,
   isMultipleCellSelection,
 } from "@shared/editor/queries/table";
-import type { MenuItem } from "@shared/editor/types";
+import { MenuType, type MenuItem } from "@shared/editor/types";
 import type { Dictionary } from "~/hooks/useDictionary";
 import { ArrowDownIcon, ArrowUpIcon } from "~/components/Icons/ArrowIcon";
 
@@ -39,7 +39,7 @@ export default function tableRowMenuItems(
 
   return [
     {
-      skipIcon: true,
+      type: MenuType.inline,
       children: [
         {
           name: "toggleHeaderRow",

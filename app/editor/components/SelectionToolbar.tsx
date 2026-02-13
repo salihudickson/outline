@@ -14,7 +14,7 @@ import {
   getRowIndex,
   isTableSelected,
 } from "@shared/editor/queries/table";
-import type { MenuItem } from "@shared/editor/types";
+import { MenuType, type MenuItem } from "@shared/editor/types";
 import useBoolean from "~/hooks/useBoolean";
 import useDictionary from "~/hooks/useDictionary";
 import useEventListener from "~/hooks/useEventListener";
@@ -221,6 +221,8 @@ export function SelectionToolbar(props: Props) {
     items = getFormattingMenuItems(state, isTemplate, dictionary);
   }
 
+  const isInline = items[0].type === MenuType.inline;
+
   // Some extensions may be disabled, remove corresponding items
   items = items.filter((item) => {
     if (item.name === "separator") {
@@ -266,11 +268,7 @@ export function SelectionToolbar(props: Props) {
     setActiveToolbar(null);
   };
 
-  if (
-    rowIndex !== undefined &&
-    activeToolbar === Toolbar.Menu &&
-    items.length
-  ) {
+  if (isInline && items.length) {
     return (
       <InlineMenuWrapper ref={menuRef}>
         <InlineMenu items={items} containerRef={menuRef} />
