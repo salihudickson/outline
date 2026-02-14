@@ -41,7 +41,6 @@ function TableOfContentsMenu() {
                   editor.props.id
                 );
               }
-              
               requestAnimationFrame(() =>
                 requestAnimationFrame(
                   () => (window.location.hash = `#${heading.id}`)

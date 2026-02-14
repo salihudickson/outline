@@ -89,8 +89,9 @@ export function expandParentHeadings(
   // At this point, parentStack contains all ancestors of the target heading
   // and collapsedParents contains all collapsed headings with level < target level
   // We need to expand only those collapsed headings that are in the parent chain
+  const parentPositions = new Set(parentStack.map((p) => p.pos));
   const actualParents = collapsedParents.filter((parent) =>
-    parentStack.some((p) => p.pos === parent.pos)
+    parentPositions.has(parent.pos)
   );
 
   // Expand all collapsed parent headings
