@@ -86,13 +86,11 @@ export function expandParentHeadings(
     }
   }
 
-  // Filter collapsedParents to only include actual parents in the hierarchy
-  // A heading is a parent if it's in the stack when we reach the target
+  // At this point, parentStack contains all ancestors of the target heading
+  // and collapsedParents contains all collapsed headings with level < target level
+  // We need to expand only those collapsed headings that are in the parent chain
   const actualParents = collapsedParents.filter((parent) =>
-    // Check if this parent is in the actual parent chain of the target
-    parentStack.some(
-      (p) => p.pos === parent.pos && p.level < targetHeading.level
-    )
+    parentStack.some((p) => p.pos === parent.pos)
   );
 
   // Expand all collapsed parent headings
