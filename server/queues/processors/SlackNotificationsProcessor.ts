@@ -1,9 +1,10 @@
 import {
   IntegrationService,
+  IntegrationType,
   NotificationChannelType,
   NotificationEventType,
 } from "@shared/types";
-import { Notification, IntegrationAuthentication } from "@server/models";
+import { Notification, Integration } from "@server/models";
 import type { Event, NotificationEvent } from "@server/types";
 import * as Slack from "../../../plugins/slack/server/slack";
 import BaseProcessor from "./BaseProcessor";
@@ -44,26 +45,28 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
 
     const slackUserId = await notification.user.getSlackUserId();
     if (!slackUserId) {
-      Logger.info(
+      Logger.debug(
         "processor",
         `User ${notification.userId} has no linked Slack account`
       );
       return;
     }
 
-    const auth = await IntegrationAuthentication.findOne({
+    // Get the user's LinkedAccount integration which contains the authentication
+    const integration = await Integration.scope("withAuthentication").findOne({
       where: {
+        userId: notification.user.id,
         service: IntegrationService.Slack,
-        teamId: notification.user.teamId,
+        type: IntegrationType.LinkedAccount,
       },
     });
 
-    if (!auth) {
+    if (!integration?.authentication?.token) {
       Logger.debug(
-        "plugins",
-        "No Slack integration authentication found for team",
+        "processor",
+        "No Slack authentication found for user's LinkedAccount",
         {
-          teamId: notification.user.teamId,
+          userId: notification.user.id,
         }
       );
       return;
@@ -73,7 +76,7 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
       const message = this.formatSlackMessage(notification);
 
       await Slack.post("chat.postMessage", {
-        token: auth?.token,
+        token: integration.authentication.token,
         channel: slackUserId,
         text: message.text,
         blocks: message.blocks,
