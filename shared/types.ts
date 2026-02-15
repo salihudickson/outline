@@ -412,7 +412,6 @@ export enum NotificationChannelType {
   App = "app",
   Email = "email",
   Chat = "chat",
-  Slack = "slack",
 }
 
 export type NotificationData = {

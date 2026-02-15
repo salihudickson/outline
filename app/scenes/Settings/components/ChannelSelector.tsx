@@ -1,18 +1,17 @@
-import { CheckmarkIcon, EmailIcon } from "outline-icons";
+import { CheckmarkIcon, EmailIcon, ChevronDownIcon } from "outline-icons";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 import { s } from "@shared/styles";
 import { NotificationChannelType } from "@shared/types";
+import SlackIcon from "~/../../plugins/slack/client/Icon";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "~/components/primitives/Popover";
+import Tooltip from "~/components/Tooltip";
 import { undraggableOnDesktop } from "~/styles";
-import { faSlack } from "@fortawesome/free-brands-svg-icons";
-import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 type Channel = {
   type: NotificationChannelType;
@@ -45,7 +44,7 @@ function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
       {
         type: NotificationChannelType.Chat,
         label: t("Slack"),
-        icon: <FontAwesomeIcon icon={faSlack} size="xs" />,
+        icon: <SlackIcon size={16} />,
         disabled: slackDisabled,
       },
     ],
@@ -84,14 +83,14 @@ function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
           $hasValue={value.length > 0}
         >
           <ButtonText>{displayText}</ButtonText>
-          <FontAwesomeIcon icon={faChevronDown} size="xs" />
+          <ChevronDownIcon size={16} />
         </SelectorButton>
       </PopoverTrigger>
       <PopoverContent width={220} shrink align="end">
         <MenuContainer>
           {channels.map((channel) => {
             const isSelected = value.includes(channel.type);
-            return (
+            const channelOption = (
               <ChannelOption
                 key={channel.type}
                 type="button"
@@ -109,6 +108,21 @@ function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
                 </CheckWrapper>
               </ChannelOption>
             );
+
+            // Show tooltip for disabled Slack option
+            if (channel.disabled && channel.type === NotificationChannelType.Chat) {
+              return (
+                <Tooltip
+                  key={channel.type}
+                  content={t("Link your Slack account to enable Slack notifications")}
+                  placement="left"
+                >
+                  <div>{channelOption}</div>
+                </Tooltip>
+              );
+            }
+
+            return channelOption;
           })}
         </MenuContainer>
       </PopoverContent>

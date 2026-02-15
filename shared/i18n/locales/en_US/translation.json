@@ -1078,6 +1078,7 @@
   "Select notification channels": "Select notification channels",
   "Disable": "Disable",
   "Enable": "Enable",
+  "Link your Slack account to enable Slack notifications": "Link your Slack account to enable Slack notifications",
   "Disconnect integration": "Disconnect integration",
   "Disconnecting": "Disconnecting",
   "Are you sure you want to disconnect the <em>{{ service }}</em> integration?": "Are you sure you want to disconnect the <em>{{ service }}</em> integration?",

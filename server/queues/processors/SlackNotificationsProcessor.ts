@@ -36,7 +36,7 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
     if (
       !notification.user.subscribedToEventType(
         notification.event,
-        NotificationChannelType.Slack
+        NotificationChannelType.Chat
       )
     ) {
       return;
