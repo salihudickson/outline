@@ -1,16 +1,18 @@
-import { CheckmarkIcon, ChevronDownIcon, EmailIcon } from "outline-icons";
+import { CheckmarkIcon, EmailIcon } from "outline-icons";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 import { s } from "@shared/styles";
 import { NotificationChannelType } from "@shared/types";
-import SlackIcon from "~/../../plugins/slack/client/Icon";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "~/components/primitives/Popover";
 import { undraggableOnDesktop } from "~/styles";
+import { faSlack } from "@fortawesome/free-brands-svg-icons";
+import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 type Channel = {
   type: NotificationChannelType;
@@ -22,7 +24,6 @@ type Channel = {
 type Props = {
   value: NotificationChannelType[];
   onChange: (channels: NotificationChannelType[]) => void;
-  eventId: string;
   slackDisabled?: boolean;
 };
 
@@ -30,12 +31,7 @@ type Props = {
  * A dropdown selector for managing notification channel preferences.
  * Displays enabled channels and allows toggling via a popover menu.
  */
-function ChannelSelector({
-  value,
-  onChange,
-  eventId,
-  slackDisabled = false,
-}: Props) {
+function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
 
@@ -49,7 +45,7 @@ function ChannelSelector({
       {
         type: NotificationChannelType.Chat,
         label: t("Slack"),
-        icon: <SlackIcon size={16} />,
+        icon: <FontAwesomeIcon icon={faSlack} size="xs" />,
         disabled: slackDisabled,
       },
     ],
@@ -88,7 +84,7 @@ function ChannelSelector({
           $hasValue={value.length > 0}
         >
           <ButtonText>{displayText}</ButtonText>
-          <ChevronDownIcon size={16} />
+          <FontAwesomeIcon icon={faChevronDown} size="xs" />
         </SelectorButton>
       </PopoverTrigger>
       <PopoverContent width={220} shrink align="end">

@@ -1,5 +1,9 @@
-import { NotificationChannelType, NotificationEventType } from "@shared/types";
-import { Notification, Integration } from "@server/models";
+import {
+  IntegrationService,
+  NotificationChannelType,
+  NotificationEventType,
+} from "@shared/types";
+import { Notification, IntegrationAuthentication } from "@server/models";
 import type { Event, NotificationEvent } from "@server/types";
 import * as Slack from "../../../plugins/slack/server/slack";
 import BaseProcessor from "./BaseProcessor";
@@ -19,50 +23,57 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
       "withUser",
       "withActor",
     ]).findByPk(event.modelId);
-    
+
     if (!notification) {
       return;
     }
 
-    // Check if user is suspended
     if (notification.user.isSuspended) {
       return;
     }
 
     // Check if user has Slack notifications enabled for this event type
-    if (!notification.user.subscribedToEventType(
-      notification.event,
-      NotificationChannelType.Chat
-    )) {
+    if (
+      !notification.user.subscribedToEventType(
+        notification.event,
+        NotificationChannelType.Slack
+      )
+    ) {
       return;
     }
 
-    // Get user's Slack user ID from their linked account
     const slackUserId = await notification.user.getSlackUserId();
     if (!slackUserId) {
-      Logger.debug("processor", `User ${notification.userId} has no linked Slack account`);
+      Logger.info(
+        "processor",
+        `User ${notification.userId} has no linked Slack account`
+      );
       return;
     }
 
-    // Get the team's Slack integration authentication to get the bot token
-    const integration = await Integration.scope("withAuthentication").findOne({
+    const auth = await IntegrationAuthentication.findOne({
       where: {
+        service: IntegrationService.Slack,
         teamId: notification.user.teamId,
-        service: "slack",
-        type: "command", // The command integration has the bot token
       },
     });
 
-    if (!integration?.authentication?.token) {
-      Logger.debug("processor", `No Slack integration found for team ${notification.user.teamId}`);
+    if (!auth) {
+      Logger.debug(
+        "plugins",
+        "No Slack integration authentication found for team",
+        {
+          teamId: notification.user.teamId,
+        }
+      );
       return;
     }
 
     try {
       const message = this.formatSlackMessage(notification);
-      
+
       await Slack.post("chat.postMessage", {
-        token: integration.authentication.token,
+        token: auth?.token,
         channel: slackUserId,
         text: message.text,
         blocks: message.blocks,
@@ -72,9 +83,15 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
         slackSentAt: new Date(),
       });
 
-      Logger.info("processor", `Slack DM sent for notification ${notification.id}`);
+      Logger.info(
+        "processor",
+        `Slack DM sent for notification ${notification.id}`
+      );
     } catch (error) {
-      Logger.error(`Failed to send Slack DM for notification ${notification.id}`, error);
+      Logger.error(
+        `Failed to send Slack DM for notification ${notification.id}`,
+        error
+      );
     }
   }
 

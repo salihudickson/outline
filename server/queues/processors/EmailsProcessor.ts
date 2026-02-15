@@ -34,10 +34,12 @@ export default class EmailsProcessor extends BaseProcessor {
     }
 
     // Check if user has email notifications enabled for this event type
-    if (!notification.user.subscribedToEventType(
-      notification.event,
-      NotificationChannelType.Email
-    )) {
+    if (
+      !notification.user.subscribedToEventType(
+        notification.event,
+        NotificationChannelType.Email
+      )
+    ) {
       return;
     }
 

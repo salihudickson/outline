@@ -19,7 +19,12 @@ import * as React from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { NotificationEventType, NotificationChannelType, IntegrationService, IntegrationType } from "@shared/types";
+import {
+  NotificationEventType,
+  NotificationChannelType,
+  IntegrationService,
+  IntegrationType,
+} from "@shared/types";
 import Heading from "~/components/Heading";
 import Notice from "~/components/Notice";
 import Scene from "~/components/Scene";
@@ -165,18 +170,29 @@ function Notifications() {
   }, 500);
 
   const handleChannelsChange = React.useCallback(
-    (eventType: NotificationEventType) => async (channels: NotificationChannelType[]) => {
-      // Update each channel setting
-      for (const channel of [NotificationChannelType.Email, NotificationChannelType.Chat]) {
-        const shouldEnable = channels.includes(channel);
-        const currentlyEnabled = user.subscribedToEventType(eventType, channel);
-        
-        if (shouldEnable !== currentlyEnabled) {
-          await user.setNotificationEventType(eventType, shouldEnable, channel);
+    (eventType: NotificationEventType) =>
+      async (channels: NotificationChannelType[]) => {
+        // Update each channel setting
+        for (const channel of [
+          NotificationChannelType.Email,
+          NotificationChannelType.Chat,
+        ]) {
+          const shouldEnable = channels.includes(channel);
+          const currentlyEnabled = user.subscribedToEventType(
+            eventType,
+            channel
+          );
+
+          if (shouldEnable !== currentlyEnabled) {
+            await user.setNotificationEventType(
+              eventType,
+              shouldEnable,
+              channel
+            );
+          }
         }
-      }
-      showSuccessMessage();
-    },
+        showSuccessMessage();
+      },
     [user, showSuccessMessage]
   );
 
