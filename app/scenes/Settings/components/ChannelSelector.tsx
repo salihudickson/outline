@@ -61,18 +61,26 @@ function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
     [value, onChange]
   );
 
+  // Filter out disabled channels from value to ensure consistency
+  const filteredValue = React.useMemo(() => {
+    return value.filter((channelType) => {
+      const channel = channels.find((c) => c.type === channelType);
+      return channel && !channel.disabled;
+    });
+  }, [value, channels]);
+
   const displayText = React.useMemo(() => {
-    if (value.length === 0) {
+    if (filteredValue.length === 0) {
       return t("No channels");
     }
-    if (value.length === channels.length && !slackDisabled) {
+    if (filteredValue.length === channels.filter(c => !c.disabled).length) {
       return t("All channels");
     }
     return channels
-      .filter((c) => value.includes(c.type))
+      .filter((c) => filteredValue.includes(c.type))
       .map((c) => c.label)
       .join(", ");
-  }, [value, channels, slackDisabled, t]);
+  }, [filteredValue, channels, t]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -80,7 +88,7 @@ function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
         <SelectorButton
           type="button"
           aria-label={t("Select notification channels")}
-          $hasValue={value.length > 0}
+          $hasValue={filteredValue.length > 0}
         >
           <ButtonText>{displayText}</ButtonText>
           <ChevronDownIcon size={16} />
@@ -89,7 +97,7 @@ function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
       <PopoverContent width={220} shrink align="end">
         <MenuContainer>
           {channels.map((channel) => {
-            const isSelected = value.includes(channel.type);
+            const isSelected = filteredValue.includes(channel.type);
             const channelOption = (
               <ChannelOption
                 key={channel.type}
