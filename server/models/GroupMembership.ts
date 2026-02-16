@@ -186,6 +186,7 @@ class GroupMembership extends ParanoidModel<
         documentId,
         ...(groupId ? { groupId } : {}),
       },
+      ...options,
     });
 
     const rootMemberships = await Promise.all(

@@ -1,4 +1,5 @@
 import type { Transaction } from "sequelize";
+import { Op } from "sequelize";
 import { Document, GroupMembership, UserMembership } from "@server/models";
 import { sequelize } from "@server/storage/database";
 import type { DocumentMovedEvent, Event } from "@server/types";
@@ -14,6 +15,26 @@ export default class DocumentMovedProcessor extends BaseProcessor {
       });
       if (!document) {
         return;
+      }
+
+      // If the document no longer has a parent, remove any sourced memberships on this document
+      if (!document.parentDocumentId) {
+        await Promise.all([
+          UserMembership.destroy({
+            where: {
+              documentId: document.id,
+              sourceId: { [Op.ne]: null },
+            },
+            transaction,
+          }),
+          GroupMembership.destroy({
+            where: {
+              documentId: document.id,
+              sourceId: { [Op.ne]: null },
+            },
+            transaction,
+          }),
+        ]);
       }
 
       // If there are any sourced memberships for this document, we need to go to the source

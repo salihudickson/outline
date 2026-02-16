@@ -185,6 +185,7 @@ class UserMembership extends IdModel<
         documentId,
         ...(userId ? { userId } : {}),
       },
+      ...options,
     });
 
     const rootMemberships = await Promise.all(
