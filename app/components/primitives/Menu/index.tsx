@@ -11,7 +11,6 @@ import useMobile from "~/hooks/useMobile";
 import { Drawer, DrawerContent } from "../Drawer";
 import Scrollable from "~/components/Scrollable";
 import { Portal as ReactPortal } from "~/components/Portal";
-import { isParentMenu } from "~/editor/components/InlineMenu";
 
 type MenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Root
@@ -218,11 +217,19 @@ const SubMenuTrigger = React.forwardRef<HTMLDivElement, BaseItemProps>(
     if (variant === "inline") {
       return (
         <Components.MenuSubTrigger
+          ref={ref}
           data-submenu-trigger={id}
           disabled={disabled}
           onMouseEnter={() => {
             if (!disabled && id) {
               setActiveSubmenu(id);
+            }
+          }}
+          onMouseLeave={() => {
+            // Clear active submenu when mouse leaves trigger
+            // This allows the submenu to close when user moves away
+            if (!disabled) {
+              setActiveSubmenu(null);
             }
           }}
         >
@@ -251,32 +258,48 @@ const SubMenuTrigger = React.forwardRef<HTMLDivElement, BaseItemProps>(
 );
 SubMenuTrigger.displayName = "SubMenuTrigger";
 
-type SubMenuContentProps = React.HTMLAttributes<HTMLDivElement>;
+type SubMenuContentProps = React.HTMLAttributes<HTMLDivElement> & {
+  id?: string;
+};
 
 const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
   (props, ref) => {
-    const { variant, getSubmenuTigger, activeSubmenu } = useMenuContext();
+    const { variant, getSubmenuTrigger, activeSubmenu, setActiveSubmenu } =
+      useMenuContext();
     const { children, id, ...rest } = props;
-
-    // consider switching to a ref storing method so we can use the usePosition method
-    // as setting with a useEffect after trigger updates might be an issue
-    // const trigger = getSubmenuTigger(activeSubmenu);
-    // const triggerRef = React.useRef<HTMLElement | null>(trigger);
-    // const pos = usePosition({ menuRef: triggerRef, active: true });
     const [position, setPosition] = React.useState({ top: 0, left: 0 });
+    const submenuRef = React.useRef<HTMLDivElement | null>(null);
 
     React.useEffect(() => {
-      const trigger = getSubmenuTigger(activeSubmenu);
+      const trigger = getSubmenuTrigger(activeSubmenu);
 
-      // if we have to keep using this method, then we need to account for when there is no space on the right side
-      if (trigger) {
-        const rect = trigger.getBoundingClientRect();
+      if (trigger && submenuRef.current) {
+        const triggerRect = trigger.getBoundingClientRect();
+        const submenuRect = submenuRef.current.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+
+        // Calculate space available on the right side
+        const spaceOnRight = viewportWidth - triggerRect.right;
+        const submenuWidth = submenuRect.width || 200; // Use actual width or fallback
+        const margin = 8; // Gap between trigger and submenu
+
+        let left: number;
+
+        // Check if there's enough space on the right
+        if (spaceOnRight >= submenuWidth + margin) {
+          // Position to the right of the inline menu
+          left = triggerRect.right + margin;
+        } else {
+          // Position to the left of the inline menu
+          left = triggerRect.left - submenuWidth - margin;
+        }
+
         setPosition({
-          top: rect.top,
-          left: rect.left,
+          top: triggerRect.top,
+          left,
         });
       }
-    }, [variant, activeSubmenu, getSubmenuTigger]);
+    }, [variant, activeSubmenu, getSubmenuTrigger]);
 
     if (variant === "inline") {
       if (!(id === activeSubmenu)) {
@@ -291,13 +314,31 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
       return (
         <ReactPortal>
           <InlineSubMenuContentWrapper
-            ref={ref as React.Ref<HTMLDivElement>}
+            ref={(node) => {
+              submenuRef.current = node;
+              if (typeof ref === "function") {
+                ref(node);
+              } else if (ref) {
+                (ref as React.MutableRefObject<HTMLDivElement | null>).current =
+                  node;
+              }
+            }}
             {...contentProps}
             {...rest}
             hiddenScrollbars
             style={{
               top: position.top,
-              left: position.left - 90,
+              left: position.left,
+            }}
+            onMouseEnter={() => {
+              // Keep submenu active when hovering over it
+              if (id) {
+                setActiveSubmenu(id);
+              }
+            }}
+            onMouseLeave={() => {
+              // Close submenu when mouse leaves
+              setActiveSubmenu(null);
             }}
           >
             {children}

@@ -13,7 +13,7 @@ type MenuContextType = {
   variant: MenuVariant;
   activeSubmenu: string | null;
   setActiveSubmenu: (id: string | null) => void;
-  getSubmenuTigger: (id: string | null) => HTMLElement | null;
+  getSubmenuTrigger: (id: string | null) => HTMLElement | null;
   mainMenuRef: React.RefObject<HTMLDivElement>;
 };
 
@@ -21,7 +21,7 @@ const MenuContext = createContext<MenuContextType>({
   variant: "dropdown",
   activeSubmenu: null,
   setActiveSubmenu: () => {},
-  getSubmenuTigger: () => null,
+  getSubmenuTrigger: () => null,
   mainMenuRef: { current: null },
 });
 
@@ -34,7 +34,7 @@ export function MenuProvider({
 }) {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const mainMenuRef = useRef<HTMLDivElement>(null);
-  const getSubmenuTigger = useCallback((id: string | null) => {
+  const getSubmenuTrigger = useCallback((id: string | null) => {
     if (!id || !mainMenuRef.current) {
       return null;
     }
@@ -49,10 +49,10 @@ export function MenuProvider({
       variant,
       activeSubmenu,
       setActiveSubmenu,
-      getSubmenuTigger,
+      getSubmenuTrigger,
       mainMenuRef,
     }),
-    [variant, activeSubmenu, getSubmenuTigger, mainMenuRef]
+    [variant, activeSubmenu, getSubmenuTrigger, mainMenuRef]
   );
 
   return <MenuContext.Provider value={ctx}>{children}</MenuContext.Provider>;
