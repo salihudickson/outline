@@ -44,10 +44,17 @@ const Menu = ({ children, ...rest }: MenuProps) => {
 type SubMenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Sub
 > &
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Sub>;
+  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Sub> & {
+    children: React.ReactNode;
+  };
 
 const SubMenu = ({ children, ...rest }: SubMenuProps) => {
   const { variant } = useMenuContext();
+
+  // For inline variant, provide custom submenu context
+  if (variant === "inline") {
+    return <div>{children}</div>;
+  }
 
   const Sub =
     variant === "dropdown"
@@ -99,7 +106,7 @@ const MenuContent = React.forwardRef<
   | HTMLDivElement,
   ContentProps
 >((props, ref) => {
-  const { variant } = useMenuContext();
+  const { variant, mainMenuRef } = useMenuContext();
   const isMobile = useMobile();
 
   const { children, ...rest } = props;
@@ -138,7 +145,20 @@ const MenuContent = React.forwardRef<
     ) : (
       <ReactPortal>
         <InlineMenuContentWrapper
-          ref={ref as React.Ref<HTMLDivElement>}
+          ref={(node) => {
+            // Set the main menu ref for submenu positioning
+            if (mainMenuRef) {
+              (
+                mainMenuRef as React.MutableRefObject<HTMLElement | null>
+              ).current = node;
+            }
+            if (typeof ref === "function") {
+              ref(node);
+            } else if (ref) {
+              (ref as React.MutableRefObject<HTMLDivElement | null>).current =
+                node;
+            }
+          }}
           {...contentProps}
           {...rest}
           hiddenScrollbars
@@ -189,79 +209,176 @@ const MenuContent = React.forwardRef<
 });
 MenuContent.displayName = "MenuContent";
 
-type SubMenuTriggerProps = BaseItemProps &
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> &
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger>;
+const SubMenuTrigger = React.forwardRef<HTMLDivElement, BaseItemProps>(
+  (props, ref) => {
+    const { variant, setActiveSubmenu } = useMenuContext();
+    const { label, icon, disabled, id, ...rest } = props;
 
-const SubMenuTrigger = React.forwardRef<
-  | React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>
-  | React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>,
-  SubMenuTriggerProps
->((props, ref) => {
-  const { variant } = useMenuContext();
-  const { label, icon, disabled, ...rest } = props;
+    if (variant === "inline") {
+      return (
+        <Components.MenuSubTrigger
+          ref={ref}
+          data-submenu-trigger={id}
+          disabled={disabled}
+          onMouseEnter={() => {
+            if (!disabled && id) {
+              setActiveSubmenu(id);
+            }
+          }}
+          onMouseLeave={() => {
+            // Clear active submenu when mouse leaves trigger
+            // This allows the submenu to close when user moves away
+            if (!disabled) {
+              setActiveSubmenu(null);
+            }
+          }}
+        >
+          {icon}
+          <Components.MenuLabel>{label}</Components.MenuLabel>
+          <Components.MenuDisclosure />
+        </Components.MenuSubTrigger>
+      );
+    }
 
-  const Trigger =
-    variant === "dropdown"
-      ? DropdownMenuPrimitive.SubTrigger
-      : ContextMenuPrimitive.SubTrigger;
+    const Trigger =
+      variant === "dropdown"
+        ? DropdownMenuPrimitive.SubTrigger
+        : ContextMenuPrimitive.SubTrigger;
 
-  return (
-    <Trigger ref={ref} {...rest} asChild>
-      <Components.MenuSubTrigger disabled={disabled}>
-        {icon}
-        <Components.MenuLabel>{label}</Components.MenuLabel>
-        <Components.MenuDisclosure />
-      </Components.MenuSubTrigger>
-    </Trigger>
-  );
-});
+    return (
+      <Trigger ref={ref} {...rest} asChild>
+        <Components.MenuSubTrigger disabled={disabled}>
+          {icon}
+          <Components.MenuLabel>{label}</Components.MenuLabel>
+          <Components.MenuDisclosure />
+        </Components.MenuSubTrigger>
+      </Trigger>
+    );
+  }
+);
 SubMenuTrigger.displayName = "SubMenuTrigger";
 
-type SubMenuContentProps = React.ComponentPropsWithoutRef<
-  typeof DropdownMenuPrimitive.SubContent
-> &
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubContent>;
+type SubMenuContentProps = React.HTMLAttributes<HTMLDivElement> & {
+  id?: string;
+};
 
-const SubMenuContent = React.forwardRef<
-  | React.ElementRef<typeof DropdownMenuPrimitive.SubContent>
-  | React.ElementRef<typeof ContextMenuPrimitive.SubContent>,
-  SubMenuContentProps
->((props, ref) => {
-  const { variant } = useMenuContext();
-  const { children, ...rest } = props;
+const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
+  (props, ref) => {
+    const { variant, getSubmenuTrigger, activeSubmenu, setActiveSubmenu } =
+      useMenuContext();
+    const { children, id, ...rest } = props;
+    const [position, setPosition] = React.useState({ top: 0, left: 0 });
+    const submenuRef = React.useRef<HTMLDivElement | null>(null);
 
-  const Portal =
-    variant === "dropdown"
-      ? DropdownMenuPrimitive.Portal
-      : ContextMenuPrimitive.Portal;
+    React.useEffect(() => {
+      const trigger = getSubmenuTrigger(activeSubmenu);
 
-  const Content =
-    variant === "dropdown"
-      ? DropdownMenuPrimitive.SubContent
-      : ContextMenuPrimitive.SubContent;
+      if (trigger && submenuRef.current) {
+        const triggerRect = trigger.getBoundingClientRect();
+        const submenuRect = submenuRef.current.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
 
-  const contentProps = {
-    maxHeightVar:
+        // Calculate space available on the right side
+        const spaceOnRight = viewportWidth - triggerRect.right;
+        const submenuWidth = submenuRect.width || 200; // Use actual width or fallback
+        const margin = 8; // Gap between trigger and submenu
+
+        let left: number;
+
+        // Check if there's enough space on the right
+        if (spaceOnRight >= submenuWidth + margin) {
+          // Position to the right of the inline menu
+          left = triggerRect.right + margin;
+        } else {
+          // Position to the left of the inline menu
+          left = triggerRect.left - submenuWidth - margin;
+        }
+
+        setPosition({
+          top: triggerRect.top,
+          left,
+        });
+      }
+    }, [variant, activeSubmenu, getSubmenuTrigger]);
+
+    if (variant === "inline") {
+      if (!(id === activeSubmenu)) {
+        return null;
+      }
+
+      const contentProps = {
+        maxHeightVar: "--inline-menu-max-height",
+        transformOriginVar: "--inline-menu-transform-origin",
+      };
+
+      return (
+        <ReactPortal>
+          <InlineSubMenuContentWrapper
+            ref={(node) => {
+              submenuRef.current = node;
+              if (typeof ref === "function") {
+                ref(node);
+              } else if (ref) {
+                (ref as React.MutableRefObject<HTMLDivElement | null>).current =
+                  node;
+              }
+            }}
+            {...contentProps}
+            {...rest}
+            hiddenScrollbars
+            style={{
+              top: position.top,
+              left: position.left,
+            }}
+            onMouseEnter={() => {
+              // Keep submenu active when hovering over it
+              if (id) {
+                setActiveSubmenu(id);
+              }
+            }}
+            onMouseLeave={() => {
+              // Close submenu when mouse leaves
+              setActiveSubmenu(null);
+            }}
+          >
+            {children}
+          </InlineSubMenuContentWrapper>
+        </ReactPortal>
+      );
+    }
+
+    const Portal =
       variant === "dropdown"
-        ? "--radix-dropdown-menu-content-available-height"
-        : "--radix-context-menu-content-available-height",
-    transformOriginVar:
-      variant === "dropdown"
-        ? "--radix-dropdown-menu-content-transform-origin"
-        : "--radix-context-menu-content-transform-origin",
-  };
+        ? DropdownMenuPrimitive.Portal
+        : ContextMenuPrimitive.Portal;
 
-  return (
-    <Portal>
-      <Content ref={ref} {...rest} collisionPadding={6} asChild>
-        <Components.MenuContent {...contentProps} hiddenScrollbars>
-          {children}
-        </Components.MenuContent>
-      </Content>
-    </Portal>
-  );
-});
+    const Content =
+      variant === "dropdown"
+        ? DropdownMenuPrimitive.SubContent
+        : ContextMenuPrimitive.SubContent;
+
+    const contentProps = {
+      maxHeightVar:
+        variant === "dropdown"
+          ? "--radix-dropdown-menu-content-available-height"
+          : "--radix-context-menu-content-available-height",
+      transformOriginVar:
+        variant === "dropdown"
+          ? "--radix-dropdown-menu-content-transform-origin"
+          : "--radix-context-menu-content-transform-origin",
+    };
+
+    return (
+      <Portal>
+        <Content ref={ref} {...rest} collisionPadding={6} asChild>
+          <Components.MenuContent {...contentProps} hiddenScrollbars>
+            {children}
+          </Components.MenuContent>
+        </Content>
+      </Portal>
+    );
+  }
+);
 SubMenuContent.displayName = "SubMenuContent";
 
 type MenuGroupProps = {
@@ -300,6 +417,7 @@ const MenuGroup = React.forwardRef<
 MenuGroup.displayName = "MenuGroup";
 
 type BaseItemProps = {
+  id?: string;
   label: string;
   icon?: React.ReactElement;
   disabled?: boolean;
@@ -324,7 +442,7 @@ const MenuButton = React.forwardRef<
   | React.ElementRef<typeof ContextMenuPrimitive.Item>,
   MenuButtonProps
 >((props, ref) => {
-  const { variant } = useMenuContext();
+  const { variant, activeSubmenu, setActiveSubmenu } = useMenuContext();
   const [active, setActive] = React.useState(false);
   const {
     label,
@@ -337,7 +455,6 @@ const MenuButton = React.forwardRef<
     ...rest
   } = props;
 
-  // Common button content
   const buttonContent = (
     <>
       {icon}
@@ -350,7 +467,6 @@ const MenuButton = React.forwardRef<
     </>
   );
 
-  // For inline variant, render button directly without Radix Item wrapper
   if (variant === "inline") {
     const button = (
       <Components.MenuButton
@@ -359,7 +475,15 @@ const MenuButton = React.forwardRef<
         $dangerous={dangerous}
         $active={active}
         onClick={onClick}
-        onMouseEnter={() => setActive(true)}
+        onMouseEnter={() => {
+          setActive(true);
+          if (
+            activeSubmenu &&
+            props.id &&
+            !isParentMenu(activeSubmenu, props.id)
+          )
+            {setActiveSubmenu(null);}
+        }}
         onMouseLeave={() => setActive(false)}
       >
         {buttonContent}
@@ -539,6 +663,14 @@ const InlineMenuContentWrapper = styled(Components.MenuContent)`
   --inline-menu-max-height: 85vh;
   --inline-menu-transform-origin: top left;
   z-index: 1000;
+`;
+
+const InlineSubMenuContentWrapper = styled(Components.MenuContent)`
+  position: absolute;
+  height: fit-content;
+  --inline-menu-max-height: 85vh;
+  --inline-menu-transform-origin: top left;
+  z-index: 1001; /* Higher than main menu */
 `;
 
 // Styled scrollable for mobile drawer content

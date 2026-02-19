@@ -133,7 +133,8 @@ function ToolbarMenu(props: Props) {
 export const mapMenuItems = (
   children: MenuItem[],
   commands: Record<string, Function>,
-  state: any
+  state: any,
+  parentId = "0"
 ): TMenuItem[] => {
   const handleClick = (menuItem: MenuItem) => () => {
     if (!menuItem.name) {
@@ -151,11 +152,26 @@ export const mapMenuItems = (
     }
   };
 
-  return children.map((child) => {
+  return children.map((child, idx) => {
     if (child.name === "separator") {
       return { type: "separator", visible: child.visible };
     }
+
+    const id = `${parentId}-${idx}`;
+    if (child.children?.length) {
+      return {
+        id,
+        type: "submenu",
+        title: child.label || child.tooltip,
+        icon: child.icon,
+        visible: child.visible,
+        disabled: child.disabled,
+        items: mapMenuItems(child.children, commands, state, id),
+      };
+    }
+
     return {
+      id,
       type: "button",
       title: child.label,
       icon: child.icon,

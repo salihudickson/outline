@@ -42,7 +42,7 @@ export function usePosition({
   align = "center",
   inline = false,
 }: {
-  menuRef: React.RefObject<HTMLDivElement>;
+  menuRef: React.RefObject<HTMLElement>;
   active?: boolean;
   align?: Props["align"];
   inline?: boolean;

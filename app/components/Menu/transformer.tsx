@@ -41,6 +41,7 @@ export function toMenuItems(items: MenuItem[]) {
       case "button":
         return (
           <MenuButton
+            id={item.id}
             key={`${item.type}-${item.title}-${index}`}
             label={item.title as string}
             icon={icon}
@@ -87,11 +88,12 @@ export function toMenuItems(items: MenuItem[]) {
         return (
           <SubMenu key={`${item.type}-${item.title}-${index}`}>
             <SubMenuTrigger
+              id={item.id}
               label={item.title as string}
               icon={icon}
               disabled={item.disabled}
             />
-            <SubMenuContent ref={parentRef}>
+            <SubMenuContent ref={parentRef} id={item.id}>
               <MouseSafeArea parentRef={parentRef} />
               {submenuItems}
             </SubMenuContent>
