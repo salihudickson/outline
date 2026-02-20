@@ -52,52 +52,61 @@ export default function tableColMenuItems(
       type: MenuType.inline,
       children: [
         {
-          name: "setColumnAttr",
-          label: dictionary.alignLeft,
-          icon: <AlignLeftIcon />,
-          attrs: { index, alignment: "left" },
-          active: isNodeActive(schema.nodes.th, {
-            colspan: 1,
-            rowspan: 1,
-            alignment: "left",
-          }),
-        },
-        {
-          name: "setColumnAttr",
-          label: dictionary.alignCenter,
+          label: dictionary.align,
           icon: <AlignCenterIcon />,
-          attrs: { index, alignment: "center" },
-          active: isNodeActive(schema.nodes.th, {
-            colspan: 1,
-            rowspan: 1,
-            alignment: "center",
-          }),
+          children: [
+            {
+              name: "setColumnAttr",
+              label: dictionary.alignLeft,
+              icon: <AlignLeftIcon />,
+              attrs: { index, alignment: "left" },
+              active: isNodeActive(schema.nodes.th, {
+                colspan: 1,
+                rowspan: 1,
+                alignment: "left",
+              }),
+            },
+            {
+              name: "setColumnAttr",
+              label: dictionary.alignCenter,
+              icon: <AlignCenterIcon />,
+              attrs: { index, alignment: "center" },
+              active: isNodeActive(schema.nodes.th, {
+                colspan: 1,
+                rowspan: 1,
+                alignment: "center",
+              }),
+            },
+            {
+              name: "setColumnAttr",
+              label: dictionary.alignRight,
+              icon: <AlignRightIcon />,
+              attrs: { index, alignment: "right" },
+              active: isNodeActive(schema.nodes.th, {
+                colspan: 1,
+                rowspan: 1,
+                alignment: "right",
+              }),
+            },
+          ],
         },
         {
-          name: "setColumnAttr",
-          label: dictionary.alignRight,
-          icon: <AlignRightIcon />,
-          attrs: { index, alignment: "right" },
-          active: isNodeActive(schema.nodes.th, {
-            colspan: 1,
-            rowspan: 1,
-            alignment: "right",
-          }),
-        },
-        {
-          name: "separator",
-        },
-        {
-          name: "sortTable",
-          label: dictionary.sortAsc,
-          attrs: { index, direction: "asc" },
+          label: dictionary.sort,
           icon: <AlphabeticalSortIcon />,
-        },
-        {
-          name: "sortTable",
-          label: dictionary.sortDesc,
-          attrs: { index, direction: "desc" },
-          icon: <AlphabeticalReverseSortIcon />,
+          children: [
+            {
+              name: "sortTable",
+              label: dictionary.sortAsc,
+              attrs: { index, direction: "asc" },
+              icon: <AlphabeticalSortIcon />,
+            },
+            {
+              name: "sortTable",
+              label: dictionary.sortDesc,
+              attrs: { index, direction: "desc" },
+              icon: <AlphabeticalReverseSortIcon />,
+            },
+          ],
         },
         {
           name: "separator",

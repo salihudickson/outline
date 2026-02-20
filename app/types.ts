@@ -19,6 +19,7 @@ export type PartialExcept<T, K extends keyof T> = Partial<Omit<T, K>> &
   Required<Pick<T, K>>;
 
 export type MenuItemButton = {
+  id?: string;
   type: "button";
   title: React.ReactNode;
   onClick: React.MouseEventHandler<HTMLButtonElement | HTMLAnchorElement>;
@@ -31,6 +32,7 @@ export type MenuItemButton = {
 };
 
 export type MenuItemWithChildren = {
+  id?: string;
   type: "submenu";
   title: React.ReactNode;
   visible?: boolean;

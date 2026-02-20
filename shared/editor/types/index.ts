@@ -25,6 +25,7 @@ export enum MenuType {
 type Section = ({ t }: { t: TFunction }) => string;
 
 export type MenuItem = {
+  id?: string;
   icon?: React.ReactNode;
   name?: string;
   title?: string;

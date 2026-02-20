@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Portal } from "~/components/Portal";
 import { Menu } from "~/components/primitives/Menu";
 import type { MenuItem } from "@shared/editor/types";
@@ -17,6 +23,9 @@ type Props = {
   containerRef?: React.MutableRefObject<HTMLDivElement | null>;
 };
 
+export const isParentMenu = (parentId: string, childId: string) =>
+  childId.startsWith(parentId);
+
 /*
  * Renders an inline menu in the floating toolbar, which does not require a trigger.
  */
@@ -26,12 +35,37 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
   const fallbackRef = useRef<HTMLDivElement | null>(null);
   const menuRef = containerRef || fallbackRef;
   const isMobile = useMobile();
+  const [pos, setPos] = useState({ top: 0, left: 0 });
 
-  const pos = usePosition({
+  const position = usePosition({
     menuRef,
     active: true,
     inline: true,
   });
+
+  useEffect(() => {
+    const viewportWidth = window.innerWidth;
+    const menuRect = menuRef.current?.getBoundingClientRect();
+
+    let left = position.left;
+    if (menuRef.current && menuRect) {
+      const spaceOnRight =
+        viewportWidth - menuRef.current?.offsetWidth - position.left;
+      if (spaceOnRight < menuRect.right) {
+        left = position.left - spaceOnRight;
+      }
+    }
+
+    setPos((prevPos) => {
+      if (prevPos.top !== position.top || prevPos.left !== left) {
+        return {
+          top: position.top,
+          left,
+        };
+      }
+      return prevPos;
+    });
+  }, [menuRef, position]);
 
   const handleCloseAutoFocus = useCallback((ev: Event) => {
     ev.stopImmediatePropagation();
