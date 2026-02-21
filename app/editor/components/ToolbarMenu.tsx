@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import styled from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import * as Toolbar from "@radix-ui/react-toolbar";
@@ -22,42 +22,65 @@ type Props = {
   items: MenuItem[];
 };
 
-/*
+type ToolbarDropdownProps = {
+  active: boolean;
+  item: MenuItem;
+  tooltip?: string;
+  shortcut?: string;
+};
+
+/**
  * Renders a dropdown menu in the floating toolbar.
  */
-function ToolbarDropdown(props: { active: boolean; item: MenuItem }) {
+function ToolbarDropdown(props: ToolbarDropdownProps) {
   const { commands, view } = useEditor();
   const { t } = useTranslation();
-  const { item } = props;
+  const { item, shortcut, tooltip } = props;
   const { state } = view;
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const items: TMenuItem[] = useMemo(
-    () => (item.children ? mapMenuItems(item.children, commands, state) : []),
-    [item.children, commands, state]
-  );
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsOpen(open);
+  }, []);
+
+  const items: TMenuItem[] = useMemo(() => {
+    if (!isOpen) {
+      return [];
+    }
+
+    const resolvedItemChildren = resolveChildren(item.children);
+    return resolvedItemChildren
+      ? mapMenuItems(resolvedItemChildren, commands, state)
+      : [];
+  }, [isOpen, commands]);
 
   const handleCloseAutoFocus = useCallback((ev: Event) => {
     ev.stopImmediatePropagation();
   }, []);
 
   return (
-    <MenuProvider variant="dropdown">
-      <Menu>
-        <MenuTrigger>
-          <ToolbarButton aria-label={item.label ? undefined : item.tooltip}>
-            {item.label && <Label>{item.label}</Label>}
-            {item.icon}
-          </ToolbarButton>
-        </MenuTrigger>
-        <MenuContent
-          align="end"
-          aria-label={item.tooltip || t("More options")}
-          onCloseAutoFocus={handleCloseAutoFocus}
-        >
-          <EventBoundary>{toMenuItems(items)}</EventBoundary>
-        </MenuContent>
-      </Menu>
-    </MenuProvider>
+    <Tooltip shortcut={shortcut} content={tooltip} disabled={isOpen}>
+      <MenuProvider variant="dropdown">
+        <Menu open={isOpen} onOpenChange={handleOpenChange}>
+          <MenuTrigger>
+            <ToolbarButton
+              aria-label={item.label ? undefined : item.tooltip}
+              disabled={item.disabled}
+            >
+              {item.label && <Label>{item.label}</Label>}
+              {item.icon}
+            </ToolbarButton>
+          </MenuTrigger>
+          <MenuContent
+            align="end"
+            aria-label={item.tooltip || t("More options")}
+            onCloseAutoFocus={handleCloseAutoFocus}
+          >
+            <EventBoundary>{toMenuItems(items)}</EventBoundary>
+          </MenuContent>
+        </Menu>
+      </MenuProvider>
+    </Tooltip>
   );
 }
 
@@ -96,6 +119,20 @@ function ToolbarMenu(props: Props) {
             }
             const isActive = item.active ? item.active(state) : false;
 
+            if (item.children) {
+              return (
+                <ToolbarDropdown
+                  key={index}
+                  active={isActive && !item.label}
+                  item={item}
+                  tooltip={
+                    item.label === item.tooltip ? undefined : item.tooltip
+                  }
+                  shortcut={item.shortcut}
+                />
+              );
+            }
+
             return (
               <Tooltip
                 key={index}
@@ -104,17 +141,13 @@ function ToolbarMenu(props: Props) {
               >
                 {item.name === "dimensions" ? (
                   <MediaDimension key={index} />
-                ) : item.children ? (
-                  <ToolbarDropdown
-                    active={isActive && !item.label}
-                    item={item}
-                  />
                 ) : (
                   <Toolbar.Button asChild>
                     <ToolbarButton
                       onClick={handleClick(item)}
                       active={isActive && !item.label}
                       aria-label={item.label ? undefined : item.tooltip}
+                      disabled={item.disabled}
                     >
                       {item.label && <Label>{item.label}</Label>}
                       {item.icon}
@@ -129,6 +162,11 @@ function ToolbarMenu(props: Props) {
     </TooltipProvider>
   );
 }
+
+const resolveChildren = (
+  children: MenuItem[] | (() => MenuItem[]) | undefined
+): MenuItem[] | undefined =>
+  typeof children === "function" ? children() : children;
 
 export const mapMenuItems = (
   children: MenuItem[],
@@ -153,20 +191,34 @@ export const mapMenuItems = (
   };
 
   return children.map((child, idx) => {
+    const id = `${parentId}-${idx}`;
+
     if (child.name === "separator") {
-      return { type: "separator", visible: child.visible };
+      return { id, type: "separator", visible: child.visible };
     }
 
-    const id = `${parentId}-${idx}`;
-    if (child.children?.length) {
+    if ("content" in child) {
+      return {
+        id,
+        type: "custom",
+        visible: child.visible,
+        content: child.content,
+      };
+    }
+
+    const resolvedChildren = resolveChildren(child.children);
+    if (resolvedChildren) {
+      const childWithPreventClose = resolvedChildren.find(
+        (c) => "preventCloseCondition" in c
+      );
       return {
         id,
         type: "submenu",
         title: child.label || child.tooltip,
         icon: child.icon,
         visible: child.visible,
-        disabled: child.disabled,
-        items: mapMenuItems(child.children, commands, state, id),
+        preventCloseCondition: childWithPreventClose?.preventCloseCondition,
+        items: mapMenuItems(resolvedChildren, commands, state, id),
       };
     }
 

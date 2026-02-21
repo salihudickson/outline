@@ -13,6 +13,7 @@ import Scrollable from "~/components/Scrollable";
 import { Portal as ReactPortal } from "~/components/Portal";
 import { isParentMenu } from "~/editor/components/InlineMenu";
 import useOnClickOutside from "~/hooks/useOnClickOutside";
+import { MenuType } from "@shared/editor/types";
 
 type MenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Root
@@ -25,7 +26,7 @@ const Menu = ({ children, ...rest }: MenuProps) => {
   const { variant } = useMenuContext();
   const isMobile = useMobile();
 
-  if (variant === "inline") {
+  if (variant === MenuType.inline) {
     return isMobile ? (
       <Drawer open={true} modal={false}>
         {children}
@@ -54,7 +55,7 @@ const SubMenu = ({ children, ...rest }: SubMenuProps) => {
   const { variant } = useMenuContext();
 
   // For inline variant, provide custom submenu context
-  if (variant === "inline") {
+  if (variant === MenuType.inline) {
     return <div>{children}</div>;
   }
 
@@ -126,7 +127,7 @@ const MenuContent = React.forwardRef<
     }
   }, []);
 
-  if (variant === "inline") {
+  if (variant === MenuType.inline) {
     const contentProps = {
       maxHeightVar: "--inline-menu-max-height",
       transformOriginVar: "--inline-menu-transform-origin",
@@ -231,7 +232,7 @@ const SubMenuTrigger = React.forwardRef<HTMLDivElement, BaseItemProps>(
       }
     }, [triggerRef, id, addSubmenuTriggerRef]);
 
-    if (variant === "inline") {
+    if (variant === MenuType.inline) {
       return (
         <Components.MenuSubTrigger
           ref={triggerRef}
@@ -248,7 +249,9 @@ const SubMenuTrigger = React.forwardRef<HTMLDivElement, BaseItemProps>(
           }}
         >
           {icon}
-          <Components.MenuLabel>{label}</Components.MenuLabel>
+          <Components.MenuLabel style={{ marginRight: 20 }}>
+            {label}
+          </Components.MenuLabel>
           <Components.MenuDisclosure />
         </Components.MenuSubTrigger>
       );
@@ -306,8 +309,8 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
         const submenuWidth = subMenuRect?.width;
 
         const marginRightForUX = 20;
-        const offsetLeftForUX = 90;
-        const offsetRightForUX = 85;
+        const offsetLeftForUX = 75;
+        const offsetRightForUX = 65;
 
         let left = triggerRect.left - offsetLeftForUX;
 
@@ -340,7 +343,7 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
       }
     }, []);
 
-    if (variant === "inline") {
+    if (variant === MenuType.inline) {
       if (!(id === activeSubmenu)) {
         return null;
       }
@@ -520,7 +523,7 @@ const MenuButton = React.forwardRef<
     </>
   );
 
-  if (variant === "inline") {
+  if (variant === MenuType.inline) {
     const button = (
       <Components.MenuButton
         ref={ref as React.Ref<HTMLButtonElement>}
@@ -668,7 +671,7 @@ const MenuSeparator = React.forwardRef<
 >((props, ref) => {
   const { variant } = useMenuContext();
 
-  if (variant === "inline") {
+  if (variant === MenuType.inline) {
     return <Components.MenuSeparator ref={ref as React.Ref<HTMLHRElement>} />;
   }
 

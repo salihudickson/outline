@@ -56,6 +56,8 @@ export { default as Team } from "./Team";
 
 export { default as TeamDomain } from "./TeamDomain";
 
+export { default as Template } from "./Template";
+
 export { default as User } from "./User";
 
 export { default as UserAuthentication } from "./UserAuthentication";
@@ -69,3 +71,4 @@ export { default as WebhookDelivery } from "./WebhookDelivery";
 export { default as Subscription } from "./Subscription";
 
 export { default as Emoji } from "./Emoji";
+export { default as UserPasskey } from "./UserPasskey";

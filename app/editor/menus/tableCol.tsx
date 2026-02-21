@@ -5,11 +5,12 @@ import {
   AlignCenterIcon,
   InsertLeftIcon,
   InsertRightIcon,
+  PaletteIcon,
   TableHeaderColumnIcon,
   TableMergeCellsIcon,
   TableSplitCellsIcon,
-  AlphabeticalSortIcon,
-  AlphabeticalReverseSortIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
   TableColumnsDistributeIcon,
 } from "outline-icons";
 import type { EditorState } from "prosemirror-state";
@@ -17,12 +18,45 @@ import { CellSelection, selectedRect } from "prosemirror-tables";
 import { isNodeActive } from "@shared/editor/queries/isNodeActive";
 import {
   getAllSelectedColumns,
+  getCellsInColumn,
   isMergedCellSelection,
   isMultipleCellSelection,
+  tableHasRowspan,
 } from "@shared/editor/queries/table";
-import { MenuType, type MenuItem } from "@shared/editor/types";
+import {
+  MenuType,
+  type MenuItem,
+  type NodeAttrMark,
+} from "@shared/editor/types";
 import type { Dictionary } from "~/hooks/useDictionary";
 import { ArrowLeftIcon, ArrowRightIcon } from "~/components/Icons/ArrowIcon";
+import CircleIcon from "~/components/Icons/CircleIcon";
+import CellBackgroundColorPicker from "../components/CellBackgroundColorPicker";
+import TableCell from "@shared/editor/nodes/TableCell";
+import { DottedCircleIcon } from "~/components/Icons/DottedCircleIcon";
+
+/**
+ * Get the set of background colors used in a column
+ */
+function getColumnColors(state: EditorState, colIndex: number): Set<string> {
+  const colors = new Set<string>();
+  const cells = getCellsInColumn(colIndex)(state) || [];
+
+  cells.forEach((pos) => {
+    const node = state.doc.nodeAt(pos);
+    if (!node) {
+      return;
+    }
+    const backgroundMark = (node.attrs.marks ?? []).find(
+      (mark: NodeAttrMark) => mark.type === "background"
+    );
+    if (backgroundMark && backgroundMark.attrs.color) {
+      colors.add(backgroundMark.attrs.color);
+    }
+  });
+
+  return colors;
+}
 
 export default function tableColMenuItems(
   state: EditorState,
@@ -46,14 +80,24 @@ export default function tableColMenuItems(
   }
 
   const tableMap = selectedRect(state);
+  const colColors = getColumnColors(state, index);
+  const hasBackground = colColors.size > 0;
+  const activeColor =
+    colColors.size === 1 ? colColors.values().next().value : null;
+  const customColor =
+    colColors.size === 1 && !TableCell.isPresetColor(activeColor)
+      ? activeColor
+      : undefined;
 
   return [
     {
       type: MenuType.inline,
       children: [
         {
+          name: "setColumnAttr",
           label: dictionary.align,
           icon: <AlignCenterIcon />,
+          attrs: { index, alignment: "left" },
           children: [
             {
               name: "setColumnAttr",
@@ -91,20 +135,88 @@ export default function tableColMenuItems(
           ],
         },
         {
+          name: "separator",
+        },
+        {
+          name: "sortTable",
           label: dictionary.sort,
-          icon: <AlphabeticalSortIcon />,
+          icon: <SortAscendingIcon />,
+          disabled: tableHasRowspan(state),
           children: [
             {
               name: "sortTable",
               label: dictionary.sortAsc,
               attrs: { index, direction: "asc" },
-              icon: <AlphabeticalSortIcon />,
+              icon: <SortAscendingIcon />,
+              disabled: tableHasRowspan(state),
             },
             {
               name: "sortTable",
               label: dictionary.sortDesc,
               attrs: { index, direction: "desc" },
-              icon: <AlphabeticalReverseSortIcon />,
+              icon: <SortDescendingIcon />,
+              disabled: tableHasRowspan(state),
+            },
+          ],
+        },
+        {
+          name: "separator",
+        },
+        {
+          label: dictionary.background,
+          icon:
+            colColors.size > 1 ? (
+              <CircleIcon color="rainbow" />
+            ) : colColors.size === 1 ? (
+              <CircleIcon color={colColors.values().next().value} />
+            ) : (
+              <PaletteIcon />
+            ),
+          children: [
+            ...[
+              {
+                name: "toggleColumnBackgroundAndCollapseSelection",
+                label: dictionary.none,
+                icon: <DottedCircleIcon retainColor color="transparent" />,
+                active: () => (hasBackground ? false : true),
+                attrs: { color: null },
+              },
+            ],
+            ...TableCell.presetColors.map((preset) => ({
+              name: "toggleColumnBackgroundAndCollapseSelection",
+              label: preset.name,
+              icon: <CircleIcon retainColor color={preset.hex} />,
+              active: () => colColors.size === 1 && colColors.has(preset.hex),
+              attrs: { color: preset.hex },
+            })),
+            ...(customColor
+              ? [
+                  {
+                    name: "toggleColumnBackgroundAndCollapseSelection",
+                    label: customColor,
+                    icon: <CircleIcon retainColor color={customColor} />,
+                    active: () => true,
+                    attrs: { color: customColor },
+                  },
+                ]
+              : []),
+            {
+              icon: <CircleIcon retainColor color="rainbow" />,
+              label: "Custom",
+              children: [
+                {
+                  content: (
+                    <CellBackgroundColorPicker
+                      activeColor={activeColor}
+                      command="toggleColumnBackground"
+                    />
+                  ),
+                  preventCloseCondition: () =>
+                    !!document.activeElement?.matches(
+                      ".ProseMirror.ProseMirror-focused"
+                    ),
+                },
+              ],
             },
           ],
         },

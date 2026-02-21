@@ -137,7 +137,7 @@ export const MenuLabel = styled.div`
   flex-grow: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 `;
 
 export const MenuHeader = styled.h3`

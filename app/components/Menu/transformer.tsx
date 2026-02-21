@@ -27,6 +27,7 @@ export function toMenuItems(items: MenuItem[]) {
       item.type !== "separator" &&
       item.type !== "heading" &&
       item.type !== "group" &&
+      item.type !== "custom" &&
       !!item.icon
   );
 
@@ -85,6 +86,12 @@ export function toMenuItems(items: MenuItem[]) {
           return null;
         }
 
+        const preventCloseHandler = (ev: Event) => {
+          if (item.preventCloseCondition && item.preventCloseCondition()) {
+            ev.preventDefault();
+          }
+        };
+
         return (
           <SubMenu key={`${item.type}-${item.title}-${index}`}>
             <SubMenuTrigger
@@ -93,7 +100,11 @@ export function toMenuItems(items: MenuItem[]) {
               icon={icon}
               disabled={item.disabled}
             />
-            <SubMenuContent ref={parentRef} id={item.id}>
+            <SubMenuContent
+              id={item.id}
+              ref={parentRef}
+              onFocusOutside={preventCloseHandler}
+            >
               <MouseSafeArea parentRef={parentRef} />
               {submenuItems}
             </SubMenuContent>
@@ -120,6 +131,9 @@ export function toMenuItems(items: MenuItem[]) {
       case "separator":
         return <MenuSeparator key={`${item.type}-${index}`} />;
 
+      case "custom":
+        return <div key={`${item.type}-${index}`}>{item.content}</div>;
+
       default:
         return null;
     }
@@ -142,6 +156,7 @@ export function toMobileMenuItems(
       item.type !== "separator" &&
       item.type !== "heading" &&
       item.type !== "group" &&
+      item.type !== "custom" &&
       !!item.icon
   );
 
@@ -250,6 +265,9 @@ export function toMobileMenuItems(
 
       case "separator":
         return <Components.MenuSeparator key={`${item.type}-${index}`} />;
+
+      case "custom":
+        return <div key={`${item.type}-${index}`}>{item.content}</div>;
 
       default:
         return null;

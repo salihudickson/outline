@@ -13,6 +13,7 @@ import type Revision from "~/models/Revision";
 import { ActionSeparator } from "~/actions";
 import {
   copyLinkToRevision,
+  downloadRevision,
   restoreRevision,
 } from "~/actions/definitions/revisions";
 import { Avatar, AvatarSize } from "~/components/Avatar";
@@ -45,7 +46,12 @@ const RevisionListItem = ({ item, document, ...rest }: Props) => {
   const ref = useRef<HTMLAnchorElement>(null);
 
   const actions = useMemo(
-    () => [restoreRevision, ActionSeparator, copyLinkToRevision(item.id)],
+    () => [
+      restoreRevision,
+      ActionSeparator,
+      copyLinkToRevision(item.id),
+      downloadRevision(item.id),
+    ],
     [item.id]
   );
   const contextMenuAction = useMenuAction(actions);
@@ -119,7 +125,7 @@ const RevisionListItem = ({ item, document, ...rest }: Props) => {
   }
 
   return (
-    <ActionContextProvider value={{ activeDocumentId: document.id }}>
+    <ActionContextProvider value={{ activeModels: [document] }}>
       <ContextMenu
         action={contextMenuAction}
         ariaLabel={t("Revision options")}

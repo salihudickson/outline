@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import fractionalIndex from "fractional-index";
 import fs from "fs-extra";
 import invariant from "invariant";
@@ -7,15 +7,21 @@ import JSZip from "jszip";
 import Router from "koa-router";
 import escapeRegExp from "lodash/escapeRegExp";
 import has from "lodash/has";
-import isNil from "lodash/isNil";
 import remove from "lodash/remove";
 import uniq from "lodash/uniq";
 import mime from "mime-types";
 import type { Order, ScopeOptions, WhereOptions } from "sequelize";
 import { Op, Sequelize } from "sequelize";
-import { randomUUID } from "crypto";
-import type { NavigationNode } from "@shared/types";
-import { StatusFilter, UserRole } from "@shared/types";
+import { randomUUID } from "node:crypto";
+import type { DirectionFilter, SortFilter } from "@shared/types";
+import { type NavigationNode } from "@shared/types";
+import {
+  FileOperationFormat,
+  FileOperationState,
+  FileOperationType,
+  StatusFilter,
+  UserRole,
+} from "@shared/types";
 import { subtractDate } from "@shared/utils/date";
 import slugify from "@shared/utils/slugify";
 import documentCreator from "@server/commands/documentCreator";
@@ -46,26 +52,30 @@ import {
   Event,
   Revision,
   SearchQuery,
+  Template,
   User,
   View,
   UserMembership,
   Group,
   GroupUser,
   GroupMembership,
+  FileOperation,
 } from "@server/models";
 import AttachmentHelper from "@server/models/helpers/AttachmentHelper";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
 import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
 import SearchHelper from "@server/models/helpers/SearchHelper";
 import { TextHelper } from "@server/models/helpers/TextHelper";
-import { authorize, can, cannot } from "@server/policies";
+import { authorize, cannot } from "@server/policies";
 import {
   presentDocument,
   presentPolicies,
+  presentTemplate,
   presentMembership,
   presentUser,
   presentGroupMembership,
   presentGroup,
+  presentFileOperation,
 } from "@server/presenters";
 import type { DocumentImportTaskResponse } from "@server/queues/tasks/DocumentImportTask";
 import DocumentImportTask from "@server/queues/tasks/DocumentImportTask";
@@ -74,11 +84,15 @@ import FileStorage from "@server/storage/files";
 import type { APIContext } from "@server/types";
 import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import ZipHelper from "@server/utils/ZipHelper";
+import { convertBareUrlsToEmbedMarkdown } from "@server/utils/embeds";
 import { getTeamFromContext } from "@server/utils/passport";
 import { assertPresent } from "@server/validation";
 import pagination from "../middlewares/pagination";
 import * as T from "./schema";
-import { loadPublicShare } from "@server/commands/shareLoader";
+import {
+  loadPublicShare,
+  getAllIdsInSharedTree,
+} from "@server/commands/shareLoader";
 
 const router = new Router();
 
@@ -91,7 +105,6 @@ router.post(
     const {
       sort,
       direction,
-      template,
       collectionId,
       backlinkDocumentId,
       parentDocumentId,
@@ -117,12 +130,6 @@ router.post(
     // Exclude archived docs by default
     if (!statusFilter) {
       where[Op.and].push({ archivedAt: { [Op.eq]: null } });
-    }
-
-    if (template) {
-      where[Op.and].push({
-        template: true,
-      });
     }
 
     // if a specific user is passed then add to filters. If the user doesn't
@@ -158,12 +165,7 @@ router.post(
     } else if (!backlinkDocumentId) {
       const collectionIds = await user.collectionIds();
       where[Op.and].push({
-        collectionId:
-          template && can(user, "readTemplate", user.team)
-            ? {
-                [Op.or]: [{ [Op.in]: collectionIds }, { [Op.is]: null }],
-              }
-            : collectionIds,
+        collectionId: collectionIds,
       });
     }
 
@@ -557,7 +559,7 @@ router.post(
     });
 
     let document: Document | null;
-    let serializedDocument: Record<string, any> | undefined;
+    let serializedDocument: Record<string, unknown> | undefined;
     let isPublic = false;
 
     if (shareId) {
@@ -583,10 +585,21 @@ router.post(
 
       isPublic = cannot(user, "read", document);
 
+      // Get backlinks that are within the shared tree
+      let backlinkIds: string[] | undefined;
+      if (result.sharedTree) {
+        const allowedDocumentIds = getAllIdsInSharedTree(result.sharedTree);
+        backlinkIds = await Relationship.findSourceDocumentIdsInSharedTree(
+          document.id,
+          allowedDocumentIds
+        );
+      }
+
       serializedDocument = await presentDocument(ctx, document, {
         isPublic,
         shareId,
         includeUpdatedAt: result.share.showLastUpdated,
+        backlinkIds,
       });
     } else {
       if (!user) {
@@ -730,7 +743,7 @@ router.post(
   auth(),
   validate(T.DocumentsExportSchema),
   async (ctx: APIContext<T.DocumentsExportReq>) => {
-    const { id } = ctx.input.body;
+    const { id, signedUrls, includeChildDocuments } = ctx.input.body;
     const { user } = ctx.state.auth;
     const accept = ctx.request.headers["accept"];
 
@@ -741,25 +754,78 @@ router.post(
       includeState: !accept?.includes("text/markdown"),
     });
 
+    authorize(user, "download", document);
+
+    const format = accept?.includes("text/html")
+      ? FileOperationFormat.HTMLZip
+      : accept?.includes("text/markdown")
+        ? FileOperationFormat.MarkdownZip
+        : accept?.includes("application/pdf")
+          ? FileOperationFormat.PDF
+          : null;
+
+    if (format === FileOperationFormat.PDF) {
+      throw IncorrectEditionError(
+        "PDF export is not available in the community edition"
+      );
+    }
+
+    if (includeChildDocuments) {
+      if (!format) {
+        throw InvalidRequestError(
+          "format needed for exporting nested documents"
+        );
+      }
+
+      const fileOperation = await FileOperation.createWithCtx(ctx, {
+        type: FileOperationType.Export,
+        state: FileOperationState.Creating,
+        format,
+        key: FileOperation.getExportKey({
+          name: document.titleWithDefault,
+          teamId: document.teamId,
+          format,
+        }),
+        url: null,
+        size: 0,
+        documentId: document.id,
+        userId: user.id,
+        teamId: document.teamId,
+      });
+
+      fileOperation.user = user;
+      fileOperation.document = document;
+
+      ctx.body = {
+        success: true,
+        data: {
+          fileOperation: presentFileOperation(fileOperation),
+        },
+      };
+      return;
+    }
+
     let contentType: string;
     let content: string;
 
-    if (accept?.includes("text/html")) {
+    const toMarkdown = async () =>
+      DocumentHelper.toMarkdown(document, {
+        signedUrls,
+        teamId: user.teamId,
+      });
+
+    if (format === FileOperationFormat.HTMLZip) {
       contentType = "text/html";
       content = await DocumentHelper.toHTML(document, {
         centered: true,
         includeMermaid: true,
       });
-    } else if (accept?.includes("application/pdf")) {
-      throw IncorrectEditionError(
-        "PDF export is not available in the community edition"
-      );
-    } else if (accept?.includes("text/markdown")) {
+    } else if (format === FileOperationFormat.MarkdownZip) {
       contentType = "text/markdown";
-      content = DocumentHelper.toMarkdown(document);
+      content = await toMarkdown();
     } else {
       ctx.body = {
-        data: DocumentHelper.toMarkdown(document),
+        data: await toMarkdown(),
       };
       return;
     }
@@ -878,14 +944,12 @@ router.post(
         })
       : undefined;
 
-    // In case of workspace templates, both source and destination collections are undefined.
-    if (!document.isWorkspaceTemplate && !destCollection?.isActive) {
+    if (!destCollection?.isActive) {
       throw ValidationError(
         "Unable to restore, the collection may have been deleted or archived"
       );
     }
 
-    // Skip this for workspace templates and drafts of a deleted collection as they won't have sourceCollectionId.
     if (sourceCollectionId && sourceCollectionId !== destCollectionId) {
       authorize(user, "updateDocument", srcCollection);
       await srcCollection?.removeDocumentInStructure(document, {
@@ -894,10 +958,7 @@ router.post(
       });
     }
 
-    if (document.deletedAt && document.isWorkspaceTemplate) {
-      authorize(user, "restore", document);
-      await document.restoreWithCtx(ctx, { name: "restore" });
-    } else if (document.deletedAt) {
+    if (document.deletedAt) {
       authorize(user, "restore", document);
       authorize(user, "updateDocument", destCollection);
 
@@ -915,7 +976,7 @@ router.post(
       const revision = await Revision.findByPk(revisionId, { transaction });
       authorize(document, "restore", revision);
 
-      document.restoreFromRevision(revision);
+      await document.restoreFromRevision(revision);
       await document.saveWithCtx(ctx, undefined, { name: "restore" });
     } else {
       assertPresent(revisionId, "revisionId is required");
@@ -935,8 +996,15 @@ router.post(
   rateLimiter(RateLimiterStrategy.OneHundredPerMinute),
   validate(T.DocumentsSearchTitlesSchema),
   async (ctx: APIContext<T.DocumentsSearchTitlesReq>) => {
-    const { query, statusFilter, dateFilter, collectionId, userId } =
-      ctx.input.body;
+    const {
+      query,
+      statusFilter,
+      dateFilter,
+      collectionId,
+      userId,
+      sort,
+      direction,
+    } = ctx.input.body;
     const { offset, limit } = ctx.state.pagination;
     const { user } = ctx.state.auth;
     let collaboratorIds = undefined;
@@ -960,6 +1028,8 @@ router.post(
       collaboratorIds,
       offset,
       limit,
+      sort: sort as SortFilter,
+      direction: direction as DirectionFilter,
     });
     const policies = presentPolicies(user, documents);
     const data = await Promise.all(
@@ -991,6 +1061,8 @@ router.post(
       shareId,
       snippetMinWords,
       snippetMaxWords,
+      sort,
+      direction,
     } = ctx.input.body;
     const { offset, limit } = ctx.state.pagination;
     const { user } = ctx.state.auth;
@@ -1044,6 +1116,8 @@ router.post(
         limit,
         snippetMinWords,
         snippetMaxWords,
+        sort: sort as SortFilter,
+        direction: direction as DirectionFilter,
       });
     } else {
       if (!user) {
@@ -1088,6 +1162,8 @@ router.post(
         limit,
         snippetMinWords,
         snippetMaxWords,
+        sort: sort as SortFilter,
+        direction: direction as DirectionFilter,
       });
     }
 
@@ -1153,30 +1229,28 @@ router.post(
       authorize(user, "createTemplate", user.team);
     }
 
-    const document = await Document.createWithCtx(ctx, {
+    const template = await Template.createWithCtx(ctx, {
       editorVersion: original.editorVersion,
       collectionId,
       teamId: user.teamId,
       publishedAt: publish ? new Date() : null,
       lastModifiedById: user.id,
       createdById: user.id,
-      template: true,
       icon: original.icon,
       color: original.color,
       title: original.title,
-      text: original.text,
       content: original.content,
     });
 
     // reload to get all of the data needed to present (user, collection etc)
-    const reloaded = await Document.findByPk(document.id, {
+    const reloaded = await Template.findByPk(template.id, {
       userId: user.id,
       transaction,
     });
-    invariant(reloaded, "document not found");
+    invariant(reloaded, "template not found");
 
     ctx.body = {
-      data: await presentDocument(ctx, reloaded),
+      data: presentTemplate(reloaded),
       policies: presentPolicies(user, [reloaded]),
     };
   }
@@ -1213,7 +1287,7 @@ router.post(
         authorize(user, "publish", document);
       }
 
-      if (!document.collectionId && !document.isWorkspaceTemplate) {
+      if (!document.collectionId) {
         assertPresent(
           collectionId,
           "collectionId is required to publish a draft without collection"
@@ -1233,8 +1307,6 @@ router.post(
           }
         );
         authorize(user, "createChildDocument", parentDocument, { collection });
-      } else if (document.isWorkspaceTemplate) {
-        authorize(user, "createTemplate", user.team);
       } else {
         authorize(user, "createDocument", collection);
       }
@@ -1282,8 +1354,6 @@ router.post(
 
     if (collection) {
       authorize(user, "updateDocument", collection);
-    } else if (document.isWorkspaceTemplate) {
-      authorize(user, "createTemplate", user.team);
     }
 
     if (parentDocumentId) {
@@ -1351,8 +1421,6 @@ router.post(
         transaction,
       });
       authorize(user, "updateDocument", collection);
-    } else if (document.template) {
-      authorize(user, "updateTemplate", user.team);
     } else {
       throw InvalidRequestError("collectionId is required to move a document");
     }
@@ -1451,26 +1519,11 @@ router.post(
   async (ctx: APIContext<T.DocumentsUnpublishReq>) => {
     const { id, detach } = ctx.input.body;
     const { user } = ctx.state.auth;
-    const { transaction } = ctx.state;
 
     const document = await Document.findByPk(id, {
       userId: user.id,
     });
     authorize(user, "unpublish", document);
-
-    const childDocumentIds = await document.findAllChildDocumentIds(
-      {
-        archivedAt: {
-          [Op.eq]: null,
-        },
-      },
-      { transaction }
-    );
-    if (childDocumentIds.length > 0) {
-      throw InvalidRequestError(
-        "Cannot unpublish document with child documents"
-      );
-    }
 
     await document.unpublishWithCtx(ctx, { detach });
 
@@ -1485,12 +1538,19 @@ router.post(
   "documents.import",
   auth(),
   rateLimiter(RateLimiterStrategy.TwentyFivePerMinute),
+  multipart({
+    maximumFileSize: env.FILE_STORAGE_IMPORT_MAX_SIZE,
+    optional: true,
+  }),
   validate(T.DocumentsImportSchema),
-  multipart({ maximumFileSize: env.FILE_STORAGE_IMPORT_MAX_SIZE }),
   async (ctx: APIContext<T.DocumentsImportReq>) => {
-    const { collectionId, parentDocumentId, publish } = ctx.input.body;
-    const file = ctx.input.file;
+    const { collectionId, parentDocumentId, publish, attachmentId } =
+      ctx.input.body;
     const { user } = ctx.state.auth;
+
+    if (!attachmentId && !ctx.input.file) {
+      throw ValidationError("one of attachmentId or file is required");
+    }
 
     if (collectionId) {
       const collection = await Collection.findByPk(collectionId, {
@@ -1508,24 +1568,37 @@ router.post(
       authorize(user, "createChildDocument", parentDocument);
     }
 
-    const buffer = await fs.readFile(file.filepath);
-    const fileName = file.originalFilename ?? file.newFilename;
-    const mimeType = file.mimetype ?? "";
-    const acl = "private";
+    let key: string;
+    let fileName: string;
+    let mimeType: string;
 
-    const key = AttachmentHelper.getKey({
-      id: randomUUID(),
-      name: fileName,
-      userId: user.id,
-    });
+    if (attachmentId) {
+      const attachment = await Attachment.findByPk(attachmentId);
+      authorize(user, "read", attachment);
 
-    await FileStorage.store({
-      body: buffer,
-      contentType: mimeType,
-      contentLength: buffer.length,
-      key,
-      acl,
-    });
+      key = attachment.key;
+      fileName = attachment.name;
+      mimeType = attachment.contentType;
+    } else {
+      const file = ctx.input.file!;
+      const buffer = await fs.readFile(file.filepath);
+      fileName = file.originalFilename ?? file.newFilename;
+      mimeType = file.mimetype ?? "";
+
+      key = AttachmentHelper.getKey({
+        id: randomUUID(),
+        name: fileName,
+        userId: user.id,
+      });
+
+      await FileStorage.store({
+        body: buffer,
+        contentType: mimeType,
+        contentLength: buffer.length,
+        key,
+        acl: "private",
+      });
+    }
 
     const job = await new DocumentImportTask().schedule({
       key,
@@ -1534,7 +1607,7 @@ router.post(
         mimeType,
       },
       userId: user.id,
-      collectionId: collectionId ?? parentDocument?.collectionId, // collectionId will be null when parent document is shared to the user.
+      collectionId: collectionId ?? parentDocument?.collectionId,
       parentDocumentId,
       publish,
       ip: ctx.request.ip,
@@ -1570,11 +1643,11 @@ router.post(
       icon,
       color,
       publish,
+      index,
       collectionId,
       parentDocumentId,
       fullWidth,
       templateId,
-      template,
       createdAt,
     } = ctx.input.body;
     const editorVersion = ctx.headers["x-editor-version"] as string | undefined;
@@ -1606,33 +1679,38 @@ router.post(
         transaction,
       });
       authorize(user, "createDocument", collection);
-    } else if (!!template && !collectionId) {
-      authorize(user, "createTemplate", user.team);
     }
 
-    let templateDocument: Document | null | undefined;
+    let template: Template | null | undefined;
 
     if (templateId) {
-      templateDocument = await Document.findByPk(templateId, {
+      template = await Template.findByPk(templateId, {
         userId: user.id,
         transaction,
       });
-      authorize(user, "read", templateDocument);
+      authorize(user, "read", template);
     }
+
+    // Pre-process text to convert bare embed URLs to markdown link format
+    const processedText = text ? convertBareUrlsToEmbedMarkdown(text) : text;
 
     const document = await documentCreator(ctx, {
       id,
       title,
-      text: !isNil(text)
-        ? await TextHelper.replaceImagesWithAttachments(ctx, text, user)
-        : text,
+      text: processedText
+        ? await TextHelper.replaceImagesWithAttachments(
+            ctx,
+            processedText,
+            user
+          )
+        : processedText,
       icon,
       color,
       createdAt,
       publish,
+      index,
       collectionId: collection?.id,
       parentDocumentId,
-      templateDocument,
       template,
       fullWidth,
       editorVersion,

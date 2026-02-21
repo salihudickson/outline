@@ -72,12 +72,17 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
 
   const mappedItems = useMemo(
     () =>
-      items.map((item) => ({
-        ...item,
-        children: item.children
-          ? mapMenuItems(item.children, commands, view.state)
-          : [],
-      })),
+      items.map((item) => {
+        const children =
+          typeof item.children === "function" ? item.children() : item.children;
+
+        return {
+          ...item,
+          children: children
+            ? mapMenuItems(children, commands, view.state)
+            : [],
+        };
+      }),
     [items, commands, view.state]
   );
 
