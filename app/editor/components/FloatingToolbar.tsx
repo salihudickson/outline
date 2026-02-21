@@ -122,6 +122,7 @@ export function usePosition({
     selection instanceof ColumnSelection && selection.isColSelection();
   const isRowSelection =
     selection instanceof RowSelection && selection.isRowSelection();
+  let colWidth = 0;
 
   if (isTableSelected(view.state)) {
     const rect = selectedRect(view.state);
@@ -138,6 +139,7 @@ export function usePosition({
     );
     if (element instanceof HTMLElement) {
       const bounds = element.getBoundingClientRect();
+      colWidth = bounds.width;
       selectionBounds.top = bounds.top - 16;
       selectionBounds.left = bounds.left;
       selectionBounds.right = bounds.right;
@@ -200,11 +202,13 @@ export function usePosition({
     ),
     Math.max(
       Math.max(offsetParent.x, margin),
-      align === "center"
-        ? centerOfSelection - menuWidth / 2
-        : align === "start"
-          ? selectionBounds.left
-          : selectionBounds.right
+      isColSelection && colWidth < 300
+        ? selectionBounds.right + margin
+        : align === "center"
+          ? centerOfSelection - menuWidth / 2
+          : align === "start"
+            ? selectionBounds.left
+            : selectionBounds.right
     )
   );
   const top = Math.max(

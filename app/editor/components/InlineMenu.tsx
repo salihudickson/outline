@@ -49,10 +49,9 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
 
     let left = position.left;
     if (menuRef.current && menuRect) {
-      const spaceOnRight =
-        viewportWidth - menuRef.current?.offsetWidth - position.left;
+      const spaceOnRight = viewportWidth - left;
       if (spaceOnRight < menuRect.right) {
-        left = position.left - spaceOnRight;
+        left = left - spaceOnRight; // double the space on the right
       }
     }
 
