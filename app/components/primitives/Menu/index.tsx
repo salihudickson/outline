@@ -108,7 +108,7 @@ const MenuContent = React.forwardRef<
   | HTMLDivElement,
   ContentProps
 >((props, ref) => {
-  const { variant, mainMenuRef, activeSubmenu } = useMenuContext();
+  const { variant, mainMenuRef } = useMenuContext();
   const isMobile = useMobile();
 
   const { children, ...rest } = props;
@@ -135,12 +135,10 @@ const MenuContent = React.forwardRef<
 
     return isMobile ? (
       <DrawerContent
-        key={activeSubmenu ? "submenu-active" : "submenu-inactive"}
         ref={contentRef}
         aria-label={rest["aria-label"]}
         onAnimationStart={disablePointerEvents}
         onAnimationEnd={enablePointerEvents}
-        style={activeSubmenu ? { display: "none" } : {}}
       >
         <StyledScrollable hiddenScrollbars overflow="scroll">
           {children}
