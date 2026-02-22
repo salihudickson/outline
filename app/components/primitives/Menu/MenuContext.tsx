@@ -16,6 +16,12 @@ type MenuContextType = {
   setActiveSubmenu: (id: string | null) => void;
   submenuTriggerRefs: Record<string, RefObject<HTMLDivElement>>;
   addSubmenuTriggerRef: (id: string, ref: RefObject<HTMLDivElement>) => void;
+  /** Refs to the rendered content elements of each active submenu, keyed by submenu id. */
+  submenuContentRefs: Record<string, RefObject<HTMLDivElement | null>>;
+  addSubmenuContentRef: (
+    id: string,
+    ref: RefObject<HTMLDivElement | null>
+  ) => void;
   mainMenuRef: React.RefObject<HTMLDivElement>;
 };
 
@@ -25,6 +31,8 @@ const MenuContext = createContext<MenuContextType>({
   setActiveSubmenu: () => {},
   submenuTriggerRefs: {},
   addSubmenuTriggerRef: () => {},
+  submenuContentRefs: {},
+  addSubmenuContentRef: () => {},
   mainMenuRef: { current: null },
 });
 
@@ -39,6 +47,9 @@ export function MenuProvider({
   const [submenuTriggerRefs, setSubmenuTriggerRefs] = useState<
     Record<string, RefObject<HTMLDivElement>>
   >({});
+  const [submenuContentRefs, setSubmenuContentRefs] = useState<
+    Record<string, RefObject<HTMLDivElement | null>>
+  >({});
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const addSubmenuTriggerRef = useCallback(
     (key: string, ref: RefObject<HTMLDivElement>) => {
@@ -49,6 +60,15 @@ export function MenuProvider({
     },
     [setSubmenuTriggerRefs]
   );
+  const addSubmenuContentRef = useCallback(
+    (key: string, ref: RefObject<HTMLDivElement | null>) => {
+      setSubmenuContentRefs((prevRefs) => ({
+        ...prevRefs,
+        [key]: ref,
+      }));
+    },
+    [setSubmenuContentRefs]
+  );
 
   const ctx = useMemo(
     () => ({
@@ -57,6 +77,8 @@ export function MenuProvider({
       setActiveSubmenu,
       submenuTriggerRefs,
       addSubmenuTriggerRef,
+      submenuContentRefs,
+      addSubmenuContentRef,
       mainMenuRef,
     }),
     [
@@ -65,6 +87,8 @@ export function MenuProvider({
       mainMenuRef,
       submenuTriggerRefs,
       addSubmenuTriggerRef,
+      submenuContentRefs,
+      addSubmenuContentRef,
     ]
   );
 

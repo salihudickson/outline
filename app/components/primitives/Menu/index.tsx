@@ -11,7 +11,6 @@ import useMobile from "~/hooks/useMobile";
 import { Drawer, DrawerContent } from "../Drawer";
 import Scrollable from "~/components/Scrollable";
 import { Portal as ReactPortal } from "~/components/Portal";
-import { isParentMenu } from "~/editor/components/InlineMenu";
 import useOnClickOutside from "~/hooks/useOnClickOutside";
 import { MenuType } from "@shared/editor/types";
 
@@ -141,11 +140,7 @@ const MenuContent = React.forwardRef<
         aria-label={rest["aria-label"]}
         onAnimationStart={disablePointerEvents}
         onAnimationEnd={enablePointerEvents}
-        style={
-          activeSubmenu
-            ? { display: "none", marginBottom: 1 }
-            : { display: "block" }
-        }
+        style={activeSubmenu ? { display: "none" } : {}}
       >
         <StyledScrollable hiddenScrollbars overflow="scroll">
           {children}
@@ -275,7 +270,9 @@ const SubMenuTrigger = React.forwardRef<HTMLDivElement, BaseItemProps>(
 );
 SubMenuTrigger.displayName = "SubMenuTrigger";
 
-type SubMenuContentProps = React.HTMLAttributes<HTMLDivElement>;
+type SubMenuContentProps = React.HTMLAttributes<HTMLDivElement> & {
+  onFocusOutside?: (ev: Event) => void;
+};
 
 const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
   (props, ref) => {
@@ -284,6 +281,8 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
       variant,
       activeSubmenu,
       submenuTriggerRefs,
+      submenuContentRefs,
+      addSubmenuContentRef,
       mainMenuRef,
       setActiveSubmenu,
     } = useMenuContext();
@@ -291,37 +290,80 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
     const [position, setPosition] = React.useState({ top: 0, left: 0 });
     const isMobile = useMobile();
 
-    useOnClickOutside(submenuRef, () => {
-      setActiveSubmenu(null);
-    });
+    // Register this submenu's content ref so siblings/parents can detect clicks inside it.
+    React.useEffect(() => {
+      if (id) {
+        addSubmenuContentRef(id, submenuRef);
+      }
+    }, [id, addSubmenuContentRef]);
+
+    // Smart click-outside: skip when click landed inside a descendant submenu; otherwise
+    // close to the deepest ancestor submenu that contains the click, or null for root.
+    const handleClickOutside = React.useCallback(
+      (event: MouseEvent | TouchEvent) => {
+        const isInsideDescendant =
+          id &&
+          Object.entries(submenuContentRefs).some(
+            ([refId, contentRef]) =>
+              refId !== id &&
+              refId.startsWith(id + "-") &&
+              contentRef.current?.contains(event.target as Node)
+          );
+        if (isInsideDescendant) {
+          return;
+        }
+
+        // Walk up the id hierarchy to find the deepest ancestor submenu containing the click.
+        let targetSubmenu: string | null = null;
+        if (id) {
+          const parts = id.split("-");
+          for (let len = parts.length - 1; len >= 2; len--) {
+            const ancestorId = parts.slice(0, len).join("-");
+            const ancestorRef = submenuContentRefs[ancestorId];
+            if (ancestorRef?.current?.contains(event.target as Node)) {
+              targetSubmenu = ancestorId;
+              break;
+            }
+          }
+        }
+
+        setActiveSubmenu(targetSubmenu);
+      },
+      [id, submenuContentRefs, setActiveSubmenu]
+    );
+
+    useOnClickOutside(submenuRef, handleClickOutside);
 
     React.useEffect(() => {
-      const trigger = submenuTriggerRefs[activeSubmenu ?? ""];
+      const trigger = submenuTriggerRefs[id ?? ""];
 
       if (trigger?.current) {
         const triggerRect = trigger.current.getBoundingClientRect();
-        const mainMenuRect = mainMenuRef.current?.getBoundingClientRect();
+        const parentId = id ? getParentSubmenuId(id) : null;
+        const anchorRect = (
+          parentId ? submenuContentRefs[parentId]?.current : mainMenuRef.current
+        )?.getBoundingClientRect();
         const subMenuRect = submenuRef.current?.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
 
         const spaceOnRight = viewportWidth - triggerRect.right;
-        const mainMenuWidth = mainMenuRect?.width;
+        const anchorWidth = anchorRect?.width;
         const submenuWidth = subMenuRect?.width;
 
         const marginRightForUX = 20;
-        const offsetLeftForUX = 75;
-        const offsetRightForUX = 65;
+        const offsetLeftForUX = parentId ? 95 : 75;
+        const offsetRightForUX = parentId ? 75 : 65;
 
         let left = triggerRect.left - offsetLeftForUX;
 
         // Check if there's enough space on the right
         if (
           submenuWidth &&
-          mainMenuWidth &&
+          anchorWidth &&
           spaceOnRight < submenuWidth + marginRightForUX
         ) {
           left =
-            triggerRect.left - submenuWidth - mainMenuWidth - offsetRightForUX;
+            triggerRect.left - submenuWidth - anchorWidth - offsetRightForUX;
         }
 
         setPosition({
@@ -329,7 +371,14 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
           left,
         });
       }
-    }, [variant, activeSubmenu, submenuTriggerRefs, mainMenuRef]);
+    }, [
+      variant,
+      activeSubmenu,
+      submenuTriggerRefs,
+      mainMenuRef,
+      id,
+      submenuContentRefs,
+    ]);
 
     const enablePointerEvents = React.useCallback(() => {
       if (submenuRef.current) {
@@ -344,7 +393,10 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
     }, []);
 
     if (variant === MenuType.inline) {
-      if (!(id === activeSubmenu)) {
+      const isVisible =
+        activeSubmenu === id ||
+        (id !== undefined && activeSubmenu?.startsWith(id + "-"));
+      if (!isVisible) {
         return null;
       }
 
@@ -354,6 +406,10 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
       };
 
       if (isMobile) {
+        if (activeSubmenu !== id) {
+          return <>{children}</>;
+        }
+
         return (
           <DrawerContent
             ref={(node) => {
@@ -368,7 +424,9 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
             aria-label={rest["aria-label"]}
             onAnimationStart={disablePointerEvents}
             onAnimationEnd={enablePointerEvents}
-            style={{ marginBottom: 1 }}
+            style={
+              activeSubmenu !== id ? { display: "none" } : { marginBottom: 1 }
+            }
           >
             <StyledScrollable hiddenScrollbars overflow="scroll">
               {children}
@@ -530,14 +588,17 @@ const MenuButton = React.forwardRef<
         disabled={disabled}
         $dangerous={dangerous}
         $active={active}
-        onClick={onClick}
+        onClick={() => {
+          onClick;
+        }}
         onMouseEnter={() => {
           setActive(true);
-          if (
-            activeSubmenu &&
-            props.id &&
-            !isParentMenu(activeSubmenu, props.id)
-          ) {
+          if (props.id) {
+            const parentId = getParentSubmenuId(props.id);
+            if (activeSubmenu && activeSubmenu !== parentId) {
+              setActiveSubmenu(parentId);
+            }
+          } else if (activeSubmenu) {
             setActiveSubmenu(null);
           }
         }}
@@ -713,6 +774,11 @@ const MenuLabel = React.forwardRef<
   );
 });
 MenuLabel.displayName = "MenuLabel";
+
+const getParentSubmenuId = (id: string): string | null => {
+  const parts = id.split("-");
+  return parts.length > 2 ? parts.slice(0, -1).join("-") : null;
+};
 
 const InlineMenuContentWrapper = styled(Components.MenuContent)`
   position: absolute;

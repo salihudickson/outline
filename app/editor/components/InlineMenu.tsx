@@ -23,9 +23,6 @@ type Props = {
   containerRef?: React.MutableRefObject<HTMLDivElement | null>;
 };
 
-export const isParentMenu = (parentId: string, childId: string) =>
-  childId.startsWith(parentId);
-
 /*
  * Renders an inline menu in the floating toolbar, which does not require a trigger.
  */
