@@ -20,21 +20,34 @@ const DrawerTrigger = DrawerPrimitive.Trigger;
 
 const DrawerHandle = DrawerPrimitive.Handle;
 
+type DrawerContentExtraProps = {
+  /**
+   * When true the sheet and its overlay are completely hidden without unmounting.
+   * Used by the inline menu to keep the React tree (and submenus inside it) alive
+   * while visually showing only the active submenu drawer on top.
+   */
+  $hidden?: boolean;
+};
+
 /** Drawer's content - renders the overlay and the actual content. */
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> &
+    DrawerContentExtraProps
 >((props, ref) => {
-  const { children, ...rest } = props;
+  const { children, $hidden, ...rest } = props;
   const [measureRef, bounds] = useMeasure();
 
   return (
     <DrawerPrimitive.Portal>
-      <DrawerPrimitive.Overlay asChild>
-        <Overlay />
-      </DrawerPrimitive.Overlay>
+      {!$hidden && (
+        <DrawerPrimitive.Overlay asChild>
+          <Overlay />
+        </DrawerPrimitive.Overlay>
+      )}
       <DrawerPrimitive.Content ref={ref} asChild>
         <StyledContent
+          $hidden={$hidden}
           animate={{
             height: bounds.height,
             transition: { bounce: 0, duration: 0.2 },
@@ -76,7 +89,7 @@ const DrawerTitle = React.forwardRef<
 DrawerTitle.displayName = DrawerPrimitive.Title.displayName;
 
 /** Styled components. */
-const StyledContent = styled(m.div)`
+const StyledContent = styled(m.div)<{ $hidden?: boolean }>`
   z-index: ${depths.menu};
   position: fixed;
   left: 0;
@@ -90,6 +103,8 @@ const StyledContent = styled(m.div)`
   border-radius: 6px;
 
   background: ${s("menuBackground")};
+
+  ${({ $hidden }) => $hidden && "display: none;"}
 `;
 
 const StyledInnerContent = styled.div`

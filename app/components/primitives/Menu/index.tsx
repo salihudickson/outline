@@ -23,16 +23,9 @@ type MenuProps = React.ComponentPropsWithoutRef<
 
 const Menu = ({ children, ...rest }: MenuProps) => {
   const { variant } = useMenuContext();
-  const isMobile = useMobile();
 
   if (variant === MenuType.inline) {
-    return isMobile ? (
-      <Drawer open={true} modal={false}>
-        {children}
-      </Drawer>
-    ) : (
-      <>{children}</>
-    );
+    return <>{children}</>;
   }
 
   const Root =
@@ -108,23 +101,10 @@ const MenuContent = React.forwardRef<
   | HTMLDivElement,
   ContentProps
 >((props, ref) => {
-  const { variant, mainMenuRef } = useMenuContext();
+  const { variant, mainMenuRef, activeSubmenu } = useMenuContext();
   const isMobile = useMobile();
 
   const { children, ...rest } = props;
-  const contentRef = React.useRef<React.ElementRef<typeof DrawerContent>>(null);
-
-  const enablePointerEvents = React.useCallback(() => {
-    if (contentRef.current) {
-      contentRef.current.style.pointerEvents = "auto";
-    }
-  }, []);
-
-  const disablePointerEvents = React.useCallback(() => {
-    if (contentRef.current) {
-      contentRef.current.style.pointerEvents = "none";
-    }
-  }, []);
 
   if (variant === MenuType.inline) {
     const contentProps = {
@@ -134,16 +114,24 @@ const MenuContent = React.forwardRef<
     const { pos } = props;
 
     return isMobile ? (
-      <DrawerContent
-        ref={contentRef}
-        aria-label={rest["aria-label"]}
-        onAnimationStart={disablePointerEvents}
-        onAnimationEnd={enablePointerEvents}
+      // Use a single Drawer that stays open as long as InlineMenu is mounted.
+      // $hidden hides the sheet + overlay when a submenu is active, while keeping
+      // the React children (including SubMenuContent trees) alive in the tree.
+      <Drawer
+        key={activeSubmenu ? `submenu-active` : "submenu-inactive"}
+        modal={false}
+        open={true}
       >
-        <StyledScrollable hiddenScrollbars overflow="scroll">
-          {children}
-        </StyledScrollable>
-      </DrawerContent>
+        <DrawerContent
+          aria-label={rest["aria-label"]}
+          aria-describedby={undefined}
+          $hidden={!!activeSubmenu}
+        >
+          <StyledScrollable hiddenScrollbars overflow="scroll">
+            {children}
+          </StyledScrollable>
+        </DrawerContent>
+      </Drawer>
     ) : (
       <ReactPortal>
         <InlineMenuContentWrapper
@@ -378,18 +366,6 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
       submenuContentRefs,
     ]);
 
-    const enablePointerEvents = React.useCallback(() => {
-      if (submenuRef.current) {
-        submenuRef.current.style.pointerEvents = "auto";
-      }
-    }, []);
-
-    const disablePointerEvents = React.useCallback(() => {
-      if (submenuRef.current) {
-        submenuRef.current.style.pointerEvents = "none";
-      }
-    }, []);
-
     if (variant === MenuType.inline) {
       const isVisible =
         activeSubmenu === id ||
@@ -409,27 +385,14 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
         }
 
         return (
-          <DrawerContent
-            ref={(node) => {
-              submenuRef.current = node;
-              if (typeof ref === "function") {
-                ref(node);
-              } else if (ref) {
-                (ref as React.MutableRefObject<HTMLDivElement | null>).current =
-                  node;
-              }
-            }}
+          <SubMenuDrawer
             aria-label={rest["aria-label"]}
-            onAnimationStart={disablePointerEvents}
-            onAnimationEnd={enablePointerEvents}
-            style={
-              activeSubmenu !== id ? { display: "none" } : { marginBottom: 1 }
-            }
+            setActiveSubmenu={setActiveSubmenu}
+            submenuRef={submenuRef}
+            forwardedRef={ref}
           >
-            <StyledScrollable hiddenScrollbars overflow="scroll">
-              {children}
-            </StyledScrollable>
-          </DrawerContent>
+            {children}
+          </SubMenuDrawer>
         );
       }
 
@@ -586,12 +549,11 @@ const MenuButton = React.forwardRef<
         disabled={disabled}
         $dangerous={dangerous}
         $active={active}
-        onClick={() => {
-          onClick;
-        }}
+        onClick={onClick}
         onMouseEnter={() => {
           setActive(true);
           if (props.id) {
+            // Close any nested submenu that is deeper than this button's parent level.
             const parentId = getParentSubmenuId(props.id);
             if (activeSubmenu && activeSubmenu !== parentId) {
               setActiveSubmenu(parentId);
@@ -798,6 +760,62 @@ const InlineSubMenuContentWrapper = styled(Components.MenuContent)`
 const StyledScrollable = styled(Scrollable)`
   max-height: 75vh;
 `;
+
+const DRAWER_ANIMATION_DURATION_MS = 300;
+
+type SubMenuDrawerProps = {
+  "aria-label"?: string;
+  setActiveSubmenu: (id: string | null) => void;
+  submenuRef: React.MutableRefObject<HTMLDivElement | null>;
+  forwardedRef: React.ForwardedRef<HTMLDivElement>;
+  children: React.ReactNode;
+};
+
+function SubMenuDrawer({
+  "aria-label": ariaLabel,
+  setActiveSubmenu,
+  submenuRef,
+  forwardedRef,
+  children,
+}: SubMenuDrawerProps) {
+  const [isOpen, setIsOpen] = React.useState(true);
+
+  const handleOpenChange = React.useCallback(
+    (open: boolean) => {
+      if (!open) {
+        // Let slide-down animation play out before tearing down the tree.
+        setIsOpen(false);
+        setTimeout(() => setActiveSubmenu(null), DRAWER_ANIMATION_DURATION_MS);
+      }
+    },
+    [setActiveSubmenu]
+  );
+
+  useOnClickOutside(submenuRef, () => handleOpenChange(false));
+
+  return (
+    <Drawer open={isOpen} modal={false} onOpenChange={handleOpenChange}>
+      <DrawerContent
+        aria-label={ariaLabel}
+        aria-describedby={undefined}
+        ref={(node) => {
+          submenuRef.current = node;
+          if (typeof forwardedRef === "function") {
+            forwardedRef(node);
+          } else if (forwardedRef) {
+            (
+              forwardedRef as React.MutableRefObject<HTMLDivElement | null>
+            ).current = node;
+          }
+        }}
+      >
+        <StyledScrollable hiddenScrollbars overflow="scroll">
+          {children}
+        </StyledScrollable>
+      </DrawerContent>
+    </Drawer>
+  );
+}
 
 export {
   Menu,
