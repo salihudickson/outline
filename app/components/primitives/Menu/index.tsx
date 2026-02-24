@@ -117,6 +117,7 @@ const MenuContent = React.forwardRef<
       // Use a single Drawer that stays open as long as InlineMenu is mounted.
       // $hidden hides the sheet + overlay when a submenu is active, while keeping
       // the React children (including SubMenuContent trees) alive in the tree.
+      //comment
       <Drawer
         key={activeSubmenu ? `submenu-active` : "submenu-inactive"}
         modal={false}
