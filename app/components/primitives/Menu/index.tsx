@@ -101,7 +101,7 @@ const MenuContent = React.forwardRef<
   | HTMLDivElement,
   ContentProps
 >((props, ref) => {
-  const { variant, mainMenuRef, activeSubmenu } = useMenuContext();
+  const { variant, mainMenuRef, activeSubmenu, closeMenu } = useMenuContext();
   const isMobile = useMobile();
 
   const { children, ...rest } = props;
@@ -118,9 +118,13 @@ const MenuContent = React.forwardRef<
       // $hidden hides the sheet + overlay when a submenu is active, while keeping
       // the React children (including SubMenuContent trees) alive in the tree.
       <Drawer
-        key={activeSubmenu ? `submenu-active` : "submenu-inactive"}
-        modal={false}
         open={true}
+        modal={false}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeMenu();
+          }
+        }}
       >
         <DrawerContent
           aria-label={rest["aria-label"]}
@@ -318,7 +322,10 @@ const SubMenuContent = React.forwardRef<HTMLDivElement, SubMenuContentProps>(
       [id, submenuContentRefs, setActiveSubmenu]
     );
 
-    useOnClickOutside(submenuRef, handleClickOutside);
+    // On mobile, SubMenuDrawer's own useOnClickOutside (with animation delay) handles
+    // outside taps. Using this handler on mobile too would cause an immediate
+    // setActiveSubmenu(null) that unmounts the component before the animation plays.
+    useOnClickOutside(submenuRef, isMobile ? undefined : handleClickOutside);
 
     React.useEffect(() => {
       const trigger = submenuTriggerRefs[id ?? ""];
@@ -517,7 +524,8 @@ const MenuButton = React.forwardRef<
   | React.ElementRef<typeof ContextMenuPrimitive.Item>,
   MenuButtonProps
 >((props, ref) => {
-  const { variant, activeSubmenu, setActiveSubmenu } = useMenuContext();
+  const { variant, activeSubmenu, setActiveSubmenu, closeMenu } =
+    useMenuContext();
   const [active, setActive] = React.useState(false);
   const {
     label,
@@ -549,7 +557,11 @@ const MenuButton = React.forwardRef<
         disabled={disabled}
         $dangerous={dangerous}
         $active={active}
-        onClick={onClick}
+        onClick={(e) => {
+          onClick(e);
+          // Close the entire inline menu after any button action.
+          closeMenu();
+        }}
         onMouseEnter={() => {
           setActive(true);
           if (props.id) {
