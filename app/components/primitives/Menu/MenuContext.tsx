@@ -23,6 +23,8 @@ type MenuContextType = {
     ref: RefObject<HTMLDivElement | null>
   ) => void;
   mainMenuRef: React.RefObject<HTMLDivElement>;
+  /** Closes the entire inline menu (no-op for non-inline variants). */
+  closeMenu: () => void;
 };
 
 const MenuContext = createContext<MenuContextType>({
@@ -34,13 +36,17 @@ const MenuContext = createContext<MenuContextType>({
   submenuContentRefs: {},
   addSubmenuContentRef: () => {},
   mainMenuRef: { current: null },
+  closeMenu: () => {},
 });
 
 export function MenuProvider({
   variant,
+  onCloseMenu,
   children,
 }: {
   variant: MenuVariant;
+  /** Called when a menu button is activated to close the entire inline menu. */
+  onCloseMenu?: () => void;
   children: React.ReactNode;
 }) {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
@@ -70,6 +76,10 @@ export function MenuProvider({
     [setSubmenuContentRefs]
   );
 
+  const closeMenu = useCallback(() => {
+    onCloseMenu?.();
+  }, [onCloseMenu]);
+
   const ctx = useMemo(
     () => ({
       variant,
@@ -80,6 +90,7 @@ export function MenuProvider({
       submenuContentRefs,
       addSubmenuContentRef,
       mainMenuRef,
+      closeMenu,
     }),
     [
       variant,
@@ -89,6 +100,7 @@ export function MenuProvider({
       addSubmenuTriggerRef,
       submenuContentRefs,
       addSubmenuContentRef,
+      closeMenu,
     ]
   );
 

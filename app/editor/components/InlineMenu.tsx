@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { TextSelection } from "prosemirror-state";
 import { Portal } from "~/components/Portal";
 import { Menu } from "~/components/primitives/Menu";
 import type { MenuItem } from "@shared/editor/types";
@@ -67,6 +68,15 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
     ev.stopImmediatePropagation();
   }, []);
 
+  /**
+   * Collapses the editor selection to a cursor. This causes SelectionToolbar to
+   * see selection.empty === true and hide the inline menu.
+   */
+  const handleCloseMenu = useCallback(() => {
+    const { tr, doc, selection } = view.state;
+    view.dispatch(tr.setSelection(TextSelection.create(doc, selection.from)));
+  }, [view]);
+
   const mappedItems = useMemo(
     () =>
       items.map((item) => {
@@ -84,7 +94,7 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
   );
 
   const content = (
-    <MenuProvider variant="inline">
+    <MenuProvider variant="inline" onCloseMenu={handleCloseMenu}>
       <Menu>
         <MenuContent
           pos={pos}
