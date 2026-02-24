@@ -5,7 +5,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { TextSelection } from "prosemirror-state";
 import { Portal } from "~/components/Portal";
 import { Menu } from "~/components/primitives/Menu";
 import type { MenuItem } from "@shared/editor/types";
@@ -34,6 +33,26 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
   const menuRef = containerRef || fallbackRef;
   const isMobile = useMobile();
   const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  // When true the menu is hidden without touching the ProseMirror selection.
+  const [dismissed, setDismissed] = useState(false);
+  // Record the selection position at dismissal so we know when to re-show.
+  const dismissedAt = useRef<{ anchor: number; head: number } | null>(null);
+
+  // Re-show the menu as soon as the selection moves to a different range.
+  useEffect(() => {
+    if (!dismissed || !dismissedAt.current) {
+      return;
+    }
+    const { anchor, head } = view.state.selection;
+    if (
+      anchor !== dismissedAt.current.anchor ||
+      head !== dismissedAt.current.head
+    ) {
+      setDismissed(false);
+      dismissedAt.current = null;
+    }
+  }, [dismissed, view.state.selection]);
 
   const position = usePosition({
     menuRef,
@@ -69,12 +88,15 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
   }, []);
 
   /**
-   * Collapses the editor selection to a cursor. This causes SelectionToolbar to
-   * see selection.empty === true and hide the inline menu.
+   * Hides the inline menu without collapsing the ProseMirror selection.
+   * The menu re-appears automatically once the selection moves to a new range.
    */
   const handleCloseMenu = useCallback(() => {
-    const { tr, doc, selection } = view.state;
-    view.dispatch(tr.setSelection(TextSelection.create(doc, selection.from)));
+    dismissedAt.current = {
+      anchor: view.state.selection.anchor,
+      head: view.state.selection.head,
+    };
+    setDismissed(true);
   }, [view]);
 
   const mappedItems = useMemo(
@@ -92,6 +114,10 @@ const InlineMenu: React.FC<Props> = ({ items, containerRef }) => {
       }),
     [items, commands, view.state]
   );
+
+  if (dismissed) {
+    return null;
+  }
 
   const content = (
     <MenuProvider variant="inline" onCloseMenu={handleCloseMenu}>
