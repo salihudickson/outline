@@ -20,20 +20,12 @@ const DrawerTrigger = DrawerPrimitive.Trigger;
 
 const DrawerHandle = DrawerPrimitive.Handle;
 
-type DrawerContentExtraProps = {
-  /**
-   * When true the sheet and its overlay are completely hidden without unmounting.
-   * Used by the inline menu to keep the React tree (and submenus inside it) alive
-   * while visually showing only the active submenu drawer on top.
-   */
-  $hidden?: boolean;
-};
-
 /** Drawer's content - renders the overlay and the actual content. */
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> &
-    DrawerContentExtraProps
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> & {
+    $hidden?: boolean;
+  }
 >((props, ref) => {
   const { children, $hidden, ...rest } = props;
   const [measureRef, bounds] = useMeasure();

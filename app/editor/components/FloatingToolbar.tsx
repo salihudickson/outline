@@ -309,9 +309,7 @@ const FloatingToolbar = React.forwardRef(function FloatingToolbar_(
         }}
       >
         {props.children && (
-          <Background align={props.align} className="background">
-            {props.children}
-          </Background>
+          <Background align={props.align}>{props.children}</Background>
         )}
       </Wrapper>
     </Portal>
@@ -376,9 +374,7 @@ const MobileBackground = styled.div`
   }
 `;
 
-const Background = styled.div<{
-  align: Props["align"];
-}>`
+const Background = styled.div<{ align: Props["align"] }>`
   position: relative;
   background-color: ${s("menuBackground")};
   box-shadow: ${s("menuShadow")};

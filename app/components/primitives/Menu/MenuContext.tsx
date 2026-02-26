@@ -16,7 +16,6 @@ type MenuContextType = {
   setActiveSubmenu: (id: string | null) => void;
   submenuTriggerRefs: Record<string, RefObject<HTMLDivElement>>;
   addSubmenuTriggerRef: (id: string, ref: RefObject<HTMLDivElement>) => void;
-  /** Refs to the rendered content elements of each active submenu, keyed by submenu id. */
   submenuContentRefs: Record<string, RefObject<HTMLDivElement | null>>;
   addSubmenuContentRef: (
     id: string,
