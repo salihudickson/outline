@@ -13,6 +13,9 @@ import Scrollable from "~/components/Scrollable";
 import { Portal as ReactPortal } from "~/components/Portal";
 import useOnClickOutside from "~/hooks/useOnClickOutside";
 import { MenuType } from "@shared/editor/types";
+import { collapseSelection } from "@shared/editor/commands/collapseSelection";
+import { useEditor } from "~/editor/components/EditorContext";
+import type { EditorView } from "prosemirror-view";
 
 type MenuProps = React.ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Root
@@ -95,8 +98,9 @@ const MenuContent = React.forwardRef<
   | HTMLDivElement,
   ContentProps
 >((props, ref) => {
-  const { variant, mainMenuRef, activeSubmenu, closeMenu } = useMenuContext();
+  const { variant, mainMenuRef, activeSubmenu } = useMenuContext();
   const isMobile = useMobile();
+  const { view } = useEditor();
 
   const { children, ...rest } = props;
 
@@ -113,7 +117,7 @@ const MenuContent = React.forwardRef<
         modal={false}
         onOpenChange={(open) => {
           if (!open) {
-            closeMenu();
+            closeMenu(view);
           }
         }}
       >
@@ -519,8 +523,8 @@ const MenuButton = React.forwardRef<
   | React.ElementRef<typeof ContextMenuPrimitive.Item>,
   MenuButtonProps
 >((props, ref) => {
-  const { variant, activeSubmenu, setActiveSubmenu, closeMenu } =
-    useMenuContext();
+  const { variant, activeSubmenu, setActiveSubmenu } = useMenuContext();
+  const { view } = useEditor();
   const [active, setActive] = React.useState(false);
   const {
     label,
@@ -545,8 +549,26 @@ const MenuButton = React.forwardRef<
     </>
   );
 
-  if (variant === MenuType.inline) {
-    const button = (
+  const Item =
+    variant === "dropdown"
+      ? DropdownMenuPrimitive.Item
+      : ContextMenuPrimitive.Item;
+
+  const handleMouseEnter = React.useCallback(() => {
+    setActive(true);
+    if (props.id) {
+      // Close any nested submenu that is deeper than this button's parent level.
+      const parentId = getParentSubmenuId(props.id);
+      if (activeSubmenu && activeSubmenu !== parentId) {
+        setActiveSubmenu(parentId);
+      }
+    } else if (activeSubmenu) {
+      setActiveSubmenu(null);
+    }
+  }, [setActive, props.id, activeSubmenu, setActiveSubmenu]);
+
+  const button =
+    variant === MenuType.inline ? (
       <Components.MenuButton
         ref={ref as React.Ref<HTMLButtonElement>}
         disabled={disabled}
@@ -554,51 +576,24 @@ const MenuButton = React.forwardRef<
         $active={active}
         onClick={(e) => {
           onClick(e);
-          closeMenu();
+          closeMenu(view);
         }}
-        onMouseEnter={() => {
-          setActive(true);
-          if (props.id) {
-            // Close any nested submenu that is deeper than this button's parent level.
-            const parentId = getParentSubmenuId(props.id);
-            if (activeSubmenu && activeSubmenu !== parentId) {
-              setActiveSubmenu(parentId);
-            }
-          } else if (activeSubmenu) {
-            setActiveSubmenu(null);
-          }
-        }}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setActive(false)}
       >
         {buttonContent}
       </Components.MenuButton>
-    );
-
-    return tooltip ? (
-      <Tooltip content={tooltip} placement="bottom">
-        <div>{button}</div>
-      </Tooltip>
     ) : (
-      <>{button}</>
+      <Item ref={ref} disabled={disabled} {...rest} asChild>
+        <Components.MenuButton
+          disabled={disabled}
+          $dangerous={dangerous}
+          onClick={onClick}
+        >
+          {buttonContent}
+        </Components.MenuButton>
+      </Item>
     );
-  }
-
-  const Item =
-    variant === "dropdown"
-      ? DropdownMenuPrimitive.Item
-      : ContextMenuPrimitive.Item;
-
-  const button = (
-    <Item ref={ref} disabled={disabled} {...rest} asChild>
-      <Components.MenuButton
-        disabled={disabled}
-        $dangerous={dangerous}
-        onClick={onClick}
-      >
-        {buttonContent}
-      </Components.MenuButton>
-    </Item>
-  );
 
   return tooltip ? (
     <Tooltip content={tooltip} placement="bottom">
@@ -741,22 +736,6 @@ const MenuLabel = React.forwardRef<
 });
 MenuLabel.displayName = "MenuLabel";
 
-const getParentSubmenuId = (id: string): string | null => {
-  const parts = id.split("-");
-  return parts.length > 2 ? parts.slice(0, -1).join("-") : null;
-};
-
-const InlineMenuContentWrapper = styled(Components.MenuContent)`
-  position: absolute;
-  height: fit-content;
-  z-index: 1000;
-`;
-
-// Styled scrollable for mobile drawer content
-const StyledScrollable = styled(Scrollable)`
-  max-height: 75vh;
-`;
-
 const DRAWER_ANIMATION_DURATION_MS = 300;
 
 type SubMenuDrawerProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -766,15 +745,15 @@ type SubMenuDrawerProps = React.HTMLAttributes<HTMLDivElement> & {
   children: React.ReactNode;
 };
 
-function SubMenuDrawer({
+const SubMenuDrawer = ({
   setActiveSubmenu,
   submenuRef,
   forwardedRef,
   children,
   ...rest
-}: SubMenuDrawerProps) {
+}: SubMenuDrawerProps) => {
   const [isOpen, setIsOpen] = React.useState(true);
-  const { closeMenu } = useMenuContext();
+  const { view } = useEditor();
 
   const handleOpenChange = React.useCallback(
     (open: boolean) => {
@@ -783,11 +762,11 @@ function SubMenuDrawer({
         // Let slide-down animation play out before tearing down the tree.
         setTimeout(() => {
           setActiveSubmenu(null);
-          closeMenu();
+          closeMenu(view);
         }, DRAWER_ANIMATION_DURATION_MS);
       }
     },
-    [setActiveSubmenu]
+    [setActiveSubmenu, view]
   );
 
   useOnClickOutside(submenuRef, () => handleOpenChange(false));
@@ -807,13 +786,31 @@ function SubMenuDrawer({
         }}
         {...rest}
       >
-        <StyledScrollable hiddenScrollbars overflow="scroll">
-          {children}
-        </StyledScrollable>
+        <StyledScrollable hiddenScrollbars>{children}</StyledScrollable>
       </DrawerContent>
     </Drawer>
   );
-}
+};
+
+const getParentSubmenuId = (id: string): string | null => {
+  const parts = id.split("-");
+  return parts.length > 2 ? parts.slice(0, -1).join("-") : null;
+};
+
+const closeMenu = (view: EditorView) => {
+  collapseSelection()(view.state, view.dispatch);
+};
+
+const InlineMenuContentWrapper = styled(Components.MenuContent)`
+  position: absolute;
+  height: fit-content;
+  z-index: 1000;
+`;
+
+// Styled scrollable for mobile drawer content
+const StyledScrollable = styled(Scrollable)`
+  max-height: 75vh;
+`;
 
 export {
   Menu,
