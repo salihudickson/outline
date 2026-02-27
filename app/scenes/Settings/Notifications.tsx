@@ -270,7 +270,6 @@ function Notifications() {
             description={option.description}
           >
             <ChannelSelector
-              eventId={option.event}
               value={enabledChannels}
               onChange={handleChannelsChange(option.event)}
               slackDisabled={!hasSlackLinked}
