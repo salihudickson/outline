@@ -72,6 +72,15 @@ function Preferences() {
     [user, t]
   );
 
+  const handleCodeBlockLineWrapChange = React.useCallback(
+    async (checked: boolean) => {
+      user.setPreference(UserPreference.CodeBlockLineWrap, checked);
+      await user.save();
+      toast.success(t("Preferences saved"));
+    },
+    [user, t]
+  );
+
   const handleSeamlessEditChange = React.useCallback(
     async (checked: boolean) => {
       user.setPreference(UserPreference.SeamlessEdit, !checked);
@@ -222,13 +231,25 @@ function Preferences() {
         name={UserPreference.CodeBlockLineNumers}
         label={t("Show line numbers")}
         description={t("Show line numbers on code blocks in documents.")}
-        border={false}
       >
         <Switch
           id={UserPreference.CodeBlockLineNumers}
           name={UserPreference.CodeBlockLineNumers}
           checked={user.getPreference(UserPreference.CodeBlockLineNumers)}
           onChange={handleCodeBlockLineNumbersChange}
+        />
+      </SettingRow>
+      <SettingRow
+        name={UserPreference.CodeBlockLineWrap}
+        label={t("Wrap code lines")}
+        description={t("Wrap long lines in code blocks in documents.")}
+        border={false}
+      >
+        <Switch
+          id={UserPreference.CodeBlockLineWrap}
+          name={UserPreference.CodeBlockLineWrap}
+          checked={user.getPreference(UserPreference.CodeBlockLineWrap)}
+          onChange={handleCodeBlockLineWrapChange}
         />
       </SettingRow>
 

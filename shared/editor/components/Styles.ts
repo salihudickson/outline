@@ -1834,6 +1834,14 @@ mark {
   }
 }
 
+.code-block.with-line-wrap {
+  pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-x: unset;
+  }
+}
+
 .mermaid-diagram-wrapper {
   display: flex;
   align-items: center;

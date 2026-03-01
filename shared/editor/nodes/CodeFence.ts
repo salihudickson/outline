@@ -63,6 +63,10 @@ export default class CodeFence extends Node {
     return this.options.userPreferences?.codeBlockLineNumbers ?? true;
   }
 
+  get showLineWrap(): boolean {
+    return this.options.userPreferences?.codeBlockLineWrap ?? false;
+  }
+
   get name() {
     return "code_fence";
   }
@@ -109,7 +113,7 @@ export default class CodeFence extends Node {
         {
           class: `code-block ${
             this.showLineNumbers ? "with-line-numbers" : ""
-          }`,
+          } ${this.showLineWrap ? "with-line-wrap" : ""}`.trim(),
           "data-language": node.attrs.language,
         },
         ["pre", ["code", { spellCheck: "false" }, 0]],
