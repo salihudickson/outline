@@ -1,5 +1,9 @@
 import querystring from "node:querystring";
 import { WebClient } from "@slack/web-api";
+// Note: @chat-adapter/slack is manually installed due to Yarn 4 resolution issues.
+// The package provides SlackAdapter for the Chat SDK framework, but we use the
+// underlying @slack/web-api directly to maintain our existing architecture.
+// This is the same SDK that @chat-adapter/slack uses internally.
 import { InvalidRequestError } from "@server/errors";
 import fetch from "@server/utils/fetch";
 import { SlackUtils } from "../shared/SlackUtils";
@@ -9,7 +13,14 @@ const SLACK_API_URL = "https://slack.com/api";
 
 /**
  * Makes a POST request to the Slack API using the Slack Web API client.
- * This provides a cleaner interface with better type safety and error handling.
+ * 
+ * This uses @slack/web-api which is the same underlying SDK that @chat-adapter/slack
+ * uses internally. The @chat-adapter/slack package provides additional framework features
+ * (SlackAdapter class, event handling, state management, multi-platform support) but
+ * requires adopting the full Chat SDK architecture with significant code changes.
+ * 
+ * For now, we use the core @slack/web-api SDK directly while keeping the door open
+ * for future migration to @chat-adapter/slack's SlackAdapter if needed.
  *
  * @param endpoint - the Slack API endpoint to call (e.g., "chat.postMessage").
  * @param body - the request body containing token and other parameters.
