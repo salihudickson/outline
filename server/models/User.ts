@@ -338,7 +338,7 @@ class User extends ParanoidModel<
    */
   public setNotificationEventType = (
     type: NotificationEventType,
-    value: boolean | Record<NotificationChannelType, boolean> = true,
+    value: boolean | Record<NotificationChannelType, boolean>,
     channel?: NotificationChannelType
   ) => {
     if (channel !== undefined) {
@@ -346,12 +346,12 @@ class User extends ParanoidModel<
       const currentSetting = this.notificationSettings[type];
       const channelSettings =
         typeof currentSetting === "object" ? currentSetting : {};
-      
+
       this.notificationSettings = {
         ...this.notificationSettings,
         [type]: {
           ...channelSettings,
-          [channel]: value as boolean,
+          [channel]: value,
         },
       };
     } else {
@@ -373,28 +373,23 @@ class User extends ParanoidModel<
    */
   public subscribedToEventType = (
     type: NotificationEventType,
-    channel?: NotificationChannelType
+    channel = NotificationChannelType.Email
   ): boolean => {
     const setting = this.notificationSettings[type];
     const defaultValue = NotificationEventDefaults[type] ?? false;
-    
+
     if (setting === undefined) {
       return defaultValue;
     }
-    
+
     if (typeof setting === "boolean") {
       return setting;
     }
-    
-    if (channel && typeof setting === "object") {
+
+    if (typeof setting === "object") {
       return setting[channel] ?? defaultValue;
     }
-    
-    // If no channel specified and setting is object, check if any channel is enabled
-    if (typeof setting === "object") {
-      return Object.values(setting).some((v) => v === true);
-    }
-    
+
     return defaultValue;
   };
 
@@ -413,16 +408,14 @@ class User extends ParanoidModel<
         type: IntegrationType.LinkedAccount,
       },
     });
-    
+
     if (!integration || typeof integration.settings !== "object") {
       return null;
     }
-    
-    // Type guard to check if settings has slack property
-    const settings = integration.settings as unknown;
+
+    const { settings } = integration;
     if (
       settings &&
-      typeof settings === "object" &&
       "slack" in settings &&
       settings.slack &&
       typeof settings.slack === "object" &&
@@ -430,7 +423,7 @@ class User extends ParanoidModel<
     ) {
       return settings.slack.serviceUserId as string;
     }
-    
+
     return null;
   };
 

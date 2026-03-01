@@ -33,6 +33,8 @@ export default class EmailsProcessor extends BaseProcessor {
       return;
     }
 
+    // find out if this is the only screening for the subscription
+
     // Check if user has email notifications enabled for this event type
     if (
       !notification.user.subscribedToEventType(

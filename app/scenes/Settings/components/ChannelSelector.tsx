@@ -27,7 +27,7 @@ function ChannelSelector({ value, onChange, slackDisabled = false }: Props) {
         icon: <EmailIcon size={16} />,
       },
       {
-        key: NotificationChannelType.Chat,
+        key: NotificationChannelType.Slack,
         label: t("Slack"),
         icon: <FontAwesomeIcon icon={faSlack} size="xs" />,
       },

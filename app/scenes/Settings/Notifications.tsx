@@ -172,10 +172,9 @@ function Notifications() {
   const handleChannelsChange = React.useCallback(
     (eventType: NotificationEventType) =>
       async (channels: NotificationChannelType[]) => {
-        // Update each channel setting
         for (const channel of [
           NotificationChannelType.Email,
-          NotificationChannelType.Chat,
+          NotificationChannelType.Slack,
         ]) {
           const shouldEnable = channels.includes(channel);
           const currentlyEnabled = user.subscribedToEventType(
@@ -246,7 +245,7 @@ function Notifications() {
         );
         const slackSetting = user.subscribedToEventType(
           option.event,
-          NotificationChannelType.Chat
+          NotificationChannelType.Slack
         );
 
         const enabledChannels: NotificationChannelType[] = [];
@@ -254,7 +253,7 @@ function Notifications() {
           enabledChannels.push(NotificationChannelType.Email);
         }
         if (slackSetting) {
-          enabledChannels.push(NotificationChannelType.Chat);
+          enabledChannels.push(NotificationChannelType.Slack);
         }
 
         return (

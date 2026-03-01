@@ -3,9 +3,9 @@ import { computed, action, observable } from "mobx";
 import { now } from "mobx-utils";
 import { UserPreferenceDefaults } from "@shared/constants";
 import {
+  NotificationChannelType,
   NotificationEventDefaults,
   type NotificationEventType,
-  type NotificationChannelType,
   TeamPreference,
   UserPreference,
   type UserPreferences,
@@ -197,28 +197,23 @@ class User extends ParanoidModel implements Searchable {
    */
   public subscribedToEventType = (
     type: NotificationEventType,
-    channel?: NotificationChannelType
+    channel = NotificationChannelType.Email
   ): boolean => {
     const setting = this.notificationSettings[type];
     const defaultValue = NotificationEventDefaults[type] ?? false;
-    
+
     if (setting === undefined) {
       return defaultValue;
     }
-    
+
     if (typeof setting === "boolean") {
       return setting;
     }
-    
-    if (channel && typeof setting === "object") {
+
+    if (typeof setting === "object") {
       return setting[channel] ?? defaultValue;
     }
-    
-    // If no channel specified and setting is object, check if any channel is enabled
-    if (typeof setting === "object") {
-      return Object.values(setting).some((v) => v === true);
-    }
-    
+
     return defaultValue;
   };
 
@@ -233,7 +228,7 @@ class User extends ParanoidModel implements Searchable {
   @action
   setNotificationEventType = async (
     eventType: NotificationEventType,
-    value: boolean,
+    value: boolean | Record<NotificationChannelType, boolean>,
     channel?: NotificationChannelType
   ) => {
     if (channel !== undefined) {
@@ -241,7 +236,7 @@ class User extends ParanoidModel implements Searchable {
       const currentSetting = this.notificationSettings[eventType];
       const channelSettings =
         typeof currentSetting === "object" ? currentSetting : {};
-      
+
       this.notificationSettings = {
         ...this.notificationSettings,
         [eventType]: {
