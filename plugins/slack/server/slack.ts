@@ -1,5 +1,5 @@
 import querystring from "node:querystring";
-import { WebClient, ChatPostMessageArguments, ChatUnfurlArguments } from "@slack/web-api";
+import { WebClient } from "@slack/web-api";
 import { InvalidRequestError } from "@server/errors";
 import fetch from "@server/utils/fetch";
 import { SlackUtils } from "../shared/SlackUtils";
@@ -8,8 +8,8 @@ import env from "./env";
 const SLACK_API_URL = "https://slack.com/api";
 
 /**
- * Makes a POST request to the Slack API using the official Slack SDK.
- * This function provides backward compatibility with the previous custom implementation.
+ * Makes a POST request to the Slack API using the Slack Web API client.
+ * This provides a cleaner interface with better type safety and error handling.
  *
  * @param endpoint - the Slack API endpoint to call (e.g., "chat.postMessage").
  * @param body - the request body containing token and other parameters.
@@ -25,19 +25,8 @@ export async function post(endpoint: string, body: Record<string, any>) {
   try {
     const client = new WebClient(token);
     
-    // Extract the method name from the endpoint (e.g., "chat.postMessage" -> "chat" namespace)
-    const [namespace, method] = endpoint.split(".");
-    
-    // Call the appropriate SDK method
-    let result;
-    if (namespace === "chat" && method === "postMessage") {
-      result = await client.chat.postMessage(params as ChatPostMessageArguments);
-    } else if (namespace === "chat" && method === "unfurl") {
-      result = await client.chat.unfurl(params as ChatUnfurlArguments);
-    } else {
-      // For any other endpoints, use the generic apiCall method
-      result = await client.apiCall(endpoint, params);
-    }
+    // Use the API call method which handles all endpoints uniformly
+    const result = await client.apiCall(endpoint, params);
 
     if (!result.ok) {
       throw InvalidRequestError(result.error || "Unknown Slack API error");
