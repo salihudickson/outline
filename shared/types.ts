@@ -287,6 +287,8 @@ export enum UserPreference {
   UseCursorPointer = "useCursorPointer",
   /** Whether code blocks should show line numbers. */
   CodeBlockLineNumers = "codeBlockLineNumbers",
+  /** Whether code blocks should wrap long lines. */
+  CodeBlockLineWrap = "codeBlockLineWrap",
   /** Whether documents have a separate edit mode instead of always editing. */
   SeamlessEdit = "seamlessEdit",
   /** Whether documents should start in full-width mode. */
@@ -312,6 +314,7 @@ export type UserPreferences = {
   [UserPreference.RememberLastPath]?: boolean;
   [UserPreference.UseCursorPointer]?: boolean;
   [UserPreference.CodeBlockLineNumers]?: boolean;
+  [UserPreference.CodeBlockLineWrap]?: boolean;
   [UserPreference.SeamlessEdit]?: boolean;
   [UserPreference.FullWidthDocuments]?: boolean;
   [UserPreference.SortCommentsByOrderInDocument]?: boolean;

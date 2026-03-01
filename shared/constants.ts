@@ -42,6 +42,7 @@ export const UserPreferenceDefaults: UserPreferences = {
   [UserPreference.RememberLastPath]: true,
   [UserPreference.UseCursorPointer]: true,
   [UserPreference.CodeBlockLineNumers]: true,
+  [UserPreference.CodeBlockLineWrap]: false,
   [UserPreference.SortCommentsByOrderInDocument]: true,
   [UserPreference.EnableSmartText]: true,
   [UserPreference.NotificationBadge]: NotificationBadgeType.Count,
