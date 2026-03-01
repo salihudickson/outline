@@ -1,9 +1,4 @@
 import querystring from "node:querystring";
-import { WebClient } from "@slack/web-api";
-// Note: @chat-adapter/slack is manually installed due to Yarn 4 resolution issues.
-// The package provides SlackAdapter for the Chat SDK framework, but we use the
-// underlying @slack/web-api directly to maintain our existing architecture.
-// This is the same SDK that @chat-adapter/slack uses internally.
 import { InvalidRequestError } from "@server/errors";
 import fetch from "@server/utils/fetch";
 import { SlackUtils } from "../shared/SlackUtils";
@@ -12,50 +7,38 @@ import env from "./env";
 const SLACK_API_URL = "https://slack.com/api";
 
 /**
- * Makes a POST request to the Slack API using the Slack Web API client.
- * 
- * This uses @slack/web-api which is the same underlying SDK that @chat-adapter/slack
- * uses internally. The @chat-adapter/slack package provides additional framework features
- * (SlackAdapter class, event handling, state management, multi-platform support) but
- * requires adopting the full Chat SDK architecture with significant code changes.
- * 
- * For now, we use the core @slack/web-api SDK directly while keeping the door open
- * for future migration to @chat-adapter/slack's SlackAdapter if needed.
+ * Makes a POST request to the Slack API with JSON body.
  *
- * @param endpoint - the Slack API endpoint to call (e.g., "chat.postMessage").
+ * @param endpoint - the Slack API endpoint to call.
  * @param body - the request body containing token and other parameters.
  * @returns the parsed JSON response from Slack.
  */
 export async function post(endpoint: string, body: Record<string, any>) {
-  const { token, ...params } = body;
-
-  if (!token) {
-    throw InvalidRequestError("Slack API token is required");
-  }
+  let data;
+  const { token, ...bodyWithoutToken } = body;
 
   try {
-    const client = new WebClient(token);
-    
-    // Use the API call method which handles all endpoints uniformly
-    const result = await client.apiCall(endpoint, params);
-
-    if (!result.ok) {
-      throw InvalidRequestError(result.error || "Unknown Slack API error");
-    }
-
-    return result;
-  } catch (err: any) {
-    // Handle Slack SDK errors
-    if (err.data) {
-      throw InvalidRequestError(err.data.error || err.message);
-    }
+    const response = await fetch(`${SLACK_API_URL}/${endpoint}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bodyWithoutToken),
+    });
+    data = await response.json();
+  } catch (err) {
     throw InvalidRequestError(err.message);
   }
+
+  if (!data.ok) {
+    throw InvalidRequestError(data.error);
+  }
+  return data;
 }
 
 /**
  * Makes a POST request to the Slack API with form-urlencoded body.
- * Used primarily for OAuth flows.
  *
  * @param endpoint - the Slack API endpoint to call.
  * @param body - the request parameters.

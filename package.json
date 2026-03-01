@@ -99,7 +99,6 @@
     "@sentry/react": "^7.120.4",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
-    "@slack/web-api": "^7.13.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@types/form-data": "^2.5.2",
@@ -268,8 +267,7 @@
     "y-protocols": "^1.0.6",
     "yauzl": "^3.2.0",
     "yjs": "^13.6.1",
-    "zod": "^3.25.76",
-    "@chat-adapter/slack": "4.15.0"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@babel/cli": "^7.28.3",
