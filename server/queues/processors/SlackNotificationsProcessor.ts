@@ -8,6 +8,7 @@ import type { Event, NotificationEvent } from "@server/types";
 import * as Slack from "../../../plugins/slack/server/slack";
 import BaseProcessor from "./BaseProcessor";
 import Logger from "@server/logging/Logger";
+import { paragraph, root, strong, text, link } from "chat";
 
 /**
  * Processor for sending Slack DM notifications.
@@ -72,11 +73,10 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
     try {
       const message = this.formatSlackMessage(notification);
 
-      await Slack.post("chat.postMessage", {
+      await Slack.postMessage({
         token: auth?.token,
         channel: slackUserId,
-        text: message.text,
-        blocks: message.blocks,
+        message,
       });
 
       await notification.update({
@@ -101,99 +101,83 @@ export default class SlackNotificationsProcessor extends BaseProcessor {
    * @param notification - the notification to format.
    * @returns the formatted Slack message.
    */
-  private formatSlackMessage(notification: Notification): {
-    text: string;
-    blocks: unknown[];
-  } {
+  private formatSlackMessage(notification: Notification) {
     const actorName = notification.actor.name;
     const teamUrl = notification.team.url;
-    let text = "";
+    let textContent = "";
     let url = "";
 
     switch (notification.event) {
       case NotificationEventType.PublishDocument:
-        text = `${actorName} published a new document`;
+        textContent = `${actorName} published a new document`;
         url = `${teamUrl}/doc/${notification.documentId}`;
         break;
 
       case NotificationEventType.UpdateDocument:
-        text = `${actorName} updated a document you're subscribed to`;
+        textContent = `${actorName} updated a document you're subscribed to`;
         url = `${teamUrl}/doc/${notification.documentId}`;
         break;
 
       case NotificationEventType.MentionedInDocument:
-        text = `${actorName} mentioned you in a document`;
+        textContent = `${actorName} mentioned you in a document`;
         url = `${teamUrl}/doc/${notification.documentId}`;
         break;
 
       case NotificationEventType.MentionedInComment:
-        text = `${actorName} mentioned you in a comment`;
+        textContent = `${actorName} mentioned you in a comment`;
         url = `${teamUrl}/doc/${notification.documentId}?commentId=${notification.commentId}`;
         break;
 
       case NotificationEventType.GroupMentionedInDocument:
-        text = `${actorName} mentioned a group you're in`;
+        textContent = `${actorName} mentioned a group you're in`;
         url = `${teamUrl}/doc/${notification.documentId}`;
         break;
 
       case NotificationEventType.GroupMentionedInComment:
-        text = `${actorName} mentioned a group you're in`;
+        textContent = `${actorName} mentioned a group you're in`;
         url = `${teamUrl}/doc/${notification.documentId}?commentId=${notification.commentId}`;
         break;
 
       case NotificationEventType.CreateComment:
-        text = `${actorName} commented on a document you're subscribed to`;
+        textContent = `${actorName} commented on a document you're subscribed to`;
         url = `${teamUrl}/doc/${notification.documentId}?commentId=${notification.commentId}`;
         break;
 
       case NotificationEventType.ResolveComment:
-        text = `${actorName} resolved a comment thread you participated in`;
+        textContent = `${actorName} resolved a comment thread you participated in`;
         url = `${teamUrl}/doc/${notification.documentId}?commentId=${notification.commentId}`;
         break;
 
       case NotificationEventType.CreateCollection:
-        text = `A new collection was created`;
+        textContent = `A new collection was created`;
         url = `${teamUrl}/collection/${notification.collectionId}`;
         break;
 
       case NotificationEventType.AddUserToDocument:
-        text = `${actorName} shared a document with you`;
+        textContent = `${actorName} shared a document with you`;
         url = `${teamUrl}/doc/${notification.documentId}`;
         break;
 
       case NotificationEventType.AddUserToCollection:
-        text = `${actorName} shared a collection with you`;
+        textContent = `${actorName} shared a collection with you`;
         url = `${teamUrl}/collection/${notification.collectionId}`;
         break;
 
       default:
-        text = `You have a new notification from ${actorName}`;
+        textContent = `You have a new notification from ${actorName}`;
         url = teamUrl;
     }
 
-    const blocks = [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*${text}*`,
-        },
-      },
-      {
-        type: "actions",
-        elements: [
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: "View",
-            },
-            url,
-          },
-        ],
-      },
-    ];
+    const message = {
+      ast: root([
+        paragraph([
+          strong([text(textContent)]),
+          text("\n"),
+          link(url, [text("View")]),
+        ]),
+      ]),
+    };
 
-    return { text, blocks };
+    return message;
   }
 }
