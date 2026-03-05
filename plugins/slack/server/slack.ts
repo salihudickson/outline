@@ -1,4 +1,7 @@
 import querystring from "node:querystring";
+// NOTE: @chat-adapter/slack requires a patch to work with Outline's CommonJS build.
+// The patch adds "default" export conditions to package.json for proper module resolution.
+// See patches/@chat-adapter+slack+4.15.0.patch and patches/README.md for details.
 import { createSlackAdapter } from "@chat-adapter/slack";
 import { InvalidRequestError } from "@server/errors";
 import fetch from "@server/utils/fetch";
