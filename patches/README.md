@@ -25,7 +25,9 @@ Patches are used when:
 These packages are ESM-only (`"type": "module"`) with only `"import"` export conditions. Outline uses CommonJS (Babel compilation), which requires a `"default"` export condition for proper module resolution.
 
 **Fix:**
-Adds `"default": "./dist/index.js"` to each package's export conditions in package.json. This ensures Node.js can resolve the modules when imported from CommonJS code.
+Adds `"default": "./dist/index.js"` to the main export (`"."`) in each package's package.json. This ensures Node.js can resolve the modules when imported from CommonJS code.
+
+Note: The `chat` package also exports `./jsx-runtime` and `./jsx-dev-runtime`, but these are not used by Outline and thus not patched.
 
 **Why not alternatives?**
 - Converting Outline to ESM: Too large a breaking change
