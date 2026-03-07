@@ -48,6 +48,7 @@ import { findParentNode } from "../queries/findParentNode";
 import { getMarkRange } from "../queries/getMarkRange";
 import { isInCode } from "../queries/isInCode";
 import Node from "./Node";
+import { CodeFenceView } from "./CodeFenceView";
 
 const DEFAULT_LANGUAGE = "javascript";
 
@@ -293,6 +294,22 @@ export default class CodeFence extends Node {
             editor: this.editor,
           })
         : undefined,
+      new Plugin({
+        key: new PluginKey("code-fence-node-view"),
+        props: {
+          nodeViews: {
+            [this.name]: (node, view, getPos) =>
+              new CodeFenceView(
+                node,
+                view,
+                getPos,
+                this.showLineNumbers,
+                this.options.dictionary.expandCode,
+                this.options.dictionary.collapseCode
+              ),
+          },
+        },
+      }),
       new Plugin({
         key: new PluginKey("code-fence-split"),
         props: {

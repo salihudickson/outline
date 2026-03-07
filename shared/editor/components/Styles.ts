@@ -1738,6 +1738,62 @@ mark {
   position: relative;
 }
 
+.code-block-wrapper {
+  position: relative;
+
+  /* When collapsed, the gradient sits between the clipped code and the toggle button */
+  .code-block-gradient {
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    height: 80px;
+    pointer-events: none;
+    z-index: 1;
+    bottom: 28px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      ${props.theme.codeBackground}
+    );
+    border-radius: 0 0 3px 3px;
+    display: none;
+  }
+
+  .code-block-toggle-btn {
+    display: none;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+    padding: 4px 12px;
+    font-size: 13px;
+    line-height: 20px;
+    font-family: ${props.theme.fontFamilyMono};
+    color: ${props.theme.textSecondary};
+    background: ${props.theme.codeBackground};
+    border: 1px solid ${props.theme.codeBorder};
+    border-top: 0;
+    border-radius: 0 0 4px 4px;
+    margin-top: -1px;
+
+    &:${hover} {
+      color: ${props.theme.text};
+      background: ${lighten(0.02, props.theme.codeBackground)};
+    }
+  }
+}
+
+.code-block.code-block-collapsed {
+  max-height: 350px;
+  overflow: hidden;
+  /* Override the bottom border-radius so it merges with the toggle button */
+  pre {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+    margin-bottom: 0;
+  }
+}
+
 .code-block[data-language=none],
 .code-block[data-language=markdown] {
   pre code {
@@ -1783,6 +1839,23 @@ mark {
   }
 }
 
+// When rendered via NodeView, decorations land on .code-block-wrapper rather
+// than the inner .code-block; mirror the mermaid adjacent-sibling rules here.
+.code-block-wrapper:is(.code-active) + .mermaid-diagram-wrapper {
+  cursor: zoom-in;
+}
+
+.code-block-wrapper.ProseMirror-selectednode {
+  outline: none;
+
+  & + .mermaid-diagram-wrapper {
+    &:not(.empty) {
+      cursor: zoom-in;
+    }
+    outline: 2px solid ${props.theme.selected};
+  }
+}
+
 .ProseMirror[contenteditable="false"] .code-block[data-language=mermaid],
 .ProseMirror[contenteditable="false"] .code-block[data-language=mermaidjs] {
     height: 0;
@@ -1791,6 +1864,18 @@ mark {
     & + .mermaid-diagram-wrapper {
       cursor: zoom-in;
     }
+}
+
+.ProseMirror[contenteditable="false"] .code-block-wrapper {
+  .code-block[data-language=mermaid],
+  .code-block[data-language=mermaidjs] {
+    height: 0;
+    overflow: hidden;
+  }
+
+  & + .mermaid-diagram-wrapper {
+    cursor: zoom-in;
+  }
 }
 
 .ProseMirror.exported {

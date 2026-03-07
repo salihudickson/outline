@@ -26,6 +26,18 @@ export class EditorStyleHelper {
 
   static readonly codeWord = "code-word";
 
+  /** Wrapper div around code-block for expand/collapse UI */
+  static readonly codeBlockWrapper = "code-block-wrapper";
+
+  /** Applied to code-block when truncated/collapsed */
+  static readonly codeBlockCollapsed = "code-block-collapsed";
+
+  /** Toggle button for expanding/collapsing tall code blocks */
+  static readonly codeBlockToggle = "code-block-toggle-btn";
+
+  /** Gradient overlay shown at the bottom of a collapsed code block */
+  static readonly codeBlockGradient = "code-block-gradient";
+
   // Diffs
 
   static readonly diffInsertion = "diff-insertion";
