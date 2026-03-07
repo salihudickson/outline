@@ -32,6 +32,8 @@ export default function useDictionary() {
       codeBlock: t("Code block"),
       codeCopied: t("Copied to clipboard"),
       codeInline: t("Code"),
+      expandCode: t("Expand"),
+      collapseCode: t("Collapse"),
       comment: t("Comment"),
       copy: t("Copy"),
       createLink: t("Create link"),
