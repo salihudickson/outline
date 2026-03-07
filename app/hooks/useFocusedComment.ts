@@ -13,7 +13,7 @@ export function useFocusedComment() {
   const { comments } = useStores();
   const context = useDocumentContext();
   const query = useQuery();
-  const focusedCommentId = context.focusedCommentId || query.get("commentId");
+  const focusedCommentId = query.get("commentId") || context.focusedCommentId;
   const comment = focusedCommentId ? comments.get(focusedCommentId) : undefined;
   const history = useHistory();
 
