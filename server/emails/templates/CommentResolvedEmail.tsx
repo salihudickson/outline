@@ -28,6 +28,7 @@ type BeforeSend = {
   document: Document;
   collection: Collection;
   body: string | undefined;
+  threadId: string;
   unsubscribeUrl: string;
 };
 
@@ -64,6 +65,10 @@ export default class CommentResolvedEmail extends BaseEmail<
       return false;
     }
 
+    const parentComment = comment.parentCommentId
+      ? ((await comment.$get("parentComment")) ?? undefined)
+      : undefined;
+
     const body = await this.htmlForData(
       team,
       ProsemirrorHelper.toProsemirror(comment.data)
@@ -73,6 +78,7 @@ export default class CommentResolvedEmail extends BaseEmail<
       document,
       collection,
       body,
+      threadId: parentComment?.id ?? comment.id,
       unsubscribeUrl: this.unsubscribeUrl(props),
     };
   }
@@ -109,12 +115,12 @@ export default class CommentResolvedEmail extends BaseEmail<
     actorName,
     teamUrl,
     document,
-    commentId,
+    threadId,
     collection,
   }: Props): string {
     const t1 = `${actorName} resolved a comment thread on "${document.titleWithDefault}"`;
     const t2 = collection.name ? ` in the ${collection.name} collection` : "";
-    const t3 = `Open Thread: ${teamUrl}${document.url}?commentId=${commentId}`;
+    const t3 = `Open Thread: ${teamUrl}${document.url}?commentId=${threadId}`;
     return `${t1}${t2}.\n\n${t3}`;
   }
 
@@ -124,11 +130,11 @@ export default class CommentResolvedEmail extends BaseEmail<
       collection,
       actorName,
       teamUrl,
-      commentId,
+      threadId,
       unsubscribeUrl,
       body,
     } = props;
-    const threadLink = `${teamUrl}${document.url}?commentId=${commentId}&ref=notification-email`;
+    const threadLink = `${teamUrl}${document.url}?commentId=${threadId}&ref=notification-email`;
 
     return (
       <EmailTemplate

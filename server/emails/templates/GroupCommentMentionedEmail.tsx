@@ -29,6 +29,7 @@ type BeforeSend = {
   document: Document;
   collection: Collection;
   body: string | undefined;
+  threadId: string;
   unsubscribeUrl: string;
   groupName: string;
 };
@@ -71,6 +72,10 @@ export default class GroupCommentMentionedEmail extends BaseEmail<
       return false;
     }
 
+    const parentComment = comment.parentCommentId
+      ? ((await comment.$get("parentComment")) ?? undefined)
+      : undefined;
+
     const body = await this.htmlForData(
       team,
       ProsemirrorHelper.toProsemirror(comment.data)
@@ -80,6 +85,7 @@ export default class GroupCommentMentionedEmail extends BaseEmail<
       document,
       collection,
       body,
+      threadId: parentComment?.id ?? comment.id,
       groupName: group.name,
       unsubscribeUrl: this.unsubscribeUrl(props),
     };
@@ -117,7 +123,7 @@ export default class GroupCommentMentionedEmail extends BaseEmail<
     actorName,
     teamUrl,
     document,
-    commentId,
+    threadId,
     collection,
     groupName,
   }: Props): string {
@@ -126,7 +132,7 @@ ${actorName} mentioned the "${groupName}" group in a comment on "${document.titl
       collection.name ? ` in the ${collection.name} collection` : ""
     }.
 
-Open Thread: ${teamUrl}${document.url}?commentId=${commentId}
+Open Thread: ${teamUrl}${document.url}?commentId=${threadId}
 `;
   }
 
@@ -136,12 +142,12 @@ Open Thread: ${teamUrl}${document.url}?commentId=${commentId}
       collection,
       actorName,
       teamUrl,
-      commentId,
+      threadId,
       unsubscribeUrl,
       body,
       groupName,
     } = props;
-    const threadLink = `${teamUrl}${document.url}?commentId=${commentId}&ref=notification-email`;
+    const threadLink = `${teamUrl}${document.url}?commentId=${threadId}&ref=notification-email`;
 
     return (
       <EmailTemplate

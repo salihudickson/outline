@@ -34,6 +34,7 @@ type BeforeSend = {
   collection: Collection | null;
   body: string | undefined;
   isReply: boolean;
+  threadId: string;
   unsubscribeUrl: string;
 };
 
@@ -83,6 +84,7 @@ export default class CommentCreatedEmail extends BaseEmail<
       document,
       collection,
       isReply,
+      threadId: parentComment?.id ?? comment.id,
       body,
       unsubscribeUrl: this.unsubscribeUrl(props),
     };
@@ -133,7 +135,7 @@ export default class CommentCreatedEmail extends BaseEmail<
     teamUrl,
     isReply,
     document,
-    commentId,
+    threadId,
     collection,
   }: Props): string {
     return `
@@ -141,7 +143,7 @@ ${actorName} ${isReply ? "replied to a thread in" : "commented on"} "${
       document.titleWithDefault
     }" ${collection?.name ? `in the ${collection.name} collection` : ""}.
 
-Open Thread: ${teamUrl}${document.url}?commentId=${commentId}
+Open Thread: ${teamUrl}${document.url}?commentId=${threadId}
 `;
   }
 
@@ -152,11 +154,11 @@ Open Thread: ${teamUrl}${document.url}?commentId=${commentId}
       isReply,
       collection,
       teamUrl,
-      commentId,
+      threadId,
       unsubscribeUrl,
       body,
     } = props;
-    const threadLink = `${teamUrl}${document.url}?commentId=${commentId}&ref=notification-email`;
+    const threadLink = `${teamUrl}${document.url}?commentId=${threadId}&ref=notification-email`;
 
     return (
       <EmailTemplate
