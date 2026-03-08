@@ -26,6 +26,9 @@ export class EditorStyleHelper {
 
   static readonly codeWord = "code-word";
 
+  /** Applied to code-block when truncated/collapsed */
+  static readonly codeBlockCollapsed = "code-block-collapsed";
+
   // Diffs
 
   static readonly diffInsertion = "diff-insertion";

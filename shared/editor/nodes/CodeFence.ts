@@ -51,6 +51,31 @@ import Node from "./Node";
 
 const DEFAULT_LANGUAGE = "javascript";
 
+/** Minimum line count for a code block to show expand/collapse controls. */
+export const MIN_LINES_FOR_TRUNCATION = 20;
+
+/**
+ * Plugin key for tracking which code blocks are expanded.
+ * Plugin state is a Set of document positions of explicitly expanded blocks.
+ */
+export const codeCollapsePluginKey = new PluginKey<Set<number>>("code-collapse");
+
+/**
+ * Returns the line count of the given code node, or undefined if the node is
+ * not a collapsible block (Mermaid diagrams are excluded).
+ *
+ * @param node - ProseMirror node to inspect.
+ * @returns number of lines in the code block, or undefined if not collapsible.
+ */
+function getCollapsibleLineCount(
+  node: ProsemirrorNode
+): number | undefined {
+  if (!isCode(node) || isMermaid(node)) {
+    return undefined;
+  }
+  return (node.textContent.match(/\n/g) || []).length + 1;
+}
+
 export default class CodeFence extends Node {
   constructor(options: {
     dictionary: Dictionary;
@@ -218,6 +243,67 @@ export default class CodeFence extends Node {
 
         return false;
       },
+      expandCodeBlock: (): Command => (state, dispatch) => {
+        const codeBlock =
+          state.selection instanceof NodeSelection &&
+          isCode(state.selection.node)
+            ? { pos: state.selection.from, node: state.selection.node }
+            : findParentNode(isCode)(state.selection);
+        if (!codeBlock) {
+          return false;
+        }
+        const lineCount = getCollapsibleLineCount(codeBlock.node);
+        if (!lineCount || lineCount < MIN_LINES_FOR_TRUNCATION) {
+          return false;
+        }
+        const expandedSet = codeCollapsePluginKey.getState(state);
+        if (expandedSet?.has(codeBlock.pos)) {
+          return false;
+        }
+        if (dispatch) {
+          dispatch(
+            state.tr.setMeta(codeCollapsePluginKey, {
+              type: "expand",
+              pos: codeBlock.pos,
+            })
+          );
+        }
+        return true;
+      },
+      collapseCodeBlock: (): Command => (state, dispatch) => {
+        const codeBlock =
+          state.selection instanceof NodeSelection &&
+          isCode(state.selection.node)
+            ? { pos: state.selection.from, node: state.selection.node }
+            : findParentNode(isCode)(state.selection);
+        if (!codeBlock) {
+          return false;
+        }
+        const lineCount = getCollapsibleLineCount(codeBlock.node);
+        if (!lineCount || lineCount < MIN_LINES_FOR_TRUNCATION) {
+          return false;
+        }
+        const expandedSet = codeCollapsePluginKey.getState(state);
+        if (!expandedSet?.has(codeBlock.pos)) {
+          return false;
+        }
+        if (dispatch) {
+          // Move the cursor to just after the code block so the auto-expand
+          // appendTransaction does not immediately re-expand the block.
+          const afterPos = codeBlock.pos + codeBlock.node.nodeSize;
+          dispatch(
+            state.tr
+              .setSelection(
+                TextSelection.near(state.doc.resolve(afterPos))
+              )
+              .setMeta(codeCollapsePluginKey, {
+                type: "collapse",
+                pos: codeBlock.pos,
+              })
+          );
+        }
+        return true;
+      },
     };
   }
 
@@ -293,6 +379,103 @@ export default class CodeFence extends Node {
             editor: this.editor,
           })
         : undefined,
+      new Plugin({
+        key: codeCollapsePluginKey,
+        state: {
+          init: () => new Set<number>(),
+          apply: (tr, pluginState) => {
+            const meta = tr.getMeta(codeCollapsePluginKey) as
+              | { type: "expand" | "collapse"; pos: number }
+              | undefined;
+
+            if (meta?.type === "expand") {
+              const next = new Set(pluginState);
+              next.add(meta.pos);
+              return next;
+            }
+
+            if (meta?.type === "collapse") {
+              const next = new Set(pluginState);
+              next.delete(meta.pos);
+              return next;
+            }
+
+            if (tr.docChanged) {
+              // Map stored positions through the transform so they stay valid.
+              // The bias of +1 (forward) ensures that if a deletion spans exactly
+              // the node boundary, the position is not incorrectly reported as deleted.
+              const next = new Set<number>();
+              for (const pos of pluginState) {
+                const mapped = tr.mapping.mapResult(pos, 1);
+                if (!mapped.deleted) {
+                  next.add(mapped.pos);
+                }
+              }
+              return next;
+            }
+
+            return pluginState;
+          },
+        },
+        props: {
+          decorations: (state) => {
+            const expandedSet = codeCollapsePluginKey.getState(state);
+            if (!expandedSet) {
+              return DecorationSet.empty;
+            }
+
+            const decorations: Decoration[] = [];
+            state.doc.descendants((node, pos) => {
+              const lineCount = getCollapsibleLineCount(node);
+              if (
+                lineCount !== undefined &&
+                lineCount >= MIN_LINES_FOR_TRUNCATION &&
+                !expandedSet.has(pos)
+              ) {
+                decorations.push(
+                  Decoration.node(pos, pos + node.nodeSize, {
+                    class: "code-block-collapsed",
+                  })
+                );
+              }
+            });
+
+            return DecorationSet.create(state.doc, decorations);
+          },
+        },
+        appendTransaction: (trs, _oldState, newState) => {
+          // Auto-expand a collapsed code block when the cursor moves into it
+          const selectionChanged = trs.some((t) => t.selectionSet);
+          if (!selectionChanged) {
+            return null;
+          }
+
+          const codeBlock =
+            newState.selection instanceof NodeSelection &&
+            isCode(newState.selection.node)
+              ? { pos: newState.selection.from, node: newState.selection.node }
+              : findParentNode(isCode)(newState.selection);
+          if (!codeBlock) {
+            return null;
+          }
+
+          const lineCount = getCollapsibleLineCount(codeBlock.node);
+          if (!lineCount || lineCount < MIN_LINES_FOR_TRUNCATION) {
+            return null;
+          }
+
+          const expandedSet = codeCollapsePluginKey.getState(newState);
+          if (expandedSet?.has(codeBlock.pos)) {
+            // Already expanded — nothing to do
+            return null;
+          }
+
+          return newState.tr.setMeta(codeCollapsePluginKey, {
+            type: "expand",
+            pos: codeBlock.pos,
+          });
+        },
+      }),
       new Plugin({
         key: new PluginKey("code-fence-split"),
         props: {
