@@ -61,9 +61,12 @@ export default function codeMenuItems(
 
   // Determine whether the current code block is in the expanded set
   const expandedSet = codeCollapsePluginKey.getState(state);
-  const codeBlockPos = findParentNode(isCode)(state.selection)?.pos;
+  const codeBlockResult =
+    state.selection instanceof NodeSelection && isCode(state.selection.node)
+      ? { pos: state.selection.from }
+      : findParentNode(isCode)(state.selection);
   const isExpanded =
-    codeBlockPos !== undefined && !!expandedSet?.has(codeBlockPos);
+    codeBlockResult !== undefined && !!expandedSet?.has(codeBlockResult.pos);
 
   return [
     {

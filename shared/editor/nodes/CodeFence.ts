@@ -244,7 +244,11 @@ export default class CodeFence extends Node {
         return false;
       },
       expandCodeBlock: (): Command => (state, dispatch) => {
-        const codeBlock = findParentNode(isCode)(state.selection);
+        const codeBlock =
+          state.selection instanceof NodeSelection &&
+          isCode(state.selection.node)
+            ? { pos: state.selection.from, node: state.selection.node }
+            : findParentNode(isCode)(state.selection);
         if (!codeBlock) {
           return false;
         }
@@ -267,7 +271,11 @@ export default class CodeFence extends Node {
         return true;
       },
       collapseCodeBlock: (): Command => (state, dispatch) => {
-        const codeBlock = findParentNode(isCode)(state.selection);
+        const codeBlock =
+          state.selection instanceof NodeSelection &&
+          isCode(state.selection.node)
+            ? { pos: state.selection.from, node: state.selection.node }
+            : findParentNode(isCode)(state.selection);
         if (!codeBlock) {
           return false;
         }
@@ -280,11 +288,18 @@ export default class CodeFence extends Node {
           return false;
         }
         if (dispatch) {
+          // Move the cursor to just after the code block so the auto-expand
+          // appendTransaction does not immediately re-expand the block.
+          const afterPos = codeBlock.pos + codeBlock.node.nodeSize;
           dispatch(
-            state.tr.setMeta(codeCollapsePluginKey, {
-              type: "collapse",
-              pos: codeBlock.pos,
-            })
+            state.tr
+              .setSelection(
+                TextSelection.near(state.doc.resolve(afterPos))
+              )
+              .setMeta(codeCollapsePluginKey, {
+                type: "collapse",
+                pos: codeBlock.pos,
+              })
           );
         }
         return true;
@@ -410,15 +425,15 @@ export default class CodeFence extends Node {
             }
 
             const decorations: Decoration[] = [];
-            state.doc.forEach((node, offset) => {
+            state.doc.descendants((node, pos) => {
               const lineCount = getCollapsibleLineCount(node);
               if (
                 lineCount !== undefined &&
                 lineCount >= MIN_LINES_FOR_TRUNCATION &&
-                !expandedSet.has(offset)
+                !expandedSet.has(pos)
               ) {
                 decorations.push(
-                  Decoration.node(offset, offset + node.nodeSize, {
+                  Decoration.node(pos, pos + node.nodeSize, {
                     class: "code-block-collapsed",
                   })
                 );
@@ -435,7 +450,11 @@ export default class CodeFence extends Node {
             return null;
           }
 
-          const codeBlock = findParentNode(isCode)(newState.selection);
+          const codeBlock =
+            newState.selection instanceof NodeSelection &&
+            isCode(newState.selection.node)
+              ? { pos: newState.selection.from, node: newState.selection.node }
+              : findParentNode(isCode)(newState.selection);
           if (!codeBlock) {
             return null;
           }
