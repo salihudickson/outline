@@ -32,7 +32,7 @@ export function Truncated({ maxHeight = 200, children, className }: Props) {
   // changes size (including when children change their rendered dimensions),
   // so children does not need to be listed as an explicit dependency.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     const el = contentRef.current;
     if (!el) {
       return;

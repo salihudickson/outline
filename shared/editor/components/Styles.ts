@@ -1762,6 +1762,46 @@ mark {
 
 }
 
+.code-block-toggle {
+  /* Pill-shaped expand/collapse button rendered inside the code block */
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: ${props.theme.fontFamily};
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: var(--pointer);
+  z-index: 2;
+  /* Allow clicks even when the parent .code-block.collapsed has pointer-events: none */
+  pointer-events: auto;
+  transition: background 150ms ease-out;
+  backdrop-filter: blur(4px);
+  user-select: none;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+}
+
 .code-block[data-language=none],
 .code-block[data-language=markdown] {
   pre code {

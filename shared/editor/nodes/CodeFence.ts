@@ -48,6 +48,7 @@ import { findParentNode } from "../queries/findParentNode";
 import { getMarkRange } from "../queries/getMarkRange";
 import { isInCode } from "../queries/isInCode";
 import Node from "./Node";
+import { CodeFenceView } from "./CodeFenceView";
 
 const DEFAULT_LANGUAGE = "javascript";
 
@@ -380,55 +381,19 @@ export default class CodeFence extends Node {
         },
       }),
       new Plugin({
-        key: new PluginKey("expand-on-click"),
+        key: new PluginKey("code-fence-node-view"),
         props: {
-          handleClick: (view) => {
-            const { state, dispatch } = view;
-            const codeBlock = findParentNode(isCode)(state.selection);
-
-            if (codeBlock && codeBlock.node.attrs.collapsed) {
-              dispatch?.(
-                state.tr.setNodeMarkup(codeBlock.pos, undefined, {
-                  ...codeBlock.node.attrs,
-                  collapsed: false,
-                })
-              );
-              return true;
-            }
-            return false;
+          nodeViews: {
+            [this.name]: (node, view, getPos) =>
+              new CodeFenceView(
+                node,
+                view,
+                getPos,
+                this.showLineNumbers,
+                this.options.dictionary.expandCode,
+                this.options.dictionary.collapseCode
+              ),
           },
-        },
-      }),
-      new Plugin({
-        key: new PluginKey("auto-collapse-on-load"),
-        appendTransaction: (_transactions, _oldState, newState) => {
-          const tr = newState.tr;
-          let modified = false;
-
-          newState.doc.descendants((node, pos) => {
-            if (
-              node.type.name === "code_fence" &&
-              node.attrs.collapsed === false
-            ) {
-              const dom = document.querySelector(
-                `[data-pos="${pos}"]`
-              ) as HTMLElement;
-              if (dom) {
-                const height = dom.offsetHeight;
-                const MAX_HEIGHT = 350;
-
-                if (height > MAX_HEIGHT) {
-                  tr.setNodeMarkup(pos, undefined, {
-                    ...node.attrs,
-                    collapsed: true,
-                  });
-                  modified = true;
-                }
-              }
-            }
-          });
-
-          return modified ? tr : null;
         },
       }),
     ].filter(Boolean) as Plugin[];
