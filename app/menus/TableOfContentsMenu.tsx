@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 import { EmojiText } from "@shared/components/EmojiText";
+import { expandParentHeadings } from "@shared/editor/queries/expandParentHeadings";
 import { createAction, createActionGroup } from "~/actions";
 import { ActiveDocumentSection } from "~/actions/sections";
 import Button from "~/components/Button";
@@ -12,7 +13,7 @@ import { DropdownMenu } from "~/components/Menu/DropdownMenu";
 import { useMenuAction } from "~/hooks/useMenuAction";
 
 function TableOfContentsMenu() {
-  const { headings } = useDocumentContext();
+  const { headings, editor } = useDocumentContext();
   const { t } = useTranslation();
   const minHeading = headings.reduce(
     (memo, heading) => (heading.level < memo ? heading.level : memo),
@@ -31,15 +32,24 @@ function TableOfContentsMenu() {
               </HeadingWrapper>
             ),
             section: ActiveDocumentSection,
-            perform: () =>
+            perform: () => {
+              // Expand any collapsed parent headings before navigating
+              if (editor?.view) {
+                expandParentHeadings(
+                  editor.view,
+                  heading.id,
+                  editor.props.id
+                );
+              }
               requestAnimationFrame(() =>
                 requestAnimationFrame(
                   () => (window.location.hash = `#${heading.id}`)
                 )
-              ),
+              );
+            },
           })
         ),
-    [headings, minHeading]
+    [headings, minHeading, editor]
   );
 
   const actions = useMemo(() => {
