@@ -47,9 +47,11 @@ import { findNextNewline, findPreviousNewline } from "../queries/findNewlines";
 import { findParentNode } from "../queries/findParentNode";
 import { getMarkRange } from "../queries/getMarkRange";
 import { isInCode } from "../queries/isInCode";
+import { EditorStyleHelper } from "../styles/EditorStyleHelper";
 import Node from "./Node";
 
 const DEFAULT_LANGUAGE = "javascript";
+const MAX_HEIGHT = 350;
 
 export default class CodeFence extends Node {
   constructor(options: {
@@ -126,6 +128,16 @@ export default class CodeFence extends Node {
           "data-language": node.attrs.language,
         },
         ["pre", ["code", { spellCheck: "false" }, 0]],
+        [
+          "button",
+          {
+            class: EditorStyleHelper.codeBlockToggle,
+            contenteditable: "false",
+            type: "button",
+            "data-expand-label": this.options.dictionary.expandCode,
+            "data-collapse-label": this.options.dictionary.collapseCode,
+          },
+        ],
       ],
     };
   }
@@ -380,55 +392,122 @@ export default class CodeFence extends Node {
         },
       }),
       new Plugin({
-        key: new PluginKey("expand-on-click"),
+        key: new PluginKey("code-block-toggle-click"),
         props: {
-          handleClick: (view) => {
-            const { state, dispatch } = view;
-            const codeBlock = findParentNode(isCode)(state.selection);
+          handleDOMEvents: {
+            mousedown: (view, event) => {
+              const target = event.target as HTMLElement;
+              const button = target.closest(
+                `.${EditorStyleHelper.codeBlockToggle}`
+              ) as HTMLElement | null;
 
-            if (codeBlock && codeBlock.node.attrs.collapsed) {
-              dispatch?.(
-                state.tr.setNodeMarkup(codeBlock.pos, undefined, {
-                  ...codeBlock.node.attrs,
-                  collapsed: false,
+              if (!button) {
+                return false;
+              }
+
+              event.preventDefault();
+              event.stopPropagation();
+
+              // Locate the code_fence position using posAtDOM on the <code>
+              // element (the contentDOM), then resolve upward to the enclosing
+              // code node. This is O(1) compared to iterating the whole doc.
+              const codeBlockEl = button.closest<HTMLElement>(".code-block");
+              const codeEl = codeBlockEl?.querySelector("code");
+              if (!codeEl) {
+                return false;
+              }
+
+              let codePos: number | undefined;
+              try {
+                const innerPos = view.posAtDOM(codeEl, 0);
+                const $pos = view.state.doc.resolve(innerPos);
+                for (let depth = $pos.depth; depth >= 1; depth--) {
+                  if (isCode($pos.node(depth))) {
+                    codePos = $pos.before(depth);
+                    break;
+                  }
+                }
+              } catch {
+                // posAtDOM can throw if the element is outside editor content.
+                return false;
+              }
+
+              if (codePos === undefined) {
+                return false;
+              }
+
+              const codeNode = view.state.doc.nodeAt(codePos);
+              if (!codeNode) {
+                return false;
+              }
+
+              view.dispatch(
+                view.state.tr.setNodeMarkup(codePos, undefined, {
+                  ...codeNode.attrs,
+                  collapsed: !codeNode.attrs.collapsed,
                 })
               );
               return true;
-            }
-            return false;
+            },
           },
         },
       }),
       new Plugin({
-        key: new PluginKey("auto-collapse-on-load"),
-        appendTransaction: (_transactions, _oldState, newState) => {
-          const tr = newState.tr;
-          let modified = false;
+        key: new PluginKey("code-block-tall"),
+        view: () => {
+          let initialized = false;
+          return {
+            update: (view, prevState) => {
+              // Only recheck heights when the document has changed (e.g. code
+              // block content or attributes changed). Selection-only changes
+              // don't affect rendered height, so skipping them avoids
+              // unnecessary scrollHeight reads and layout reflows.
+              const docChanged = !prevState || view.state.doc !== prevState.doc;
 
-          newState.doc.descendants((node, pos) => {
-            if (
-              node.type.name === "code_fence" &&
-              node.attrs.collapsed === false
-            ) {
-              const dom = document.querySelector(
-                `[data-pos="${pos}"]`
-              ) as HTMLElement;
-              if (dom) {
-                const height = dom.offsetHeight;
-                const MAX_HEIGHT = 350;
-
-                if (height > MAX_HEIGHT) {
-                  tr.setNodeMarkup(pos, undefined, {
-                    ...node.attrs,
-                    collapsed: true,
+              if (docChanged) {
+                // Keep the "tall" class in sync with each block's natural height.
+                // scrollHeight reflects the full content height even when the
+                // element is clipped by CSS max-height (collapsed state).
+                view.dom
+                  .querySelectorAll<HTMLElement>(".code-block")
+                  .forEach((block) => {
+                    block.classList.toggle(
+                      "tall",
+                      block.scrollHeight > MAX_HEIGHT
+                    );
                   });
-                  modified = true;
-                }
               }
-            }
-          });
 
-          return modified ? tr : null;
+              // Auto-collapse tall blocks once on initial document load.
+              if (!initialized) {
+                initialized = true;
+                requestAnimationFrame(() => {
+                  // Read view.state *inside* the callback so we always act on
+                  // the current state at frame time, not a stale captured copy.
+                  const { state } = view;
+                  const tr = state.tr;
+                  let modified = false;
+
+                  state.doc.descendants((node, pos) => {
+                    if (isCode(node) && !node.attrs.collapsed) {
+                      const dom = view.nodeDOM(pos) as HTMLElement | null;
+                      if (dom && dom.scrollHeight > MAX_HEIGHT) {
+                        tr.setNodeMarkup(pos, undefined, {
+                          ...node.attrs,
+                          collapsed: true,
+                        });
+                        modified = true;
+                      }
+                    }
+                  });
+
+                  if (modified) {
+                    view.dispatch(tr);
+                  }
+                });
+              }
+            },
+          };
         },
       }),
     ].filter(Boolean) as Plugin[];
