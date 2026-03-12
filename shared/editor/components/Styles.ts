@@ -1895,6 +1895,11 @@ mark {
     .mermaid-diagram-wrapper {
         display: none;
     }
+
+    /* The toggle button is interactive UI and must never appear in static exports */
+    .code-block-toggle {
+        display: none;
+    }
 }
 
 .code-block.with-line-wrap {

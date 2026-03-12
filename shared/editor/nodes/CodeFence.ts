@@ -408,21 +408,29 @@ export default class CodeFence extends Node {
               event.preventDefault();
               event.stopPropagation();
 
-              // Find the code_fence node whose DOM element contains this button.
+              // Locate the code_fence position using posAtDOM on the <code>
+              // element (the contentDOM), then resolve upward to the enclosing
+              // code node. This is O(1) compared to iterating the whole doc.
+              const codeBlockEl = button.closest<HTMLElement>(".code-block");
+              const codeEl = codeBlockEl?.querySelector("code");
+              if (!codeEl) {
+                return false;
+              }
+
               let codePos: number | undefined;
-              view.state.doc.descendants((node, pos) => {
-                if (codePos !== undefined) {
-                  return false;
-                }
-                if (isCode(node)) {
-                  const dom = view.nodeDOM(pos) as HTMLElement | null;
-                  if (dom?.contains(button)) {
-                    codePos = pos;
-                    return false;
+              try {
+                const innerPos = view.posAtDOM(codeEl, 0);
+                const $pos = view.state.doc.resolve(innerPos);
+                for (let depth = $pos.depth; depth >= 1; depth--) {
+                  if (isCode($pos.node(depth))) {
+                    codePos = $pos.before(depth);
+                    break;
                   }
                 }
-                return;
-              });
+              } catch {
+                // posAtDOM can throw if the element is outside editor content.
+                return false;
+              }
 
               if (codePos === undefined) {
                 return false;
@@ -449,23 +457,33 @@ export default class CodeFence extends Node {
         view: () => {
           let initialized = false;
           return {
-            update: (view) => {
-              // Keep the "tall" class in sync with each block's natural height.
-              // scrollHeight reflects the full content height even when the
-              // element is clipped by CSS max-height (collapsed state).
-              view.dom
-                .querySelectorAll<HTMLElement>(".code-block")
-                .forEach((block) => {
-                  block.classList.toggle(
-                    "tall",
-                    block.scrollHeight > MAX_HEIGHT
-                  );
-                });
+            update: (view, prevState) => {
+              // Only recheck heights when the document has changed (e.g. code
+              // block content or attributes changed). Selection-only changes
+              // don't affect rendered height, so skipping them avoids
+              // unnecessary scrollHeight reads and layout reflows.
+              const docChanged = !prevState || view.state.doc !== prevState.doc;
+
+              if (docChanged) {
+                // Keep the "tall" class in sync with each block's natural height.
+                // scrollHeight reflects the full content height even when the
+                // element is clipped by CSS max-height (collapsed state).
+                view.dom
+                  .querySelectorAll<HTMLElement>(".code-block")
+                  .forEach((block) => {
+                    block.classList.toggle(
+                      "tall",
+                      block.scrollHeight > MAX_HEIGHT
+                    );
+                  });
+              }
 
               // Auto-collapse tall blocks once on initial document load.
               if (!initialized) {
                 initialized = true;
                 requestAnimationFrame(() => {
+                  // Read view.state *inside* the callback so we always act on
+                  // the current state at frame time, not a stale captured copy.
                   const { state } = view;
                   const tr = state.tr;
                   let modified = false;
