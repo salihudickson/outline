@@ -1763,13 +1763,15 @@ mark {
 }
 
 .code-block-toggle {
-  /* Pill-shaped expand/collapse button rendered inside the code block */
+  /* Pill-shaped expand/collapse button rendered inside the code block.
+     Hidden by default; shown via .collapsed and .tall on the parent. */
+  display: none;
   position: absolute;
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 6px 14px;
   border-radius: 100px;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -1788,8 +1790,13 @@ mark {
   backdrop-filter: blur(4px);
   user-select: none;
 
-  svg {
-    flex-shrink: 0;
+  /* Chevron icon + label via CSS so no JS text-update is needed */
+  &::before {
+    content: "▴";
+    font-size: 11px;
+  }
+  &::after {
+    content: attr(data-collapse-label);
   }
 
   &:hover {
@@ -1800,6 +1807,23 @@ mark {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 2px;
   }
+}
+
+/* Show the button when the block is collapsed */
+.code-block.collapsed .code-block-toggle {
+  display: inline-flex;
+
+  &::before {
+    content: "▾";
+  }
+  &::after {
+    content: attr(data-expand-label);
+  }
+}
+
+/* Show the button when the block is tall (but not yet collapsed) */
+.code-block.tall:not(.collapsed) .code-block-toggle {
+  display: inline-flex;
 }
 
 .code-block[data-language=none],

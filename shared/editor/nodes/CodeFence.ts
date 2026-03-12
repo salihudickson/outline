@@ -47,10 +47,11 @@ import { findNextNewline, findPreviousNewline } from "../queries/findNewlines";
 import { findParentNode } from "../queries/findParentNode";
 import { getMarkRange } from "../queries/getMarkRange";
 import { isInCode } from "../queries/isInCode";
+import { EditorStyleHelper } from "../styles/EditorStyleHelper";
 import Node from "./Node";
-import { CodeFenceView } from "./CodeFenceView";
 
 const DEFAULT_LANGUAGE = "javascript";
+const MAX_HEIGHT = 350;
 
 export default class CodeFence extends Node {
   constructor(options: {
@@ -127,6 +128,16 @@ export default class CodeFence extends Node {
           "data-language": node.attrs.language,
         },
         ["pre", ["code", { spellCheck: "false" }, 0]],
+        [
+          "button",
+          {
+            class: EditorStyleHelper.codeBlockToggle,
+            contenteditable: "false",
+            type: "button",
+            "data-expand-label": this.options.dictionary.expandCode,
+            "data-collapse-label": this.options.dictionary.collapseCode,
+          },
+        ],
       ],
     };
   }
@@ -381,19 +392,104 @@ export default class CodeFence extends Node {
         },
       }),
       new Plugin({
-        key: new PluginKey("code-fence-node-view"),
+        key: new PluginKey("code-block-toggle-click"),
         props: {
-          nodeViews: {
-            [this.name]: (node, view, getPos) =>
-              new CodeFenceView(
-                node,
-                view,
-                getPos,
-                this.showLineNumbers,
-                this.options.dictionary.expandCode,
-                this.options.dictionary.collapseCode
-              ),
+          handleDOMEvents: {
+            mousedown: (view, event) => {
+              const target = event.target as HTMLElement;
+              const button = target.closest(
+                `.${EditorStyleHelper.codeBlockToggle}`
+              ) as HTMLElement | null;
+
+              if (!button) {
+                return false;
+              }
+
+              event.preventDefault();
+              event.stopPropagation();
+
+              // Find the code_fence node whose DOM element contains this button.
+              let codePos: number | undefined;
+              view.state.doc.descendants((node, pos) => {
+                if (codePos !== undefined) {
+                  return false;
+                }
+                if (isCode(node)) {
+                  const dom = view.nodeDOM(pos) as HTMLElement | null;
+                  if (dom?.contains(button)) {
+                    codePos = pos;
+                    return false;
+                  }
+                }
+                return;
+              });
+
+              if (codePos === undefined) {
+                return false;
+              }
+
+              const codeNode = view.state.doc.nodeAt(codePos);
+              if (!codeNode) {
+                return false;
+              }
+
+              view.dispatch(
+                view.state.tr.setNodeMarkup(codePos, undefined, {
+                  ...codeNode.attrs,
+                  collapsed: !codeNode.attrs.collapsed,
+                })
+              );
+              return true;
+            },
           },
+        },
+      }),
+      new Plugin({
+        key: new PluginKey("code-block-tall"),
+        view: () => {
+          let initialized = false;
+          return {
+            update: (view) => {
+              // Keep the "tall" class in sync with each block's natural height.
+              // scrollHeight reflects the full content height even when the
+              // element is clipped by CSS max-height (collapsed state).
+              view.dom
+                .querySelectorAll<HTMLElement>(".code-block")
+                .forEach((block) => {
+                  block.classList.toggle(
+                    "tall",
+                    block.scrollHeight > MAX_HEIGHT
+                  );
+                });
+
+              // Auto-collapse tall blocks once on initial document load.
+              if (!initialized) {
+                initialized = true;
+                requestAnimationFrame(() => {
+                  const { state } = view;
+                  const tr = state.tr;
+                  let modified = false;
+
+                  state.doc.descendants((node, pos) => {
+                    if (isCode(node) && !node.attrs.collapsed) {
+                      const dom = view.nodeDOM(pos) as HTMLElement | null;
+                      if (dom && dom.scrollHeight > MAX_HEIGHT) {
+                        tr.setNodeMarkup(pos, undefined, {
+                          ...node.attrs,
+                          collapsed: true,
+                        });
+                        modified = true;
+                      }
+                    }
+                  });
+
+                  if (modified) {
+                    view.dispatch(tr);
+                  }
+                });
+              }
+            },
+          };
         },
       }),
     ].filter(Boolean) as Plugin[];
