@@ -1739,6 +1739,49 @@ mark {
   font-size: 90%;
 }
 
+.code-block.collapsed {
+  max-height: 350px;
+  clip-path: inset(0 -1px 0 0);
+  pointer-events: none;
+
+  &::before {
+    z-index: 1;
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 120px;
+    width: 100%;
+    pointer-events: none;
+
+    ${
+      props.theme.isDark
+        ? `
+      background: linear-gradient(
+        to bottom,
+        rgba(15, 17, 21, 0) 0%,
+        rgba(15, 17, 21, 0.2) 40%,
+        rgba(15, 17, 21, 0.4) 60%,
+        rgba(15, 17, 21, 0.5) 85%,
+        rgba(15, 17, 21, 0.6) 100%
+      );
+    `
+        : `
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.2) 40%,
+        rgba(255, 255, 255, 0.4) 60%,
+        rgba(255, 255, 255, 0.5) 85%,
+        rgba(255, 255, 255, 0.6) 100%
+      );
+    `
+    }
+  }
+
+}
+
 .code-block[data-language=none],
 .code-block[data-language=markdown] {
   pre code {
@@ -1808,6 +1851,10 @@ mark {
     .mermaid-diagram-wrapper {
         display: none;
     }
+
+    .code-block-toggle {
+        display: none;
+    }
 }
 
 .code-block.with-line-wrap {
@@ -1839,6 +1886,49 @@ mark {
     font-variant-numeric: tabular-nums;
     user-select: none;
   }
+}
+
+.code-block-toggle {
+  display: none;
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: ${props.theme.fontFamily};
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: var(--pointer);
+  z-index: 2;
+  pointer-events: auto;
+  transition: background 150ms ease-out;
+  backdrop-filter: blur(4px);
+  user-select: none;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+}
+
+.code-block.collapsed .code-block-toggle {
+  display: inline-flex;
+}
+
+.code-block.tall:not(.collapsed):hover .code-block-toggle {
+  display: inline-flex;
 }
 
 .mermaid-diagram-wrapper {

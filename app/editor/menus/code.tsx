@@ -62,9 +62,6 @@ export default function codeMenuItems(
       tooltip: dictionary.copy,
     },
     {
-      name: "separator",
-    },
-    {
       name: "edit_mermaid",
       icon: <EditIcon />,
       tooltip: dictionary.editDiagram,
