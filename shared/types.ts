@@ -440,6 +440,7 @@ export type NavigationNode = {
   color?: string;
   children: NavigationNode[];
   isDraft?: boolean;
+  isRestricted?: boolean;
   collectionId?: string;
   type?: NavigationNodeType;
   parent?: NavigationNode | null;

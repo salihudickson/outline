@@ -163,6 +163,13 @@ export default class Document extends ArchivableModel implements Searchable {
   insightsEnabled: boolean;
 
   /**
+   * Whether this document manages access independently of the collection and parent document.
+   */
+  @Field
+  @observable
+  isRestricted: boolean;
+
+  /**
    * A reference to the template that this document was created from.
    */
   @Field

@@ -24,7 +24,8 @@ allow(User, "read", Document, (actor, document) =>
         DocumentPermission.Admin,
       ]),
       and(!!document?.isDraft, actor.id === document?.createdById),
-      can(actor, "readDocument", document?.collection)
+      isTeamAdmin(actor, document),
+      and(!document?.isRestricted, can(actor, "readDocument", document?.collection))
     )
   )
 );
@@ -90,7 +91,7 @@ allow(User, "update", Document, (actor, document) =>
         DocumentPermission.Admin,
       ]),
       or(
-        can(actor, "updateDocument", document?.collection),
+        and(!document?.isRestricted, can(actor, "updateDocument", document?.collection)),
         and(!!document?.isDraft && actor.id === document?.createdById)
       )
     )
@@ -111,7 +112,7 @@ allow(User, "manageUsers", Document, (actor, document) =>
     or(
       includesMembership(document, [DocumentPermission.Admin]),
       and(isTeamAdmin(actor, document), can(actor, "read", document)),
-      can(actor, "updateDocument", document?.collection),
+      and(!document?.isRestricted, can(actor, "updateDocument", document?.collection)),
       !!document?.isDraft && actor.id === document?.createdById
     )
   )
@@ -123,7 +124,7 @@ allow(User, "duplicate", Document, (actor, document) =>
     or(
       includesMembership(document, [DocumentPermission.Admin]),
       and(isTeamAdmin(actor, document), can(actor, "read", document)),
-      can(actor, "updateDocument", document?.collection),
+      and(!document?.isRestricted, can(actor, "updateDocument", document?.collection)),
       !!document?.isDraft && actor.id === document?.createdById
     )
   )
@@ -137,7 +138,7 @@ allow(User, "move", Document, (actor, document) =>
         DocumentPermission.ReadWrite,
         DocumentPermission.Admin,
       ]),
-      can(actor, "updateDocument", document?.collection),
+      and(!document?.isRestricted, can(actor, "updateDocument", document?.collection)),
       and(!!document?.isDraft && actor.id === document?.createdById),
       and(!!document?.isDraft && !document?.collection)
     )
@@ -194,7 +195,7 @@ allow(User, "restore", Document, (actor, document) =>
         DocumentPermission.ReadWrite,
         DocumentPermission.Admin,
       ]),
-      can(actor, "updateDocument", document?.collection),
+      and(!document?.isRestricted, can(actor, "updateDocument", document?.collection)),
       and(!!document?.isDraft && actor.id === document?.createdById)
     )
   )
@@ -217,7 +218,7 @@ allow(User, "archive", Document, (actor, document) =>
     or(
       includesMembership(document, [DocumentPermission.Admin]),
       and(isTeamAdmin(actor, document), can(actor, "read", document)),
-      can(actor, "updateDocument", document?.collection)
+      and(!document?.isRestricted, can(actor, "updateDocument", document?.collection))
     )
   )
 );
@@ -233,7 +234,7 @@ allow(User, "unarchive", Document, (actor, document) =>
         DocumentPermission.ReadWrite,
         DocumentPermission.Admin,
       ]),
-      can(actor, "updateDocument", document?.collection),
+      and(!document?.isRestricted, can(actor, "updateDocument", document?.collection)),
       and(!!document?.isDraft && actor.id === document?.createdById)
     )
   )
@@ -244,6 +245,18 @@ allow(
   "restore",
   Revision,
   (document, revision) => document.id === revision?.documentId
+);
+
+allow(User, "restrict", Document, (actor, document) =>
+  and(
+    isTeamModel(actor, document),
+    or(
+      includesMembership(document, [DocumentPermission.Admin]),
+      isTeamAdmin(actor, document),
+      and(!document?.isRestricted, can(actor, "updateDocument", document?.collection)),
+      and(!!document?.isDraft, actor.id === document?.createdById)
+    )
+  )
 );
 
 allow(User, "unpublish", Document, (user, document) => {
@@ -261,6 +274,9 @@ allow(User, "unpublish", Document, (user, document) => {
     document.collection,
     "collection is missing, did you forget to include in the query scope?"
   );
+  if (document.isRestricted) {
+    return false;
+  }
   if (cannot(user, "updateDocument", document.collection)) {
     return false;
   }

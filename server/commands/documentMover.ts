@@ -111,6 +111,18 @@ async function documentMover(
     result.collections.push(collection);
   }
 
+  // Auto-restrict when moving into a restricted parent to preserve the invariant
+  // that all children of a restricted document are also restricted.
+  if (parentDocumentId && !document.isRestricted) {
+    const newParent = await Document.findByPk(parentDocumentId, {
+      attributes: ["id", "isRestricted"],
+      transaction,
+    });
+    if (newParent?.isRestricted) {
+      await document.setRestricted(true, user, transaction);
+    }
+  }
+
   // If the collection has changed then we also need to update the properties
   // on all of the documents children to reflect the new collectionId
   if (collectionChanged) {
