@@ -1,6 +1,8 @@
 import type { Schema } from "prosemirror-model";
 import { Node } from "prosemirror-model";
-import headingToSlug from "../editor/lib/headingToSlug";
+import headingToSlug, {
+  safeSlugify,
+} from "../editor/lib/headingToSlug";
 import textBetween from "../editor/lib/textBetween";
 import type { ProsemirrorData } from "../types";
 import { TextHelper } from "./TextHelper";
@@ -453,6 +455,51 @@ export class ProsemirrorHelper {
         });
       }
     });
+    return headings;
+  }
+
+  /**
+   * Iterates through raw ProsemirrorData JSON to find all headings and their
+   * level. Unlike `getHeadings`, this method works directly on the serialized
+   * JSON representation and does not require constructing a full ProseMirror
+   * document with a schema. This is useful when processing document data on the
+   * client before a schema is available, such as when generating mention menu
+   * items from document data already stored in the client-side model store.
+   *
+   * @param data The ProsemirrorData JSON object to process
+   * @returns Array<Heading>
+   */
+  static getHeadingsFromData(data: ProsemirrorData): Heading[] {
+    const headings: Heading[] = [];
+    const previouslySeen: Record<string, number> = {};
+
+    function getTextContent(node: ProsemirrorData): string {
+      if (node.text) {
+        return node.text;
+      }
+      return (node.content ?? []).map(getTextContent).join("");
+    }
+
+    function traverse(node: ProsemirrorData) {
+      if (node.type === "heading") {
+        const text = getTextContent(node);
+        const baseSlug = safeSlugify(text);
+        const seenCount = previouslySeen[baseSlug] ?? 0;
+        const id = seenCount === 0 ? baseSlug : `${baseSlug}-${seenCount}`;
+        previouslySeen[baseSlug] = seenCount + 1;
+
+        headings.push({
+          title: text,
+          level: (node.attrs?.level as number) ?? 1,
+          id,
+        });
+      }
+      for (const child of node.content ?? []) {
+        traverse(child);
+      }
+    }
+
+    traverse(data);
     return headings;
   }
 

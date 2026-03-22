@@ -33,6 +33,12 @@ export type MenuItem = {
   /** Higher number is higher in results, default is 0. */
   priority?: number;
   children?: MenuItem[] | (() => MenuItem[]);
+  /**
+   * When true, pressing Enter or clicking the item will directly select it
+   * rather than opening its children submenu. The ArrowRight key still opens
+   * the submenu.
+   */
+  allowDirectSelect?: boolean;
   defaultHidden?: boolean;
   attrs?:
     | Record<string, Primitive | null>

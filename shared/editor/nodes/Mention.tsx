@@ -62,6 +62,9 @@ export default class Mention extends Node {
         unfurl: {
           default: undefined,
         },
+        headingId: {
+          default: undefined,
+        },
       },
       inline: true,
       marks: "",
@@ -89,6 +92,7 @@ export default class Mention extends Node {
               unfurl: dom.dataset.unfurl
                 ? JSON.parse(dom.dataset.unfurl)
                 : undefined,
+              headingId: dom.dataset.headingid ?? undefined,
             };
           },
         },
@@ -102,13 +106,14 @@ export default class Mention extends Node {
             node.attrs.type === MentionType.User
               ? undefined
               : node.attrs.type === MentionType.Document
-                ? `${env.URL}/doc/${node.attrs.modelId}`
+                ? `${env.URL}/doc/${node.attrs.modelId}${node.attrs.headingId ? `#${node.attrs.headingId}` : ""}`
                 : node.attrs.type === MentionType.Collection
                   ? `${env.URL}/collection/${node.attrs.modelId}`
                   : node.attrs.href,
           "data-type": node.attrs.type,
           "data-id": node.attrs.modelId,
           "data-actorid": node.attrs.actorId,
+          "data-headingid": node.attrs.headingId,
           "data-url":
             node.attrs.type === MentionType.PullRequest ||
             node.attrs.type === MentionType.Issue ||
@@ -316,10 +321,12 @@ export default class Mention extends Node {
     const mId = node.attrs.modelId;
     const label = node.attrs.label;
     const id = node.attrs.id;
+    const headingId = node.attrs.headingId;
 
     // Use regular links for document and collection mentions
     if (mType === MentionType.Document) {
-      state.write(`[${label}](/doc/${mId})`);
+      const anchor = headingId ? `#${headingId}` : "";
+      state.write(`[${label}](/doc/${mId}${anchor})`);
     } else if (mType === MentionType.Collection) {
       state.write(`[${label}](/collection/${mId})`);
     } else {

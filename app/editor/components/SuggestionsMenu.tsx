@@ -634,10 +634,12 @@ function SuggestionsMenu<T extends MenuItem>(props: Props<T>) {
         const item = filtered[selectedIndex];
 
         if (item) {
+          const canDirectSelect =
+            "allowDirectSelect" in item && item.allowDirectSelect;
           const children = resolveChildren(
             "children" in item ? item.children : undefined
           );
-          if (children?.length) {
+          if (children?.length && !canDirectSelect) {
             openSubmenu(selectedIndex);
           } else {
             handleClickItem(item);
@@ -855,7 +857,9 @@ function SuggestionsMenu<T extends MenuItem>(props: Props<T>) {
           const handleOnClick = (ev: React.MouseEvent) => {
             ev.preventDefault();
             ev.stopPropagation();
-            if (hasChildren) {
+            const canDirectSelect =
+              "allowDirectSelect" in item && item.allowDirectSelect;
+            if (hasChildren && !canDirectSelect) {
               openSubmenu(index);
             } else {
               handleClickItem(item);

@@ -234,4 +234,77 @@ describe("ProsemirrorHelper", () => {
       ]);
     });
   });
+
+  describe("getHeadingsFromData", () => {
+    it("should return an empty array for a document with no headings", () => {
+      const data: ProsemirrorData = {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Hello world" }],
+          },
+        ],
+      };
+      expect(ProsemirrorHelper.getHeadingsFromData(data)).toEqual([]);
+    });
+
+    it("should return headings with correct title, level, and id", () => {
+      const data: ProsemirrorData = {
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 1 },
+            content: [{ type: "text", text: "Introduction" }],
+          },
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "Getting Started" }],
+          },
+        ],
+      };
+      const headings = ProsemirrorHelper.getHeadingsFromData(data);
+      expect(headings).toHaveLength(2);
+      expect(headings[0]).toMatchObject({
+        title: "Introduction",
+        level: 1,
+        id: "h-introduction",
+      });
+      expect(headings[1]).toMatchObject({
+        title: "Getting Started",
+        level: 2,
+        id: "h-getting-started",
+      });
+    });
+
+    it("should deduplicate heading ids when headings have the same text", () => {
+      const data: ProsemirrorData = {
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "Section" }],
+          },
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "Section" }],
+          },
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "Section" }],
+          },
+        ],
+      };
+      const headings = ProsemirrorHelper.getHeadingsFromData(data);
+      expect(headings).toHaveLength(3);
+      expect(headings[0].id).toBe("h-section");
+      expect(headings[1].id).toBe("h-section-1");
+      expect(headings[2].id).toBe("h-section-2");
+    });
+  });
 });
