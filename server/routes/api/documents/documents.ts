@@ -168,6 +168,24 @@ router.post(
       });
     }
 
+    // For non-admin users, exclude restricted documents that the user has no direct membership in.
+    // Restricted documents are only visible to users with explicit document-level membership.
+    if (!user.isAdmin) {
+      // UUID format only contains [0-9a-f-] so inlining is safe
+      const userId = user.id;
+      where[Op.and].push({
+        [Op.or]: [
+          { isRestricted: false },
+          Sequelize.literal(
+            `EXISTS (SELECT 1 FROM user_permissions WHERE "documentId" = "document"."id" AND "userId" = '${userId}' AND "sourceId" IS NULL)`
+          ),
+          Sequelize.literal(
+            `EXISTS (SELECT 1 FROM group_permissions gp INNER JOIN group_users gu ON gu."groupId" = gp."groupId" WHERE gp."documentId" = "document"."id" AND gu."userId" = '${userId}' AND gp."sourceId" IS NULL)`
+          ),
+        ],
+      });
+    }
+
     if (parentDocumentId) {
       const [groupMembership, membership] = await Promise.all([
         GroupMembership.findOne({
@@ -1257,7 +1275,7 @@ router.post(
   transaction(),
   async (ctx: APIContext<T.DocumentsUpdateReq>) => {
     const { transaction } = ctx.state;
-    const { id, insightsEnabled, publish, collectionId, ...input } =
+    const { id, insightsEnabled, publish, collectionId, isRestricted, ...input } =
       ctx.input.body;
     const editorVersion = ctx.headers["x-editor-version"] as string | undefined;
 
@@ -1274,6 +1292,10 @@ router.post(
 
     if (collection && insightsEnabled !== undefined) {
       authorize(user, "updateInsights", document);
+    }
+
+    if (isRestricted !== undefined) {
+      authorize(user, "restrict", document);
     }
 
     if (publish) {
@@ -1304,6 +1326,11 @@ router.post(
       } else {
         authorize(user, "createDocument", collection);
       }
+    }
+
+    // Handle restrict/unrestrict: propagate isRestricted to all descendants
+    if (isRestricted !== undefined && isRestricted !== document.isRestricted) {
+      await document.setRestricted(isRestricted, user, transaction);
     }
 
     document = await documentUpdater(ctx, {

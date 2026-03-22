@@ -44,6 +44,7 @@ import type {
   ProsemirrorData,
   SourceMetadata,
 } from "@shared/types";
+import { DocumentPermission } from "@shared/types";
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { UrlHelper } from "@shared/utils/UrlHelper";
 import slugify from "@shared/utils/slugify";
@@ -371,6 +372,11 @@ class Document extends ArchivableModel<
   @Default(false)
   @Column
   isWelcome: boolean;
+
+  /** Whether this document manages access independently of the collection and parent document. */
+  @Default(false)
+  @Column
+  isRestricted: boolean;
 
   /** How many versions there are in the history of this document. */
   @IsNumeric
@@ -850,11 +856,15 @@ class Document extends ArchivableModel<
 
     return documents.filter(
       (doc) =>
-        (!doc.collection?.isPrivate && !user?.isGuest) ||
-        (doc.collection?.memberships.length || 0) > 0 ||
-        (doc.collection?.groupMemberships.length || 0) > 0 ||
-        doc.memberships.length > 0 ||
-        doc.groupMemberships.length > 0
+        doc.isRestricted
+          ? doc.memberships.length > 0 ||
+            doc.groupMemberships.length > 0 ||
+            user?.isAdmin
+          : (!doc.collection?.isPrivate && !user?.isGuest) ||
+            (doc.collection?.memberships.length || 0) > 0 ||
+            (doc.collection?.groupMemberships.length || 0) > 0 ||
+            doc.memberships.length > 0 ||
+            doc.groupMemberships.length > 0
     );
   }
 
@@ -991,6 +1001,107 @@ class Document extends ArchivableModel<
     return findAllChildDocumentIds(this.id);
   };
 
+  /**
+   * Restricts or unrestricts this document and all its descendants. When restricting, sourced
+   * (inherited) memberships are removed. When unrestricting, sourced memberships are rebuilt from
+   * the parent document's direct memberships. If restricting and the acting user has no direct
+   * membership, they are auto-added as an Admin to maintain access.
+   *
+   * @param isRestricted whether to restrict or unrestrict
+   * @param actingUser the user performing the action
+   * @param transaction the current database transaction
+   */
+  setRestricted = async (
+    isRestricted: boolean,
+    actingUser: User,
+    transaction?: Transaction
+  ): Promise<void> => {
+    const childDocumentIds = await this.findAllChildDocumentIds(undefined, {
+      transaction,
+    });
+
+    await (this.constructor as typeof Document).update(
+      { isRestricted },
+      {
+        transaction,
+        where: { id: [this.id, ...childDocumentIds] },
+      }
+    );
+
+    if (isRestricted) {
+      // Remove all sourced (inherited) memberships from this doc and descendants
+      await UserMembership.destroy({
+        where: {
+          sourceId: { [Op.ne]: null },
+          documentId: { [Op.in]: [this.id, ...childDocumentIds] },
+        },
+        transaction,
+      });
+      await GroupMembership.destroy({
+        where: {
+          sourceId: { [Op.ne]: null },
+          documentId: { [Op.in]: [this.id, ...childDocumentIds] },
+        },
+        transaction,
+      });
+
+      // Auto-add the acting user as Admin document member if not already directly a member.
+      // Admins bypass restriction so no membership record is needed for them.
+      if (!actingUser.isAdmin) {
+        const existingMembership = await UserMembership.findOne({
+          where: {
+            documentId: this.id,
+            userId: actingUser.id,
+            sourceId: null,
+          },
+          transaction,
+        });
+        if (!existingMembership) {
+          await UserMembership.create(
+            {
+              documentId: this.id,
+              userId: actingUser.id,
+              permission: DocumentPermission.Admin,
+              createdById: actingUser.id,
+            },
+            { transaction, hooks: false }
+          );
+        }
+      }
+    } else {
+      // Unrestrict: rebuild sourced memberships from parent document's direct memberships
+      const parentDocumentMemberships = this.parentDocumentId
+        ? await UserMembership.findAll({
+            where: { documentId: this.parentDocumentId, sourceId: null },
+            transaction,
+          })
+        : [];
+
+      for (const membership of parentDocumentMemberships) {
+        await UserMembership.recreateSourcedMemberships(membership, {
+          transaction,
+          documentId: this.id,
+        });
+      }
+
+      const parentGroupMemberships = this.parentDocumentId
+        ? await GroupMembership.findAll({
+            where: { documentId: this.parentDocumentId, sourceId: null },
+            transaction,
+          })
+        : [];
+
+      for (const membership of parentGroupMemberships) {
+        await GroupMembership.recreateSourcedMemberships(membership, {
+          transaction,
+          documentId: this.id,
+        });
+      }
+    }
+
+    this.isRestricted = isRestricted;
+  };
+
   publish = async (
     ctx: APIContext,
     {
@@ -1040,7 +1151,7 @@ class Document extends ArchivableModel<
     }
 
     // Copy the group and user memberships from the parent document, if any
-    if (this.parentDocumentId) {
+    if (this.parentDocumentId && !this.isRestricted) {
       await GroupMembership.copy(
         {
           documentId: this.parentDocumentId,
@@ -1312,6 +1423,7 @@ class Document extends ArchivableModel<
       url: this.url,
       icon: isNil(this.icon) ? undefined : this.icon,
       color: isNil(this.color) ? undefined : this.color,
+      isRestricted: this.isRestricted || undefined,
       children,
     };
   };

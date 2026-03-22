@@ -100,6 +100,7 @@ async function presentDocument(
 
     res.tasks = document.tasks;
     res.isCollectionDeleted = await document.isCollectionDeleted();
+    res.isRestricted = document.isRestricted;
     res.collectionId = document.collectionId;
     res.parentDocumentId = document.parentDocumentId;
     res.createdBy = presentUser(document.createdBy);

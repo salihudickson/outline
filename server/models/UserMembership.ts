@@ -350,6 +350,7 @@ class UserMembership extends IdModel<
           publishedAt: {
             [Op.ne]: null,
           },
+          isRestricted: false,
         },
         {
           transaction,
