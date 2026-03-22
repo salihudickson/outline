@@ -3,6 +3,10 @@ import { observer } from "mobx-react";
 import { v4 as uuidv4 } from "uuid";
 import {
   DocumentIcon,
+  Heading1Icon,
+  Heading2Icon,
+  Heading3Icon,
+  Heading4Icon,
   PlusIcon,
   NewDocumentIcon,
   CollectionIcon,
@@ -15,6 +19,7 @@ import Icon from "@shared/components/Icon";
 import type { MenuItem } from "@shared/editor/types";
 import { MentionType } from "@shared/types";
 import parseDocumentSlug from "@shared/utils/parseDocumentSlug";
+import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
 import { Avatar, AvatarSize, GroupAvatar } from "~/components/Avatar";
 import DocumentBreadcrumb from "~/components/DocumentBreadcrumb";
 import Flex from "~/components/Flex";
@@ -32,6 +37,14 @@ import SuggestionsMenu from "./SuggestionsMenu";
 import SuggestionsMenuItem from "./SuggestionsMenuItem";
 import { runInAction } from "mobx";
 
+/** Icons mapped to heading levels 1–4. Levels beyond 4 fall back to Heading4Icon. */
+const headingIcons = [Heading1Icon, Heading2Icon, Heading3Icon, Heading4Icon];
+
+/** Returns the icon component for the given heading level (1-based, clamped to 1–4). */
+function getHeadingIcon(level: number) {
+  return headingIcons[Math.min(Math.max(level, 1), headingIcons.length) - 1];
+}
+
 interface MentionItem extends MenuItem {
   attrs: {
     id: string;
@@ -39,6 +52,7 @@ interface MentionItem extends MenuItem {
     modelId: string;
     label: string;
     actorId?: string;
+    headingId?: string;
   };
 }
 
@@ -175,12 +189,35 @@ function MentionMenu({ search, isActive, ...rest }: Props) {
                   ) : undefined,
                   section: DocumentsSection,
                   appendSpace: true,
+                  allowDirectSelect: true,
                   attrs: {
                     id: uuidv4(),
                     type: MentionType.Document,
                     modelId: doc.id,
                     actorId,
                     label: doc.title,
+                  },
+                  children: () => {
+                    const headings = doc.data
+                      ? ProsemirrorHelper.getHeadingsFromData(doc.data)
+                      : [];
+                    return headings.map((heading) => {
+                      const HeadingIcon = getHeadingIcon(heading.level);
+                      return {
+                        name: "mention",
+                        icon: <HeadingIcon />,
+                        title: heading.title,
+                        appendSpace: true,
+                        attrs: {
+                          id: uuidv4(),
+                          type: MentionType.Document,
+                          modelId: doc.id,
+                          actorId,
+                          label: `${doc.title} › ${heading.title}`,
+                          headingId: heading.id,
+                        },
+                      } as MentionItem;
+                    });
                   },
                 }) as MentionItem
             )

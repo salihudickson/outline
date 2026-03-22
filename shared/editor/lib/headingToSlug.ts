@@ -7,7 +7,7 @@ const cache = new Map<string, string>();
 // Slugify, escape, and remove periods from headings so that they are
 // compatible with both url hashes AND dom ID's (querySelector does not like
 // ID's that begin with a number or a period, for example).
-function safeSlugify(text: string) {
+export function safeSlugify(text: string) {
   if (cache.has(text)) {
     return cache.get(text) as string;
   }
