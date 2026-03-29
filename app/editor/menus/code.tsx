@@ -1,4 +1,4 @@
-import { CopyIcon, EditIcon, ExpandedIcon, TextWrapIcon } from "outline-icons";
+import { CopyIcon, EditIcon, ExpandedIcon, ShrinkIcon, GrowIcon, TextWrapIcon } from "outline-icons";
 import type { Node as ProseMirrorNode } from "prosemirror-model";
 import { NodeSelection } from "prosemirror-state";
 import type { EditorState } from "prosemirror-state";
@@ -11,7 +11,12 @@ import {
   codeLanguages,
   getLabelForLanguage,
 } from "@shared/editor/lib/code";
-import { isMermaid } from "@shared/editor/lib/isCode";
+import { isCode, isMermaid } from "@shared/editor/lib/isCode";
+import {
+  codeCollapsePluginKey,
+  MIN_LINES_FOR_TRUNCATION,
+} from "@shared/editor/nodes/CodeFence";
+import { findParentNode } from "@shared/editor/queries/findParentNode";
 import type { MenuItem } from "@shared/editor/types";
 import type { Dictionary } from "~/hooks/useDictionary";
 import { metaDisplay } from "@shared/utils/keyboard";
@@ -52,6 +57,18 @@ export default function codeMenuItems(
   const isEditingMermaid = !!(mermaidPluginKey.getState(state) as MermaidState)
     ?.editingId;
 
+  const lineCount = (node.textContent.match(/\n/g) || []).length + 1;
+  const isTall = !isMermaid(node) && lineCount >= MIN_LINES_FOR_TRUNCATION;
+
+  // Determine whether the current code block is in the expanded set
+  const expandedSet = codeCollapsePluginKey.getState(state);
+  const codeBlockResult =
+    state.selection instanceof NodeSelection && isCode(state.selection.node)
+      ? { pos: state.selection.from }
+      : findParentNode(isCode)(state.selection);
+  const isExpanded =
+    codeBlockResult !== undefined && !!expandedSet?.has(codeBlockResult.pos);
+
   return [
     {
       name: "copyToClipboard",
@@ -70,6 +87,21 @@ export default function codeMenuItems(
       tooltip: dictionary.editDiagram,
       shortcut: `${metaDisplay} Enter`,
       visible: isMermaid(node) && !isEditingMermaid && !readOnly,
+    },
+    {
+      name: "separator",
+    },
+    {
+      name: "expandCodeBlock",
+      icon: <GrowIcon />,
+      tooltip: dictionary.expandCode,
+      visible: isTall && !isExpanded && !readOnly,
+    },
+    {
+      name: "collapseCodeBlock",
+      icon: <ShrinkIcon />,
+      tooltip: dictionary.collapseCode,
+      visible: isTall && isExpanded && !readOnly,
     },
     {
       name: "separator",

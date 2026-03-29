@@ -1739,6 +1739,30 @@ mark {
   font-size: 90%;
 }
 
+.code-block.code-block-collapsed {
+  pre {
+    max-height: 350px;
+    overflow: hidden;
+  }
+
+  // Gradient fade at the bottom to hint that content is truncated.
+  &::after {
+    content: "";
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    height: 80px;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      ${props.theme.codeBackground}
+    );
+    border-radius: 0 0 3px 3px;
+  }
+}
+
 .code-block[data-language=none],
 .code-block[data-language=markdown] {
   pre code {
